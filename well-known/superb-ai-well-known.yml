@@ -1,0 +1,143 @@
+generated: '2026-08-29'
+method: probed
+source: live GET probes of /.well-known/* on every Superb AI host in apis.yml
+note: >-
+  No /.well-known document is served on any Superb AI host. Every path 404s on the origins that
+  answer honestly (superb-ai.com, docs.superb-ai.com, api.bdai.superb-ai.com); api.superb-ai.com
+  answers 403 "Missing Authentication Token" for every path because it is an AWS API Gateway
+  with no wildcard route. bdai.superb-ai.com and platform.superb-ai.com return HTTP 200 for
+  EVERY /.well-known/* path, but the body is the single-page-app HTML shell (`<!doctype html>`,
+  `<title>Superb Platform</title>`), not a document — these are catch-all false positives and
+  are recorded as misses. Because nothing returned a real document, NO `WellKnown` and NO
+  `SecurityTxt` pointer is emitted in apis.yml.
+hosts:
+- host: superb-ai.com
+  documents:
+  - path: /.well-known/security.txt
+    status: 404
+  - path: /.well-known/openid-configuration
+    status: 404
+  - path: /.well-known/oauth-authorization-server
+    status: 404
+  - path: /.well-known/oauth-protected-resource
+    status: 404
+  - path: /.well-known/api-catalog
+    status: 404
+  - path: /.well-known/ai-plugin.json
+    status: 404
+  - path: /.well-known/agent-card.json
+    status: 404
+  - path: /.well-known/agent.json
+    status: 404
+- host: docs.superb-ai.com
+  documents:
+  - path: /.well-known/security.txt
+    status: 404
+  - path: /.well-known/openid-configuration
+    status: 404
+  - path: /.well-known/oauth-authorization-server
+    status: 404
+  - path: /.well-known/oauth-protected-resource
+    status: 404
+  - path: /.well-known/api-catalog
+    status: 404
+  - path: /.well-known/ai-plugin.json
+    status: 404
+  - path: /.well-known/agent-card.json
+    status: 404
+  - path: /.well-known/agent.json
+    status: 404
+- host: api.bdai.superb-ai.com
+  documents:
+  - path: /.well-known/security.txt
+    status: 404
+  - path: /.well-known/openid-configuration
+    status: 404
+  - path: /.well-known/oauth-authorization-server
+    status: 404
+  - path: /.well-known/oauth-protected-resource
+    status: 404
+  - path: /.well-known/api-catalog
+    status: 404
+  - path: /.well-known/ai-plugin.json
+    status: 404
+  - path: /.well-known/agent-card.json
+    status: 404
+  - path: /.well-known/agent.json
+    status: 404
+- host: api.superb-ai.com
+  documents:
+  - path: /.well-known/security.txt
+    status: 403
+    note: AWS API Gateway "Missing Authentication Token" — no route, not a document.
+  - path: /.well-known/openid-configuration
+    status: 403
+  - path: /.well-known/oauth-authorization-server
+    status: 403
+  - path: /.well-known/oauth-protected-resource
+    status: 403
+  - path: /.well-known/api-catalog
+    status: 403
+  - path: /.well-known/ai-plugin.json
+    status: 403
+  - path: /.well-known/agent-card.json
+    status: 403
+  - path: /.well-known/agent.json
+    status: 403
+- host: bdai.superb-ai.com
+  documents:
+  - path: /.well-known/security.txt
+    status: 200
+    note: SPA catch-all HTML shell, not a document — counted as a miss.
+  - path: /.well-known/openid-configuration
+    status: 200
+    note: SPA catch-all HTML shell, not a document — counted as a miss.
+  - path: /.well-known/oauth-authorization-server
+    status: 200
+    note: SPA catch-all HTML shell, not a document — counted as a miss.
+  - path: /.well-known/oauth-protected-resource
+    status: 200
+    note: SPA catch-all HTML shell, not a document — counted as a miss.
+  - path: /.well-known/api-catalog
+    status: 200
+    note: SPA catch-all HTML shell, not a document — counted as a miss.
+  - path: /.well-known/ai-plugin.json
+    status: 200
+    note: SPA catch-all HTML shell, not a document — counted as a miss.
+  - path: /.well-known/agent-card.json
+    status: 200
+    note: SPA catch-all HTML shell, not a document — counted as a miss.
+  - path: /.well-known/agent.json
+    status: 200
+    note: SPA catch-all HTML shell, not a document — counted as a miss.
+- host: platform.superb-ai.com
+  documents:
+  - path: /.well-known/security.txt
+    status: 200
+    note: SPA catch-all HTML shell, not a document — counted as a miss.
+  - path: /.well-known/openid-configuration
+    status: 200
+    note: SPA catch-all HTML shell, not a document — counted as a miss.
+  - path: /.well-known/oauth-authorization-server
+    status: 200
+    note: SPA catch-all HTML shell, not a document — counted as a miss.
+  - path: /.well-known/oauth-protected-resource
+    status: 200
+    note: SPA catch-all HTML shell, not a document — counted as a miss.
+  - path: /.well-known/api-catalog
+    status: 200
+    note: SPA catch-all HTML shell, not a document — counted as a miss.
+  - path: /.well-known/ai-plugin.json
+    status: 200
+    note: SPA catch-all HTML shell, not a document — counted as a miss.
+  - path: /.well-known/agent-card.json
+    status: 200
+    note: SPA catch-all HTML shell, not a document — counted as a miss.
+  - path: /.well-known/agent.json
+    status: 200
+    note: SPA catch-all HTML shell, not a document — counted as a miss.
+summary:
+  hosts_probed: 6
+  paths_per_host: 8
+  real_documents_found: 0
+  agent_card_found: false

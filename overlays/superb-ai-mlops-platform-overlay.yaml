@@ -1,0 +1,122 @@
+overlay: 1.0.0
+info:
+  title: API Evangelist enhancements for the Superb AI MLOps Platform API
+  version: 1.0.0
+x-provenance:
+  generated: '2026-08-29'
+  method: generated
+  source: openapi/superb-ai-mlops-platform-openapi.json
+  extends: openapi/superb-ai-mlops-platform-openapi.json
+  note: >-
+    Non-destructive OpenAPI Overlay 1.0.0 capturing API Evangelist's enhancements to the spec as
+    published at https://api.bdai.superb-ai.com/openapi.json. The original document is never
+    mutated. The most consequential action below is the first: the published spec has NO
+    servers[] block at all, so a consumer who downloads it has no machine-readable base URL even
+    though the document is served from the API host itself. The host asserted here is the exact
+    origin the spec was fetched from.
+actions:
+- target: $
+  description: >-
+    Add the missing servers[] block. The published document omits servers entirely; this is the
+    origin the spec is served from and the base the first-party SDK targets.
+  update:
+    servers:
+    - url: https://api.bdai.superb-ai.com
+      description: >-
+        Superb AI MLOps Platform production API. Confirmed by fetching the spec itself from
+        https://api.bdai.superb-ai.com/openapi.json (HTTP 200), and by the PyPI project metadata
+        for the first-party SDK `superb-ai`, which names https://docs.bdai.superb-ai.com as its
+        documentation home.
+- target: $.info
+  description: Add contact, licence and external identity absent from the published info block.
+  update:
+    contact:
+      name: Superb AI
+      url: https://superb-ai.com/en/company/contact
+    x-provider: Superb AI Inc.
+    x-documentation: https://docs.bdai.superb-ai.com
+    x-legacy-surface: >-
+      A separate, older Suite platform is documented at https://docs.superb-ai.com with a gated
+      GraphQL endpoint at https://api.superb-ai.com/graphql. It is NOT described by this
+      document.
+- target: $
+  description: >-
+    Declare the global security requirement. The published document defines the HTTPBearer scheme
+    but sets no top-level `security`, so a generated client cannot tell that a token is required.
+  update:
+    security:
+    - HTTPBearer: []
+- target: $.components.securitySchemes.HTTPBearer
+  description: Enrich the bearer scheme with the token format and how a caller obtains one.
+  update:
+    bearerFormat: JWT
+    x-token-source: Amazon Cognito
+    x-obtain: >-
+      GET /auth/authorize -> hosted sign-in -> POST /auth/callback returns the access token;
+      POST /auth/refresh rotates it. Per-user API keys can be minted at
+      POST /tenants/{slug}/users/me/api-keys.
+- target: $
+  description: >-
+    Record the cross-cutting runtime semantics as machine-readable extensions. They are currently
+    only prose inside info.description.
+  update:
+    x-pagination:
+      style: cursor
+      request_param: cursor
+      response_items_field: items
+      response_cursor_field: next_cursor
+      total_counts: false
+    x-idempotency:
+      header: Idempotency-Key
+      scope: tenant
+      applies_to: bulk POST operations only
+      replay_error_code: IDEMPOTENCY_REPLAY
+    x-error-envelope:
+      media_type: application/json
+      branch_on: error.code
+      enum_schema: '#/components/schemas/ErrorCode'
+      rfc9457: false
+    x-rate-limit:
+      algorithm: token bucket
+      scope: tenant
+      status: 429
+      error_code: RATE_LIMITED
+      headers_published: false
+- target: $.components.schemas.ExportFormat
+  description: >-
+    Flag the two industry annotation formats this enum commits to, so a consumer can match on
+    standard rather than on vendor.
+  update:
+    x-domain-standards:
+    - id: coco
+      name: MS-COCO object-detection annotation format
+    - id: yolo
+      name: YOLO (Darknet) label format
+- target: $.paths['/tenants/{slug}/projects/{project_id}']['delete']
+  description: >-
+    Mark the hard-delete consequence machine-readable. The spec states in prose that this is
+    irreversible; agents need it as a field.
+  update:
+    x-reversible: false
+    x-consequence: destructive
+    x-agent-escalation: require-human-approval
+    x-note: >-
+      HARD delete (ADR-0120). Cascades annotations, classes, attributes, members, versions and
+      frozen snapshots, training runs, models, deployments, exports, tags and jobs, and purges
+      the project's S3 objects. There is no archive and no undo.
+- target: $.paths['/tenants/{slug}/projects/{project_id}/versions/{version_id}']['delete']
+  description: Mark the version hard-delete as irreversible.
+  update:
+    x-reversible: false
+    x-consequence: destructive
+    x-agent-escalation: require-human-approval
+    x-note: >-
+      Hard-delete (ADR-0065). No soft-delete or archive; cascades training runs and models. The
+      web UI requires typing the name to confirm — the API applies no such guard.
+- target: $.paths['/tenants/{slug}/models/{model_id}']['delete']
+  description: Mark the model hard-delete as irreversible.
+  update:
+    x-reversible: false
+    x-consequence: destructive
+    x-agent-escalation: require-human-approval
+    x-note: 'Hard delete (ADR-0064); cascades to deployment rows of this model.'

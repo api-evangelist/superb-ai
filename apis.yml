@@ -1,18 +1,52 @@
 aid: superb-ai
 name: Superb AI
-description: 'Superb AI is a company surfaced via the API Evangelist harvest backlog (source: secondary-market)
-  and added to the network as a stub for full-pipeline profiling.'
+description: Superb AI (Superb AI Inc.) is a vision-intelligence company that turns industrial visual
+  data into models enterprises can deploy. Its Superb Platform covers the data-centric computer-vision
+  lifecycle end to end — dataset and image-asset management, human and automated annotation (Superb Label),
+  dataset curation and embedding search (Superb Curate), model training, diagnosis and hosted inference
+  endpoints (Superb Model), plus the ZERO vision foundation model for open-vocabulary detection. The platform
+  is used by manufacturing, logistics, mobility and physical-security teams, and is delivered as cloud,
+  private-cloud and air-gapped on-premise deployments. Developers reach it through a multi-tenant REST
+  API, a first-party Python SDK family and the spb command-line interface.
+image: https://superb-ai.com/logo/superb-logo-circle.png
 url: https://raw.githubusercontent.com/api-evangelist/superb-ai/refs/heads/main/apis.yml
 x-type: company
 x-source: harvest:secondary-market
-x-tier: stub
-x-tier-reason: harvest
 specificationVersion: '0.20'
 created: '2026-08-29'
 modified: '2026-08-29'
 tags:
-- Company
-apis: []
+- Artificial Intelligence
+- Machine Learning
+- Computer Vision
+- Data Labeling
+- Annotation
+- MLOps
+- Training Data
+- Model Training
+- Inference
+- Datasets
+apis:
+- aid: superb-ai-mlops-platform-api
+  name: Superb AI MLOps Platform API
+  description: Multi-tenant REST backend for the Superb Platform. 164 operations across tenants, workspaces,
+    image datasets and assets, projects and labeling workflow, annotations, comments, auto-label runs,
+    model training, foundation models, deployments and exports. Bearer-token (Amazon Cognito) authentication
+    with per-request workspace membership resolution, cursor pagination, an Idempotency-Key header on
+    bulk operations, and a stable machine-readable error-code enum.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - MLOps
+  - Computer Vision
+  - Data Labeling
+  - Annotation
+  - Model Training
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-mlops-platform-openapi.json
+  - type: Overlay
+    url: overlays/superb-ai-mlops-platform-overlay.yaml
 maintainers:
 - FN: Kin Lane
   email: kin@apievangelist.com
@@ -20,4 +54,71 @@ maintainers:
   email: info@apis.io
 common:
 - type: Website
-  url: https://forgeglobal.com/superb-ai_stock/
+  url: https://superb-ai.com/en
+- type: DeveloperPortal
+  url: https://docs.superb-ai.com/
+- type: Documentation
+  url: https://docs.superb-ai.com/docs/welcome
+- type: APIReference
+  url: https://docs.bdai.superb-ai.com
+- type: GettingStarted
+  url: https://docs.superb-ai.com/docs/welcome
+- type: Support
+  url: https://superb-ai.com/en/company/contact
+- type: Blog
+  url: https://superb-ai.com/en/resources/blog
+- type: GitHubOrganization
+  url: https://github.com/Superb-AI-Suite
+- type: Pricing
+  url: https://superb-ai.com/en/pricing
+- type: SignUp
+  url: https://platform.superb-ai.com/auth/sign_up
+- type: TermsOfService
+  url: https://superbai.notion.site/Terms-of-Use-a20d09ccfc28469987e61552eee3e3c4?pvs=4
+- type: PrivacyPolicy
+  url: https://superbai.notion.site/Privacy-Policy-880523efa01649708e64696332d1ca60
+- type: TrustCenter
+  url: security/superb-ai-trust-center.yml
+- type: DomainSecurity
+  url: security/superb-ai-domain-security.yml
+- type: Authentication
+  url: authentication/superb-ai-authentication.yml
+- type: Packages
+  url: packages/superb-ai-packages.yml
+- type: SDKs
+  url: packages/superb-ai-packages.yml
+- type: CLI
+  url: cli/superb-ai-cli.yml
+- type: MCPServer
+  url: mcp/superb-ai-mcp.yml
+- type: ToolCrosswalk
+  url: mcp/superb-ai-tool-crosswalk.yml
+- type: AgentSkill
+  url: skills/_index.yml
+- type: LLMsTxt
+  url: llms/superb-ai-llms.txt
+- type: Conventions
+  url: conventions/superb-ai-conventions.yml
+- type: Idempotency
+  url: conventions/superb-ai-conventions.yml
+- type: ErrorCatalog
+  url: errors/superb-ai-problem-types.yml
+- type: DataModel
+  url: data-model/superb-ai-data-model.yml
+- type: RateLimits
+  url: rate-limits/superb-ai-rate-limits.yml
+- type: Plans
+  url: plans/superb-ai-plans-pricing.yml
+- type: Lifecycle
+  url: lifecycle/superb-ai-lifecycle.yml
+- type: ChangeLog
+  url: changelog/superb-ai-changelog.yml
+- type: Conformance
+  url: conformance/superb-ai-conformance.yml
+- type: Compliance
+  url: conformance/superb-ai-conformance.yml
+x-enrichment:
+  date: '2026-08-29'
+  status: enriched
+  artifacts_added: 25
+  pass: local-v1

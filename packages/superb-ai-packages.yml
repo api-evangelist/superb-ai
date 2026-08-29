@@ -1,0 +1,78 @@
+generated: '2026-08-29'
+method: searched
+source: >-
+  PyPI JSON metadata endpoints (pypi.org/pypi/<pkg>/json), registry.npmjs.org, and the
+  Superb-AI-Suite GitHub organization (https://github.com/Superb-AI-Suite)
+note: >-
+  Superb AI ships a Python-only SDK family. Every package below is first-party: each declares a
+  Source/Homepage project URL inside the Superb-AI-Suite GitHub organization, which is the org
+  linked from superb-ai.com. No JavaScript/TypeScript, Java, Go, Ruby, PHP, .NET or Rust client
+  was found — registry.npmjs.org returned 404 for `superb-ai`, `@superb-ai/sdk` and `spb-cli`,
+  and no package exists on Maven Central, NuGet, pkg.go.dev, RubyGems, Packagist or crates.io.
+packages:
+- name: superb-ai
+  registry: pypi
+  language: python
+  official: true
+  version: 0.4.0
+  published: '2026-07-15'
+  url: https://pypi.org/project/superb-ai/
+  source: https://github.com/Superb-AI-Suite/superb-ai-python
+  docs: https://docs.bdai.superb-ai.com
+  license: Apache-2.0
+  requires_python: '>=3.12'
+  description: >-
+    Official Python SDK for the current Superb Platform — datasets, labeling, versions,
+    training. This is the client for the MLOps Platform API at api.bdai.superb-ai.com, and its
+    project metadata is what surfaced that API host.
+- name: superb-ai-onprem
+  registry: pypi
+  language: python
+  official: true
+  version: 1.11.1
+  published: '2026-04-30'
+  url: https://pypi.org/project/superb-ai-onprem/
+  source: https://github.com/Superb-AI-Suite/superb-ai-onprem-python
+  description: Python SDK for Superb AI On-premise (air-gapped / private-cloud deployments).
+- name: superb-ai-curate
+  registry: pypi
+  language: python
+  official: true
+  version: 1.5.0
+  published: '2025-04-29'
+  url: https://pypi.org/project/superb-ai-curate/
+  source: https://github.com/Superb-AI-Suite/superb-ai-curate-python
+  docs: https://docs.superb-ai.com/reference/superb-curate-sdk-overview
+  description: The official Superb AI Curate client for Python — datasets, slices, images, jobs.
+- name: superb-ai-label
+  registry: pypi
+  language: python
+  official: true
+  version: 0.22.2
+  published: '2024-11-07'
+  url: https://pypi.org/project/superb-ai-label/
+  source: https://github.com/Superb-AI-Suite/superb-ai-label-python
+  description: >-
+    Superb Label Python client ("Suite Standard Library"). Last release 2024-11-07 — nearly two
+    years stale relative to the current platform SDK (superb-ai 0.4.0, 2026-07-15), which is a
+    decay signal on the legacy Suite surface.
+- name: spb-cli
+  registry: pypi
+  language: python
+  official: true
+  version: 0.19.4
+  published: '2024-11-07'
+  url: https://pypi.org/project/spb-cli/
+  source: https://github.com/Superb-AI-Suite/spb-cli
+  docs: https://docs.superb-ai.com/reference/cli-overview
+  description: >-
+    The `spb` command-line tool for Superb AI Suite. See cli/superb-ai-cli.yml. Last release
+    2024-11-07; a newer CLI repo (Superb-AI-Suite/superb-ai-cli, "Superb Platform Command Line
+    Interface") exists on GitHub but publishes no package to any registry.
+absent_registries:
+- registry: npm
+  checked:
+  - superb-ai
+  - '@superb-ai/sdk'
+  - spb-cli
+  result: 404 — no first-party JavaScript client published.

@@ -1,0 +1,182 @@
+generated: '2026-08-29'
+method: derived
+source: >-
+  openapi/superb-ai-mlops-platform-openapi.json (info.description, operation parameters and
+  descriptions, components.schemas) — cross-checked against https://docs.superb-ai.com/
+note: >-
+  The Superb AI MLOps Platform API documents its cross-cutting semantics inside the OpenAPI
+  document itself, in info.description and in per-operation descriptions that cite internal ADR
+  numbers (ADR-0012 pagination, ADR-0023 idempotency, ADR-0034 errors, ADR-0048 exports,
+  ADR-0113 auth). That is where every convention below comes from; nothing here is inferred from
+  a marketing page.
+authentication:
+  style: bearer-token
+  scheme: HTTPBearer (http/bearer)
+  token_source: Amazon Cognito access token
+  flow: >-
+    Account-level login (ADR-0113) — GET /auth/authorize redirects to a hosted sign-in, POST
+    /auth/callback exchanges for a Bearer token, POST /auth/refresh rotates it, POST /auth/logout
+    revokes the session.
+  api_keys: >-
+    Per-user API keys are issuable from within a workspace — POST/GET
+    /tenants/{slug}/users/me/api-keys and DELETE .../{key_id} to revoke (soft-delete, sets
+    revoked_at).
+  tenancy: >-
+    Multi-tenant. Endpoints under /tenants/{slug} resolve workspace membership per request by
+    matching the token's `sub` against that tenant's membership table; non-members get 403
+    (AUTH_TENANT_MISMATCH). The account surface /me/* is tenant-free.
+  see: authentication/superb-ai-authentication.yml
+idempotency:
+  supported: true
+  mechanism: Idempotency-Key request header
+  header: Idempotency-Key
+  required: false
+  scope: per tenant
+  applies_to_operation_count: 14
+  applies_to: >-
+    Bulk / expensive POSTs only (ADR-0023) — bulk asset add/remove/delete, bulk tag update,
+    bulk assign/unassign, bulk approve/reject, bulk set-status, bulk annotation create, dataset
+    embed, export create, and auto-label run create. Ordinary single-resource writes do not
+    accept the header.
+  replay_signal: >-
+    IDEMPOTENCY_REPLAY is a first-class value in the ErrorCode enum, so a replayed key is
+    machine-detectable.
+  implicit_layer: >-
+    Exports additionally carry an implicit idempotency layer (ADR-0048): options_hash =
+    sha256(format || canonical_options) with a partial unique index enforcing at most one live
+    export per (version, format, options). On collision the API returns the existing row with an
+    `X-From-Cache: true` response header and HTTP 200 instead of 202.
+  operations:
+  - image_datasets-embed_image_dataset
+  - image_assets-bulk_delete
+  - projects-project_bulk_update_tags
+  - projects-project_bulk_add_assets
+  - projects-project_bulk_remove_assets
+  - projects-project_bulk_delete_annotations
+  - projects-project_bulk_assign
+  - projects-project_bulk_unassign
+  - projects-project_bulk_approve
+  - projects-project_bulk_reject
+  - projects-project_bulk_set_status
+  - annotations-project_bulk_create_annotations
+  - exports-create_export
+  - auto-label-create_run
+pagination:
+  style: cursor
+  spec_reference: ADR-0012
+  request_param: cursor
+  request_in: query
+  response_shape: '{"items": [...], "next_cursor": str | null}'
+  total_counts: false
+  note: >-
+    "No total counts" is stated explicitly in the spec. An agent must page until next_cursor is
+    null rather than computing page counts. INVALID_CURSOR is an enumerated error code.
+error_envelope:
+  media_type: application/json
+  rfc9457: false
+  shape: '{"error": {"code": str, "message": str, "hint": str|null, "details": object|null, "request_id": str}}'
+  branch_on: error.code
+  stability: >-
+    "Adding values is non-breaking; renaming/removing is a major bump" — the spec commits to
+    enum stability.
+  see: errors/superb-ai-problem-types.yml
+request_id_tracing:
+  supported: true
+  field: error.request_id
+  format: AWS X-Ray trace id (observed "Root=1-6a92f7e9-2f82b6ad54f0efff52ac941f")
+  note: >-
+    Present in every error body. No request-id response header was observed on success
+    responses, and none is declared in the spec.
+rate_limit_signaling:
+  documented: true
+  headers: none
+  note: >-
+    All 164 operations declare a 429 response described as "Rate-limited (per-tenant token
+    bucket)" and RATE_LIMITED is an enumerated error code, so the CONDITION is machine-readable.
+    But the spec declares no X-RateLimit-*, RateLimit-* or Retry-After response header, so an
+    agent learns it has been throttled only by being refused, and has no published budget or
+    reset time to pace against. This is the clearest agent-readiness gap in the contract.
+  see: rate-limits/superb-ai-rate-limits.yml
+versioning:
+  api_version: 0.1.0 (info.version)
+  url_versioning: false
+  note: >-
+    Paths are unversioned (/tenants/{slug}/...). The spec states a semver-style compatibility
+    promise for the error enum but publishes no formal API deprecation policy.
+  see: lifecycle/superb-ai-lifecycle.yml
+async_operations:
+  pattern: job
+  note: >-
+    Long-running work (exports, embedding, bulk annotation ops, auto-label runs, training)
+    returns HTTP 202 with a Job row; poll GET /jobs/{job_id} or the resource list. 17 operations
+    return 202. JOB_ALREADY_RUNNING, JOB_TERMINAL and JOB_PER_TENANT_CAP are enumerated codes.
+concurrency:
+  optimistic_locking: true
+  signal: CONCURRENT_MODIFICATION error code plus HTTP 409 on all 164 operations.
+dry_run_mode:
+  supported: false
+  note: No dry-run / preview / validate-only parameter is declared on any write operation.
+reversibility:
+  grade: documented
+  summary: >-
+    Superb AI is unusually explicit about what CANNOT be taken back — several destructive
+    operations state in the contract that they are hard deletes with no undo, which is
+    genuinely useful negative information for an agent. Real reversal paths exist for
+    in-flight jobs. What is missing is a time-boxed restore window on any destroyed resource,
+    so this grades `documented` rather than `verified`.
+  reversal_paths:
+  - operation: training-cancel_training_run
+    action: POST /tenants/{slug}/projects/{project_id}/versions/{version_id}/training-runs/{run_id}/cancel
+    reverses: an in-flight training run
+    window: >-
+      Until the run reaches a terminal status. No clock-time window is stated.
+    source: openapi/superb-ai-mlops-platform-openapi.json
+  - operation: auto-label-cancel_run
+    action: POST /tenants/{slug}/projects/{project_id}/auto-label/runs/{job_id}/cancel
+    reverses: an in-flight auto-label run (which spends inference credit)
+    window: >-
+      "Sets a terminal `canceled` status the worker honors at the next chunk boundary" — the
+      boundary is stated, but not as a duration.
+    source: openapi/superb-ai-mlops-platform-openapi.json
+  - operation: deployments-stop_deployment
+    action: DELETE /tenants/{slug}/deployments/{deployment_id}
+    reverses: a running inference deployment (stops it)
+    window: not stated
+  - operation: me-decline_invitation
+    action: POST /me/invitations/{invitation_id}/decline
+    reverses: a pending workspace invitation
+    window: >-
+      Only while the invitation is pending and unexpired — INVITATION_EXPIRED and
+      INVITATION_NOT_PENDING are enumerated codes. No duration is published.
+  soft_deletes:
+  - operation: comments-delete_comment
+    detail: 'Soft-delete. Replies are preserved (their parent_id still resolves).'
+    restore_operation: none published
+  - operation: api-keys-revoke_api_key
+    detail: 'Soft-delete — sets revoked_at; the key is rejected on the next auth check.'
+    restore_operation: none published — a revoked key cannot be un-revoked.
+  irreversible:
+  - operation: projects-delete_project
+    detail: >-
+      "This is a HARD delete — there is no archive/undo" (ADR-0120). Cascades away annotations,
+      classes and attributes, members, versions and their frozen snapshots, training runs,
+      models, deployments, exports, tags and jobs, and purges the project's S3 objects.
+  - operation: projects-delete_version
+    detail: >-
+      "Hard-delete a version (ADR-0065). No soft-delete/archive" — the DB row is dropped
+      immediately, cascading its training runs and models. The web UI guards it with a
+      type-the-name confirmation; the API does not.
+  - operation: models-delete_model
+    detail: 'Hard delete, no soft-delete/archive. Cascades to any deployment rows of this model.'
+  retention_windows:
+  - resource: export bundle
+    detail: >-
+      "Lifecycle rule will GC it within 7 days regardless" (exports-delete_export). EXPORT_EXPIRED
+      is an enumerated code and `expired` is a value of ExportStatus.
+    window: 7 days
+    source: openapi/superb-ai-mlops-platform-openapi.json
+  agent_guidance: >-
+    An agent may safely cancel runs and decline invitations. It must treat
+    projects-delete_project, projects-delete_version and models-delete_model as terminal and
+    escalate to a human first — the contract itself says there is no undo, and no backup or
+    restore endpoint exists.

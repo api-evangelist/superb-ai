@@ -1,0 +1,60 @@
+generated: '2026-08-29'
+method: searched
+source: >-
+  https://docs.superb-ai.com/changelog/changelog-in-2025 and
+  openapi/superb-ai-mlops-platform-openapi.json, plus DNS/HTTP probes for a status page
+note: >-
+  Superb AI publishes a dated changelog but no versioning policy, no deprecation policy and no
+  status page. The gaps below are recorded as probed absences, not omissions.
+versioning:
+  api_version: 0.1.0
+  source: openapi/superb-ai-mlops-platform-openapi.json info.version
+  url_versioning: false
+  header_versioning: false
+  policy_published: false
+  note: >-
+    Paths are unversioned (/tenants/{slug}/...). info.version is 0.1.0 despite 164 operations in
+    production, so the version number is not a usable compatibility signal for a consumer. The
+    single published compatibility commitment is scoped to the error enum: "Adding values is
+    non-breaking; renaming/removing is a major bump" (components.schemas.ErrorCode.description).
+deprecation:
+  policy_published: false
+  sunset_header: false
+  deprecation_header: false
+  rfc8594: false
+  deprecated_operations: []
+  note: >-
+    No operation in the spec carries `deprecated: true`, and no Sunset or Deprecation response
+    header is declared anywhere. No deprecation or end-of-life policy page was found on
+    superb-ai.com or docs.superb-ai.com. Because there is no deprecation policy, NO
+    `Deprecation` pointer is emitted in apis.yml.
+status_page:
+  published: false
+  probes:
+  - url: https://status.superb-ai.com
+    status: 0
+    note: DNS NXDOMAIN.
+  note: >-
+    No status page, uptime dashboard or incident history was found on any Superb AI host, and no
+    statuspage.io / instatus / better-stack property is linked from the site footer or the docs.
+    Because none exists, NO `StatusPage` pointer is emitted in apis.yml.
+sla:
+  published: false
+  note: >-
+    No public SLA or uptime commitment. Pricing is entirely contact-sales, so availability terms
+    are presumably negotiated per contract — see plans/superb-ai-plans-pricing.yml.
+changelog:
+  published: true
+  url: https://docs.superb-ai.com/changelog/changelog-in-2025
+  current_version: v1.14.3
+  current_version_date: '2025-08-08'
+  see: changelog/superb-ai-changelog.yml
+support_lifecycle:
+  legacy_surface: >-
+    Two generations of platform coexist. The legacy Suite surface (api.superb-ai.com, GraphQL,
+    spb-cli, superb-ai-label, superb-ai-curate) is still documented on docs.superb-ai.com but
+    its client libraries last shipped 2024-11-07 / 2025-04-29. The current surface (the MLOps
+    Platform API at api.bdai.superb-ai.com, SDK `superb-ai` 0.4.0 published 2026-07-15) is
+    documented separately at docs.bdai.superb-ai.com. No migration guide, deprecation notice or
+    end-of-support date connecting the two was found — a consumer cannot tell from published
+    material how long the legacy surface will be supported.

@@ -1,0 +1,395 @@
+generated: '2026-08-29'
+method: derived
+source: openapi/superb-ai-mlops-platform-openapi.json (components.schemas — 300 schemas, $ref graph and
+  *_id reference fields)
+note: 'Entity graph derived from the 300 component schemas of the MLOps Platform API. Superb AI publishes
+  no separate object-reference page for this API, so relationships were computed from `*_id` / `*_ids`
+  fields on the *Response schemas rather than read from prose. Identifiers are UUIDs (format: uuid) throughout;
+  there is no Stripe-style prefixed-id scheme. The workspace (tenant) is addressed by a URL `slug`, not
+  a UUID.'
+identifiers:
+  scheme: uuid
+  prefixed_ids: false
+  tenant_addressing: slug (string) in the path — /tenants/{slug}/...
+entity_count: 20
+schema_count: 300
+core_entities:
+- TenantResponse
+- ProjectResponse
+- DatasetResponse
+- AssetResponse
+- AnnotationResponse
+- VersionResponse
+- ExportResponse
+- DeploymentResponse
+- JobResponse
+- CommentResponse
+- UserResponse
+- InvitationResponse
+entities:
+- name: ActivityEventResponse
+  fields:
+  - action
+  - actor_email
+  - actor_key_id
+  - actor_system
+  - actor_user_id
+  - asset_id
+  - count
+  - created_at
+  - dataset_id
+  - event_count
+  - first_at
+  - id
+  - last_at
+  - metadata
+  - project_id
+  - sample_subject_ids
+  - subject_id
+  - subject_type
+- name: AnnotationResponse
+  fields:
+  - asset_id
+  - class_id
+  - created_at
+  - created_by
+  - data
+  - geometry
+  - id
+  - instance_id
+  - locked
+  - parent_id
+  - source
+  - type
+  - updated_at
+- name: AssetResponse
+  fields:
+  - content_type
+  - created_at
+  - embedding_status
+  - filename
+  - id
+  - projects
+  - properties
+  - size_bytes
+  - status
+  - thumbnail_url
+  - uploaded_by
+- name: AttributeResponse
+  fields:
+  - archived
+  - classification_config
+  - color
+  - created_at
+  - id
+  - name
+  - owner_class_id
+  - updated_at
+- name: ClassResponse
+  fields:
+  - allowed_types
+  - archived
+  - attributes
+  - color
+  - created_at
+  - id
+  - keypoint_topology
+  - kind
+  - name
+  - updated_at
+- name: CommentResponse
+  fields:
+  - anchor_coords
+  - anchor_kind
+  - annotation_id
+  - asset_id
+  - asset_kind
+  - author_id
+  - body
+  - created_at
+  - id
+  - origin
+  - parent_id
+  - project_id
+  - reply_count
+  - seq
+  - status
+  - updated_at
+- name: DatasetResponse
+  fields:
+  - created_at
+  - created_by
+  - description
+  - id
+  - name
+  - updated_at
+- name: DeploymentResponse
+  fields:
+  - created_at
+  - created_by
+  - error
+  - gpu
+  - id
+  - last_activity_at
+  - model_id
+  - name
+  - project_id
+  - status
+  - task
+- name: ExportResponse
+  fields:
+  - completed_at
+  - created_at
+  - created_by
+  - error
+  - exported_count
+  - format
+  - id
+  - job_id
+  - project_id
+  - result_details
+  - size_bytes
+  - skipped_count
+  - skipped_details
+  - status
+- name: ImageClassificationResponse
+  fields:
+  - archived
+  - classification_config
+  - color
+  - created_at
+  - id
+  - kind
+  - name
+  - owner_class_id
+  - updated_at
+- name: InvitationResponse
+  fields:
+  - accept_url
+  - created_at
+  - email
+  - expires_at
+  - id
+  - role
+  - status
+- name: JobResponse
+  fields:
+  - completed_at
+  - created_at
+  - created_by
+  - error
+  - failed
+  - id
+  - kind
+  - pct
+  - processed
+  - result_summary
+  - skipped
+  - status
+  - succeeded
+  - target
+  - total
+- name: OwnerResponse
+  fields:
+  - email
+  - first_name
+  - id
+  - last_name
+- name: ProjectResponse
+  fields:
+  - assignment_mode
+  - created_at
+  - dataset_id
+  - dataset_kind
+  - dataset_name
+  - description
+  - id
+  - name
+  - progress
+  - status
+  - tag_config
+  - updated_at
+- name: TenantResponse
+  fields:
+  - created_at
+  - id
+  - name
+  - owner
+  - slug
+- name: TrainedModelResponse
+  fields:
+  - class_map
+  - created_at
+  - description
+  - id
+  - metrics_summary
+  - model
+  - name
+  - project_id
+  - project_version_id
+  - task
+  - training_run_id
+  - updated_at
+- name: TrainingRunResponse
+  fields:
+  - completed_at
+  - created_at
+  - epochs
+  - epochs_completed
+  - error
+  - id
+  - model
+  - name
+  - project_version_id
+  - split
+  - started_at
+  - status
+  - task
+- name: UnifiedDatasetResponse
+  fields:
+  - created_at
+  - created_by
+  - description
+  - id
+  - kind
+  - name
+- name: UserResponse
+  fields:
+  - created_at
+  - email
+  - first_name
+  - id
+  - last_name
+  - role
+  - updated_at
+- name: VersionResponse
+  fields:
+  - completed_at
+  - created_at
+  - created_by
+  - description
+  - error
+  - frozen_asset_count
+  - frozen_class_count
+  - frozen_classes
+  - id
+  - name
+  - project_id
+  - status
+  - updated_at
+relationships:
+- from: ActivityEventResponse
+  field: actor_key_id
+  to: actor_key
+  kind: belongs_to
+- from: ActivityEventResponse
+  field: actor_user_id
+  to: actor_user
+  kind: belongs_to
+- from: ActivityEventResponse
+  field: asset_id
+  to: asset
+  kind: belongs_to
+- from: ActivityEventResponse
+  field: dataset_id
+  to: dataset
+  kind: belongs_to
+- from: ActivityEventResponse
+  field: project_id
+  to: project
+  kind: belongs_to
+- from: ActivityEventResponse
+  field: sample_subject_ids
+  to: sample_subject
+  kind: has_many
+- from: ActivityEventResponse
+  field: subject_id
+  to: subject
+  kind: belongs_to
+- from: AnnotationResponse
+  field: asset_id
+  to: asset
+  kind: belongs_to
+- from: AnnotationResponse
+  field: class_id
+  to: class
+  kind: belongs_to
+- from: AnnotationResponse
+  field: instance_id
+  to: instance
+  kind: belongs_to
+- from: AnnotationResponse
+  field: parent_id
+  to: parent
+  kind: belongs_to
+- from: AttributeResponse
+  field: owner_class_id
+  to: owner_class
+  kind: belongs_to
+- from: CommentResponse
+  field: annotation_id
+  to: annotation
+  kind: belongs_to
+- from: CommentResponse
+  field: asset_id
+  to: asset
+  kind: belongs_to
+- from: CommentResponse
+  field: author_id
+  to: author
+  kind: belongs_to
+- from: CommentResponse
+  field: parent_id
+  to: parent
+  kind: belongs_to
+- from: CommentResponse
+  field: project_id
+  to: project
+  kind: belongs_to
+- from: DeploymentResponse
+  field: model_id
+  to: model
+  kind: belongs_to
+- from: DeploymentResponse
+  field: project_id
+  to: project
+  kind: belongs_to
+- from: ExportResponse
+  field: job_id
+  to: job
+  kind: belongs_to
+- from: ExportResponse
+  field: project_id
+  to: project
+  kind: belongs_to
+- from: ImageClassificationResponse
+  field: owner_class_id
+  to: owner_class
+  kind: belongs_to
+- from: ProjectResponse
+  field: dataset_id
+  to: dataset
+  kind: belongs_to
+- from: TrainedModelResponse
+  field: project_id
+  to: project
+  kind: belongs_to
+- from: TrainedModelResponse
+  field: project_version_id
+  to: project_version
+  kind: belongs_to
+- from: TrainedModelResponse
+  field: training_run_id
+  to: training_run
+  kind: belongs_to
+- from: TrainingRunResponse
+  field: project_version_id
+  to: project_version
+  kind: belongs_to
+- from: VersionResponse
+  field: project_id
+  to: project
+  kind: belongs_to
+hierarchy: tenant (workspace, by slug) -> image dataset -> image asset; tenant -> project (labels one
+  dataset) -> {classes -> attributes, annotations, comments, tags, members, versions}; version -> {exports,
+  training runs -> models -> deployments}; jobs are tenant-scoped and track every async operation.

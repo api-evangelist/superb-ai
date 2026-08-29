@@ -1,0 +1,54 @@
+generated: '2026-08-29'
+method: searched
+source: https://superb-ai.com/en/company/security
+url: https://superb-ai.com/en/company/security
+name: Superb AI Security & Information Protection
+note: >-
+  Superb AI publishes a security page rather than a hosted trust portal — there is no
+  trust.superb-ai.com (NXDOMAIN) and no Vanta/Drata/SafeBase-style portal. The page names two
+  third-party certifications and describes the encryption, backup and penetration-testing
+  program. It does NOT publish a vulnerability-disclosure policy, a security contact address or
+  a bug-bounty program, so no VulnerabilityDisclosure artifact and no `Security` pointer were
+  emitted.
+certifications:
+- name: SOC 2 Type II
+  standard: AICPA SOC 2
+  evidence: >-
+    "SOC-2 Type II, in particular, is the most comprehensive certification within the SOC
+    framework" — https://superb-ai.com/en/company/security
+- name: ISO 27001
+  standard: ISO/IEC 27001 (Information Security Management System)
+  evidence: >-
+    "ISO 27001 is an international standard for Information Security Management Systems (ISMS)
+    issued by the International Organization for Standardization" —
+    https://superb-ai.com/en/company/security
+controls:
+- area: encryption-at-rest
+  detail: All data encrypted using AES-256; AWS S3 and AWS Aurora RDS.
+- area: encryption-in-transit
+  detail: HTTPS for all communications.
+- area: key-management
+  detail: Encryption keys managed with AWS KMS.
+- area: backup
+  detail: Daily backups with 7-day retention; quarterly restoration testing; database replication servers.
+- area: penetration-testing
+  detail: >-
+    "regularly engages top security experts to conduct network and application penetration
+    testing"
+evidence:
+- url: https://superb-ai.com/en/company/security
+  status: 200
+  note: 260,189-byte page, title "Trusted AI Data Security and Information Protection | Superb AI".
+- url: https://trust.superb-ai.com
+  status: 0
+  note: DNS NXDOMAIN — no hosted trust portal.
+x-corrections:
+- date: '2026-08-29'
+  note: >-
+    probe-security-programs.py originally recorded https://superb-ai.com/en/trust and
+    https://superb-ai.com/en/security/responsible-disclosure as hits. Both are SOFT-404s — a
+    control probe of https://superb-ai.com/en/definitely-not-a-real-page-xyz returned the same
+    200 with an identical ~127.9KB body and the same generic title, and the SOC 2 / ISO 27001
+    strings that triggered the match come from the site-wide footer bundle present on every
+    page. Both were discarded and the trust-center source was corrected to the real security
+    page; the vulnerability-disclosure artifact was deleted outright.

@@ -1,0 +1,60 @@
+generated: '2026-08-29'
+method: searched
+source: https://docs.superb-ai.com/reference/cli-overview
+note: >-
+  Superb AI ships a first-party Python-based CLI, `spb`, distributed on PyPI as `spb-cli`
+  (0.19.4, published 2024-11-07) with source at https://github.com/Superb-AI-Suite/spb-cli. It
+  targets the LEGACY Suite platform, not the newer MLOps Platform API at api.bdai.superb-ai.com.
+  A second repository, https://github.com/Superb-AI-Suite/superb-ai-cli ("Superb Platform Command
+  Line Interface", last pushed 2024-12-24), exists on GitHub but publishes no package to any
+  registry, so it is not installable.
+name: Superb AI CLI
+binary: spb
+language: python
+install:
+- method: pip
+  command: pip install spb-cli
+  registry: https://pypi.org/project/spb-cli/
+  version: 0.19.4
+  published: '2024-11-07'
+authentication:
+  method: access key
+  command: spb configure
+  prompts:
+  - Suite Team Name
+  - Access Key
+  profile_file: named profiles; `spb configure --list` prints the active profile
+  key_issuance: >-
+    Access Keys are generated from `Settings > Access` in the Suite web application — see
+    https://docs.superb-ai.com/reference/access-key-management
+  source: https://docs.superb-ai.com/reference/cli-authorization
+command_groups:
+- group: configure
+  purpose: Set up and inspect authentication profiles.
+  commands:
+  - spb configure
+  - spb configure --list
+- group: describe
+  purpose: List platform resources.
+  commands:
+  - spb describe projects
+  note: >-
+    Paginated table output showing project name, label count, in-progress, submitted and skipped
+    counts. Documented at https://docs.superb-ai.com/reference/getting-project-information
+- group: upload
+  purpose: Upload raw data, label files, or both, including video projects.
+  documented_flows:
+  - Uploading raw data (images, video)
+  - Uploading label files only
+  - Uploading raw data and labels together
+  - Uploading video projects
+  source: https://docs.superb-ai.com/reference/uploading-raw-data-and-labels
+- group: download
+  purpose: Download a project's data and labels to the local machine.
+  source: https://docs.superb-ai.com/reference/downloading-data-labels
+currency:
+  last_release: '2024-11-07'
+  note: >-
+    Nearly two years old at the time of this pass, and pinned to the legacy Suite surface. The
+    current platform SDK (`superb-ai` 0.4.0, 2026-07-15) has no matching CLI on any registry, so
+    there is no installable command-line client for the MLOps Platform API.

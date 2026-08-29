@@ -1,0 +1,42 @@
+generated: '2026-08-29'
+method: derived
+source: openapi/superb-ai-mlops-platform-openapi.json (429 responses on all 164 operations)
+note: >-
+  Superb AI declares that rate limiting EXISTS and is machine-detectable, but publishes no
+  numbers and no runtime headers. Every one of the 164 operations in the MLOps Platform API
+  declares a 429 response described as "Rate-limited (per-tenant token bucket)", and RATE_LIMITED
+  and RESOURCE_LIMIT_EXCEEDED are values in the stable ErrorCode enum. No limit, window or burst
+  figure is stated anywhere in the spec or on docs.superb-ai.com, and no X-RateLimit-*,
+  RateLimit-* or Retry-After response header is declared. An agent therefore cannot pace itself:
+  it discovers the ceiling only by hitting it, and has no published reset time to back off to.
+limit_count: 0
+algorithm: token bucket
+scope: per-tenant (workspace)
+source_of_truth: contract
+headers:
+  published: false
+  x_ratelimit: false
+  ratelimit_draft: false
+  retry_after: false
+  probe: >-
+    Searched the full 536KB OpenAPI document for "Retry-After", "X-RateLimit", "RateLimit" —
+    zero occurrences.
+exhaustion:
+  status_code: 429
+  error_code: RATE_LIMITED
+  envelope: '{"error": {"code": "RATE_LIMITED", "message": ..., "hint": ..., "details": ..., "request_id": ...}}'
+  operations_declaring_429: 164
+related_limits:
+- name: JOB_PER_TENANT_CAP
+  kind: concurrency cap
+  detail: Enumerated error code — a per-tenant cap on concurrent jobs exists, but its value is unpublished.
+- name: DATASET_ASSET_CAP_EXCEEDED
+  kind: resource cap
+  detail: Enumerated error code — a per-dataset asset cap exists, but its value is unpublished.
+- name: RESOURCE_LIMIT_EXCEEDED
+  kind: quota
+  detail: Enumerated error code covering general quota exhaustion.
+- name: PAYLOAD_TOO_LARGE
+  kind: request size
+  detail: Enumerated error code; no byte figure published.
+limits: []

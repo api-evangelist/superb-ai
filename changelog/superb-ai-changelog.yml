@@ -1,0 +1,109 @@
+generated: '2026-08-29'
+method: searched
+source: https://docs.superb-ai.com/changelog/changelog-in-2025
+note: >-
+  Superb AI publishes a dated, versioned changelog on its documentation host, split into
+  per-period pages. It tracks the Superb Platform WEB APPLICATION (Superb Label / Curate / Model
+  / Platform) on a semver-style vMAJOR.MINOR.PATCH line, not the MLOps Platform REST API — the
+  API document itself carries info.version 0.1.0 and has no changelog of its own. The most
+  recent dated entry found is 2025-08-08; the changelog pages were last touched 2025-11-12
+  (updatedAt in the page frontmatter), so there is a visible gap between the newest release note
+  and today.
+scheme: semver-ish (vMAJOR.MINOR.PATCH), dated entries
+current_version: v1.14.3
+current_version_date: '2025-08-08'
+pages:
+- title: Changelog in 2025
+  url: https://docs.superb-ai.com/changelog/changelog-in-2025
+  status: 200
+- title: Changelog in 2024
+  url: https://docs.superb-ai.com/changelog/changelog-in-2024
+- title: Changelog in the second half of 2023
+  url: https://docs.superb-ai.com/changelog/changelog-in-the-second-half-of-2023
+- title: Last version Changelog
+  url: https://docs.superb-ai.com/changelog/changlogs-eng
+breaking_change_policy:
+  published: false
+  note: >-
+    No entry in the changelog is labelled breaking, and no deprecation or sunset notice appears.
+    The only stability promise found anywhere is inside the OpenAPI document, for the error enum:
+    "Adding values is non-breaking; renaming/removing is a major bump."
+entries:
+- version: v1.14.3
+  date: '2025-08-08'
+  type: improvement
+  product: Superb Platform
+  highlights:
+  - Unified error messages for login failures.
+- version: v1.14.2
+  date: '2025-07-25'
+  type: improvement
+  product: Superb Label
+  highlights:
+  - Removed auto-label performance chart (precision & recall) and generation step from Export Compare.
+- version: v1.14.1
+  date: '2025-07-23'
+  type: improvement
+  product: Superb Label
+  highlights:
+  - Tooltips for long metadata key/value pairs.
+  - Fixed hidden bottom chart on the metadata analytics page.
+- version: v1.14.0
+  date: '2025-07-17'
+  type: improvement
+  product: Superb Platform
+  highlights:
+  - 'ZERO Labs API integration: switched to the `apply_area_filter` API property instead of frontend area calculations.'
+  - Moved area filter controls from the output section to the input section.
+- version: v1.13.35
+  date: '2025-07-12'
+  type: improvement
+  product: Superb Platform
+  highlights:
+  - Added AWS Marketplace link button to the ZERO Labs page.
+- version: v1.13.34
+  date: '2025-07-09'
+  type: improvement
+  product: Superb Label
+  highlights:
+  - Fixed label tag filter merging in the User Report filter.
+  - Prevented editing or deletion of in-use class names and data types.
+- version: v1.13.33
+  date: '2025-07-02'
+  type: improvement
+  product: Superb Platform
+  highlights:
+  - '"Hide big inferences" toggle in ZERO output controls.'
+  - Fixed an ID token being used without validation.
+- version: v1.13.32
+  date: '2025-06-10'
+  type: improvement
+  product: Superb Label
+  highlights:
+  - Input validation on the ZERO Labs page.
+- version: v1.13.31
+  date: '2025-05-28'
+  type: feature
+  product: Superb Model
+  highlights:
+  - Endpoint scheduling — endpoints can automatically start and stop at specified times.
+- version: v1.13.30
+  date: '2025-05-12'
+  type: feature
+  product: Superb Label / Superb Platform
+  highlights:
+  - Cloudflare R2 supported as a storage backend.
+  - Video frame upload can split videos into segments by frame interval.
+  - Added a ZERO model demo page.
+- version: v1.13.29
+  date: '2025-04-29'
+  type: fix
+  product: Superb Label
+  highlights:
+  - Fixed type errors in Export Compare caused by deleted user profiles.
+- version: v1.13.28
+  date: '2025-03-31'
+  type: feature
+  product: Superb Label
+  highlights:
+  - Annotation deletion feature and delete buttons.

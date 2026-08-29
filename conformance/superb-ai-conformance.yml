@@ -1,0 +1,120 @@
+generated: '2026-08-29'
+method: derived
+source: >-
+  openapi/superb-ai-mlops-platform-openapi.json and https://superb-ai.com/en/company/security
+note: >-
+  Cross-cutting and domain-standard conformance for the Superb AI MLOps Platform API. Every
+  `conforms: true` below points at a specific location in the contract or a named certification
+  on the provider's own security page. Standards the provider does not claim are recorded as
+  false rather than omitted.
+standards:
+- id: openapi
+  name: OpenAPI Specification 3.1.0
+  conforms: true
+  evidence: >-
+    openapi/superb-ai-mlops-platform-openapi.json declares `"openapi": "3.1.0"` with 130 paths,
+    164 operations, 300 component schemas; served anonymously at
+    https://api.bdai.superb-ai.com/openapi.json (HTTP 200, application/json).
+- id: rfc9457
+  name: RFC 9457 Problem Details for HTTP APIs
+  conforms: false
+  evidence: >-
+    Errors use a vendor envelope `{"error": {...}}` with media type application/json, not
+    application/problem+json. See errors/superb-ai-problem-types.yml.
+- id: idempotency
+  name: Idempotency-Key request header
+  conforms: true
+  evidence: >-
+    info.description (ADR-0023) plus an `Idempotency-Key` header parameter declared on 14 bulk
+    POST operations, and IDEMPOTENCY_REPLAY in components.schemas.ErrorCode.
+- id: pagination
+  name: Cursor-based pagination
+  conforms: true
+  evidence: >-
+    info.description (ADR-0012) — list endpoints return `{"items": [...], "next_cursor": str |
+    null}`; `cursor` query parameter; INVALID_CURSOR in components.schemas.ErrorCode.
+- id: oauth2
+  name: OAuth 2.0
+  conforms: partial
+  evidence: >-
+    The login flow is an OAuth-style authorization-code redirect (GET /auth/authorize -> hosted
+    sign-in -> POST /auth/callback -> Bearer token, with POST /auth/refresh), backed by Amazon
+    Cognito. But components.securitySchemes declares only `HTTPBearer` (type http, scheme
+    bearer) — no `oauth2` scheme, no flows block and no scopes. No
+    /.well-known/oauth-authorization-server is served, so the authorization server is not
+    programmatically discoverable.
+- id: oidc
+  name: OpenID Connect
+  conforms: false
+  evidence: >-
+    No openIdConnect security scheme; /.well-known/openid-configuration returns 404 on every
+    Superb AI host.
+- id: json-schema
+  name: JSON Schema 2020-12
+  conforms: true
+  evidence: >-
+    Inherited from OpenAPI 3.1.0 — 300 schemas under components.schemas use 2020-12 keywords
+    (anyOf, const, prefixItems-free typing, `type: "null"` unions).
+- id: http-semantics
+  name: Conventional HTTP status semantics
+  conforms: true
+  evidence: >-
+    202 for async job creation (17 operations), 204 for empty success (19), 409 for state
+    conflict on all 164, 422 for validation on 161, 429 for throttling on 164.
+- id: rate-limit-headers
+  name: RFC 9331 / draft-ietf-httpapi-ratelimit-headers
+  conforms: false
+  evidence: >-
+    No RateLimit-*, X-RateLimit-* or Retry-After header is declared anywhere in the spec,
+    despite every operation declaring a 429.
+- id: json-api
+  name: "JSON:API"
+  conforms: false
+  evidence: >-
+    Response envelope is `{"items": [...], "next_cursor": ...}`, not JSON:API.
+- id: scim
+  name: SCIM 2.0
+  conforms: false
+  evidence: >-
+    User and invitation management is a bespoke surface (/tenants/{slug}/users, /me/invitations);
+    no urn:ietf:params:scim:schemas:* URN appears in the contract.
+domain_standards:
+- id: coco
+  name: MS-COCO object-detection annotation format
+  conforms: true
+  market: computer vision / training-data annotation
+  evidence: >-
+    Declared by the contract itself, not by a marketing claim —
+    components.schemas.ExportFormat is `{"type":"string","enum":["coco","yolo","delta"]}`;
+    components.schemas.CocoResultDetails pins `"format": {"const": "coco"}` with num_images,
+    num_annotations, num_categories and per-class counts;
+    components.schemas.ExportCreateRequest documents "Export bundle format: coco, yolo, or
+    delta"; and components.schemas.VisibilityModel enumerates `coco_ternary` as a keypoint
+    visibility model. Produced by exports-create_export.
+- id: yolo
+  name: YOLO (Darknet) label format
+  conforms: true
+  market: computer vision / training-data annotation
+  evidence: >-
+    components.schemas.ExportFormat enum value `yolo`; components.schemas.YoloResultDetails pins
+    `"format": {"const": "yolo"}` with num_images, num_labels, num_classes;
+    components.schemas.ClassCountByIdx is described as "YOLO per-class entry (0-based dataset
+    index)".
+- id: delta
+  name: Superb AI Delta export bundle
+  conforms: n/a
+  market: computer vision
+  evidence: >-
+    Third ExportFormat enum value. Vendor-specific, not an industry standard — recorded so the
+    export surface is not misread as fully standards-based.
+domain_standard_summary: >-
+  Superb AI's contract speaks the two formats that dominate its market. A buyer whose training
+  pipeline already reads COCO or YOLO can consume a Superb AI export with no bespoke connector,
+  which is the distinction this check exists to draw. The claim is made by the contract's own
+  enums and schema constants, so it is verifiable without trusting a datasheet.
+compliance:
+  certifications:
+  - SOC 2 Type II
+  - ISO 27001
+  source: https://superb-ai.com/en/company/security
+  see: security/superb-ai-trust-center.yml

@@ -1,0 +1,62 @@
+generated: '2026-08-29'
+method: searched
+source: https://superb-ai.com/en/pricing
+note: >-
+  Superb AI publishes a pricing PAGE but no prices. All four packaged offerings route to a
+  contact-sales form; there is no self-serve tier, no per-seat rate, no published quota and no
+  free tier listed on the pricing page. The on-premise offering states only that pricing is
+  "customized based on the number of data, trainings, and inferences". A developer cannot
+  determine cost, included quota or overage from published material, and cannot buy without
+  talking to sales. Recorded as plan_count 0 with the tiers captured as named, unpriced
+  offerings.
+plan_count: 0
+pricing_model: contact-sales
+currency: null
+free_tier: not published
+self_serve_checkout: false
+signup: https://platform.superb-ai.com/auth/sign_up
+offerings:
+- name: Superb Platform — Cloud
+  price: null
+  billing_period: null
+  quota: null
+  overage: null
+  access: contact sales
+  description: >-
+    Image labeling with auto-labeling AI and model training; cloud deployment.
+- name: Superb Platform — On-Premise
+  price: null
+  billing_period: null
+  quota: null
+  overage: null
+  access: contact sales
+  description: >-
+    Deployment into air-gapped networks and private clouds, covering data curation, labeling and
+    model training. Pricing is stated to be "customized based on the number of data, trainings,
+    and inferences" — a usage-shaped model with no published rate card.
+- name: Superb Industrial Solutions
+  price: null
+  access: contact sales
+  description: Video Analytics, Defect Detection and Edge AI packages.
+- name: Superb Service
+  price: null
+  access: contact sales
+  description: Integrated Project Execution Package and AI Capability Building Package.
+adjacent_commercial_surfaces:
+- name: AWS Marketplace (ZERO)
+  url: https://github.com/Superb-AI-Suite/aws-marketplace
+  note: >-
+    The changelog records "Added AWS Marketplace link button to ZERO Labs page" (v1.13.35,
+    2025-07-12) and the GitHub org publishes an `aws-marketplace` examples repo for ZERO, so a
+    marketplace listing exists as a purchase path. Its pricing was not read in this pass.
+- name: AI Credit
+  url: https://docs.superb-ai.com/docs/ai-credit
+  note: >-
+    The legacy Suite platform meters Custom Auto-Label and Model Diagnosis in "AI Credits"
+    (https://docs.superb-ai.com/docs/ai-credit, usage view at
+    https://docs.superb-ai.com/docs/billing-usage). The docs explain what credits are consumed by
+    but publish no credit price.
+evidence:
+- url: https://superb-ai.com/en/pricing
+  status: 200
+  note: 301,277-byte page, title "Superb AI | Platform & Service Pricing" — a real page, no prices on it.

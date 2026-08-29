@@ -1,0 +1,271 @@
+generated: '2026-08-29'
+method: derived
+source: openapi/superb-ai-mlops-platform-openapi.json (components.schemas.ErrorCode, components.schemas.ErrorResponse,
+  info.description)
+format: vendor-envelope
+rfc9457: false
+note: 'Superb AI does NOT use RFC 9457 application/problem+json. It publishes its own error envelope,
+  documented in the spec description (ADR-0034) and typed as components.schemas.ErrorResponse, plus a
+  stable string enum of 61 error codes (components.schemas.ErrorCode). The spec states the contract explicitly:
+  "Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major
+  bump." That is a stronger machine-readable error contract than most providers ship, even though it is
+  not the IETF standard media type. Titles and remediation below are taken verbatim from the spec; the
+  docs host publishes no separate error reference page for this API.'
+envelope:
+  media_type: application/json
+  shape: '{"error": {"code": str, "message": str, "hint": str|null, "details": object|null, "request_id":
+    str}}'
+  fields:
+  - name: code
+    type: string
+    stable: true
+    note: Enum from components.schemas.ErrorCode. This is the field to branch on.
+  - name: message
+    type: string
+    stable: false
+    note: Human-readable. The spec explicitly says NOT to pattern-match on it.
+  - name: hint
+    type: string|null
+    note: When present, suggests a concrete next step.
+  - name: details
+    type: object|null
+    note: Structured context for the failure.
+  - name: request_id
+    type: string
+    note: 'Correlation id for support (observed live: "Root=1-6a92f7e9-2f82b6ad54f0efff52ac941f" — an
+      AWS X-Ray trace id).'
+  observed_live:
+    url: https://api.bdai.superb-ai.com/
+    status: 404
+    body: '{"error":{"code":"UNCATEGORIZED","message":"Not Found","hint":null,"details":null,"request_id":"Root=1-6a92f7e9-2f82b6ad54f0efff52ac941f"}}'
+http_status_coverage:
+- status: '401'
+  operations: 158
+  meaning: Unauthenticated
+- status: '403'
+  operations: 158
+  meaning: Forbidden — not a member of the tenant, or state forbids the action
+- status: '404'
+  operations: 153
+  meaning: Not found
+- status: '409'
+  operations: 164
+  meaning: Conflict — resource state prevents this action
+- status: '422'
+  operations: 161
+  meaning: Validation error
+- status: '429'
+  operations: 164
+  meaning: Rate-limited (per-tenant token bucket)
+code_count: 61
+families:
+- family: ANNOTATION
+  likely_status: '404'
+  codes:
+  - ANNOTATION_NOT_FOUND
+- family: ASSET
+  likely_status: 404/409
+  codes:
+  - ASSET_DELETED
+  - ASSET_FORMAT_UNSUPPORTED
+  - ASSET_NOT_EMBEDDED
+  - ASSET_NOT_FOUND
+  - ASSET_TOO_LARGE
+- family: AUTH
+  likely_status: 401/403
+  codes:
+  - AUTH_FORBIDDEN
+  - AUTH_INVALID_CREDENTIAL
+  - AUTH_MISSING
+  - AUTH_TENANT_MISMATCH
+  - AUTH_TOKEN_EXPIRED
+- family: BAD
+  likely_status: '400'
+  codes:
+  - BAD_REQUEST
+- family: CLASS
+  likely_status: '409'
+  codes:
+  - CLASS_IN_USE
+  - CLASS_LOCKED
+- family: CONCURRENT
+  likely_status: '409'
+  codes:
+  - CONCURRENT_MODIFICATION
+- family: DATASET
+  likely_status: 404/409
+  codes:
+  - DATASET_ASSET_CAP_EXCEEDED
+  - DATASET_DELETED
+  - DATASET_NAME_TAKEN
+  - DATASET_NOT_FOUND
+- family: DEPENDENCY
+  likely_status: '503'
+  codes:
+  - DEPENDENCY_UNAVAILABLE
+- family: DEPLOYMENT
+  likely_status: 404/409
+  codes:
+  - DEPLOYMENT_NOT_FOUND
+  - DEPLOYMENT_STATE_FORBIDDEN
+- family: EMBEDDER
+  likely_status: '503'
+  codes:
+  - EMBEDDER_INVOCATION_FAILED
+  - EMBEDDER_UNAVAILABLE
+- family: EXPORT
+  likely_status: '409'
+  codes:
+  - EXPORT_EXPIRED
+  - EXPORT_FAILED
+- family: IDEMPOTENCY
+  likely_status: '409'
+  codes:
+  - IDEMPOTENCY_REPLAY
+- family: INTERNAL
+  likely_status: '500'
+  codes:
+  - INTERNAL_ERROR
+- family: INVALID
+  likely_status: '400'
+  codes:
+  - INVALID_CURSOR
+  - INVALID_FILTER
+- family: INVITATION
+  likely_status: 404/409
+  codes:
+  - INVITATION_EXPIRED
+  - INVITATION_NOT_FOUND
+  - INVITATION_NOT_PENDING
+  - INVITATION_PENDING
+- family: JOB
+  likely_status: 404/409
+  codes:
+  - JOB_ALREADY_RUNNING
+  - JOB_NOT_FOUND
+  - JOB_PER_TENANT_CAP
+  - JOB_TERMINAL
+- family: LAST
+  likely_status: '409'
+  codes:
+  - LAST_ADMIN
+- family: MODEL
+  likely_status: '404'
+  codes:
+  - MODEL_LOADING
+  - MODEL_NOT_FOUND
+  - MODEL_STARTING
+- family: NAME
+  likely_status: '409'
+  codes:
+  - NAME_TAKEN
+- family: PAYLOAD
+  likely_status: '413'
+  codes:
+  - PAYLOAD_TOO_LARGE
+- family: PROJECT
+  likely_status: 404/403
+  codes:
+  - PROJECT_ARCHIVED
+  - PROJECT_CLASS_NOT_FOUND
+  - PROJECT_MEMBER_NOT_FOUND
+  - PROJECT_NOT_FOUND
+  - PROJECT_STATE_FORBIDDEN
+- family: RATE
+  likely_status: '429'
+  codes:
+  - RATE_LIMITED
+- family: RESOURCE
+  likely_status: '409'
+  codes:
+  - RESOURCE_LIMIT_EXCEEDED
+  - RESOURCE_NOT_READY
+- family: TENANT
+  likely_status: 404/409
+  codes:
+  - TENANT_NOT_FOUND
+  - TENANT_SLUG_TAKEN
+- family: UNCATEGORIZED
+  likely_status: 4xx/5xx
+  codes:
+  - UNCATEGORIZED
+- family: UNSUPPORTED
+  likely_status: '400'
+  codes:
+  - UNSUPPORTED_OPERATION
+- family: USER
+  likely_status: 404/409
+  codes:
+  - USER_EMAIL_TAKEN
+  - USER_NOT_FOUND
+- family: VALIDATION
+  likely_status: '422'
+  codes:
+  - VALIDATION_ERROR
+  - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+- family: VERSION
+  likely_status: '404'
+  codes:
+  - VERSION_NOT_FOUND
+codes:
+- ANNOTATION_NOT_FOUND
+- ASSET_DELETED
+- ASSET_FORMAT_UNSUPPORTED
+- ASSET_NOT_EMBEDDED
+- ASSET_NOT_FOUND
+- ASSET_TOO_LARGE
+- AUTH_FORBIDDEN
+- AUTH_INVALID_CREDENTIAL
+- AUTH_MISSING
+- AUTH_TENANT_MISMATCH
+- AUTH_TOKEN_EXPIRED
+- BAD_REQUEST
+- CLASS_IN_USE
+- CLASS_LOCKED
+- CONCURRENT_MODIFICATION
+- DATASET_ASSET_CAP_EXCEEDED
+- DATASET_DELETED
+- DATASET_NAME_TAKEN
+- DATASET_NOT_FOUND
+- DEPENDENCY_UNAVAILABLE
+- DEPLOYMENT_NOT_FOUND
+- DEPLOYMENT_STATE_FORBIDDEN
+- EMBEDDER_INVOCATION_FAILED
+- EMBEDDER_UNAVAILABLE
+- EXPORT_EXPIRED
+- EXPORT_FAILED
+- IDEMPOTENCY_REPLAY
+- INTERNAL_ERROR
+- INVALID_CURSOR
+- INVALID_FILTER
+- INVITATION_EXPIRED
+- INVITATION_NOT_FOUND
+- INVITATION_NOT_PENDING
+- INVITATION_PENDING
+- JOB_ALREADY_RUNNING
+- JOB_NOT_FOUND
+- JOB_PER_TENANT_CAP
+- JOB_TERMINAL
+- LAST_ADMIN
+- MODEL_LOADING
+- MODEL_NOT_FOUND
+- MODEL_STARTING
+- NAME_TAKEN
+- PAYLOAD_TOO_LARGE
+- PROJECT_ARCHIVED
+- PROJECT_CLASS_NOT_FOUND
+- PROJECT_MEMBER_NOT_FOUND
+- PROJECT_NOT_FOUND
+- PROJECT_STATE_FORBIDDEN
+- RATE_LIMITED
+- RESOURCE_LIMIT_EXCEEDED
+- RESOURCE_NOT_READY
+- TENANT_NOT_FOUND
+- TENANT_SLUG_TAKEN
+- UNCATEGORIZED
+- UNSUPPORTED_OPERATION
+- USER_EMAIL_TAKEN
+- USER_NOT_FOUND
+- VALIDATION_ERROR
+- VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+- VERSION_NOT_FOUND

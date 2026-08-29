@@ -1,0 +1,289 @@
+generated: '2026-08-29'
+method: derived
+source: openapi/superb-ai-mlops-platform-openapi.json + probes of https://docs.superb-ai.com/mcp and https://api.superb-ai.com/graphql
+note: 'Superb AI runs three surfaces and they do NOT overlap. (1) The MLOps Platform API (OpenAPI 3.1.0,
+  164 operations) is the only one whose contract is public and readable. (2) The MCP server at docs.superb-ai.com/mcp
+  is a ReadMe-platform DOCUMENTATION-SEARCH server over the docs corpus — it is not a projection of the
+  REST API, so there is no operation for its tools to bind to, and its tool list is auth-gated and was
+  not enumerated. (3) A GraphQL endpoint at api.superb-ai.com/graphql (and /curate/graphql) answers HTTP
+  401 Unauthorized to an anonymous introspection POST — it is the legacy Suite/Curate backend and its
+  schema is gated. Because neither non-REST surface could be read, crosswalk[] is EMPTY rather than guessed:
+  binding tools by name alone across surfaces that serve different products would be fabrication. Every
+  REST operation is therefore recorded as rest_only.'
+surfaces:
+  openapi:
+    file: openapi/superb-ai-mlops-platform-openapi.json
+    host: https://api.bdai.superb-ai.com
+    operations: 164
+    gated: false
+    note: Spec is served anonymously at https://api.bdai.superb-ai.com/openapi.json; the operations themselves
+      require a Bearer token.
+  mcp:
+    url: https://docs.superb-ai.com/mcp
+    gated: true
+    status: 401
+    kind: documentation-search (ReadMe platform-authored)
+    tools_enumerated: false
+  graphql:
+    url: https://api.superb-ai.com/graphql
+    gated: true
+    status: 401
+    kind: legacy Suite / Curate backend
+    introspection: denied anonymously
+crosswalk: []
+mcp_only: []
+graphql_only: []
+rest_only:
+- tag: activity
+  operation_count: 3
+  operations:
+  - activity-list_dataset_activity
+  - activity-list_project_activity
+  - activity-list_tenant_activity
+- tag: annotations
+  operation_count: 9
+  operations:
+  - annotations-annotation_import_init
+  - annotations-batch_delete_annotations
+  - annotations-batch_edit_annotations
+  - annotations-get_asset_revision
+  - annotations-list_annotation_revisions
+  - annotations-list_annotations
+  - annotations-list_asset_revisions
+  - annotations-project_batch_create_annotations
+  - annotations-project_bulk_create_annotations
+- tag: api-keys
+  operation_count: 3
+  operations:
+  - api-keys-create_api_key
+  - api-keys-list_api_keys
+  - api-keys-revoke_api_key
+- tag: auth
+  operation_count: 4
+  operations:
+  - auth-authorize
+  - auth-callback
+  - auth-logout
+  - auth-refresh
+- tag: auto-label
+  operation_count: 6
+  operations:
+  - auto-label-cancel_run
+  - auto-label-create_run
+  - auto-label-get_config
+  - auto-label-list_runs
+  - auto-label-put_config
+  - auto-label-suggest
+- tag: comments
+  operation_count: 7
+  operations:
+  - comments-create_comment
+  - comments-delete_comment
+  - comments-list_asset_comments
+  - comments-list_project_comments
+  - comments-reopen_comment
+  - comments-resolve_comment
+  - comments-update_comment
+- tag: datasets
+  operation_count: 1
+  operations:
+  - datasets-list_all_datasets
+- tag: deployments
+  operation_count: 5
+  operations:
+  - deployments-deploy_model
+  - deployments-get_deployment
+  - deployments-list_deployments
+  - deployments-predict
+  - deployments-stop_deployment
+- tag: exports
+  operation_count: 4
+  operations:
+  - exports-create_export
+  - exports-delete_export
+  - exports-get_export_download
+  - exports-list_exports
+- tag: foundation-models
+  operation_count: 3
+  operations:
+  - foundation-models-get_foundation_model
+  - foundation-models-list_foundation_models
+  - foundation-models-predict
+- tag: image_assets
+  operation_count: 10
+  operations:
+  - image_assets-batch_delete_image_assets
+  - image_assets-bulk_delete
+  - image_assets-get_asset
+  - image_assets-get_asset_download_url
+  - image_assets-get_asset_thumbnail_url
+  - image_assets-list_assets
+  - image_assets-search_assets
+  - image_assets-upload_complete
+  - image_assets-upload_init
+  - image_assets-upload_init_batch
+- tag: image_datasets
+  operation_count: 6
+  operations:
+  - image_datasets-create_image_dataset
+  - image_datasets-delete_image_dataset
+  - image_datasets-embed_image_dataset
+  - image_datasets-get_image_dataset
+  - image_datasets-get_image_dataset_stats
+  - image_datasets-update_image_dataset
+- tag: invitations
+  operation_count: 3
+  operations:
+  - invitations-create_invitation
+  - invitations-list_invitations
+  - invitations-revoke_invitation_route
+- tag: jobs
+  operation_count: 2
+  operations:
+  - jobs-get_job
+  - jobs-list_jobs
+- tag: labeling-time
+  operation_count: 2
+  operations:
+  - labeling-time-get_report
+  - labeling-time-post_heartbeat
+- tag: me
+  operation_count: 5
+  operations:
+  - me-accept_invitation
+  - me-create_my_tenant
+  - me-decline_invitation
+  - me-list_my_invitations
+  - me-list_my_tenants
+- tag: models
+  operation_count: 4
+  operations:
+  - models-delete_model
+  - models-get_model
+  - models-list_models
+  - models-update_model
+- tag: project-guidelines
+  operation_count: 3
+  operations:
+  - project-guidelines-get_guideline
+  - project-guidelines-init_guideline_image_upload
+  - project-guidelines-upsert_guideline
+- tag: projects
+  operation_count: 48
+  operations:
+  - projects-add_member
+  - projects-create_attribute
+  - projects-create_class
+  - projects-create_project
+  - projects-create_project_tag
+  - projects-create_version
+  - projects-delete_attribute
+  - projects-delete_class
+  - projects-delete_project
+  - projects-delete_project_tag
+  - projects-delete_version
+  - projects-duplicate_project
+  - projects-get_project_endpoint
+  - projects-get_project_progress
+  - projects-get_version
+  - projects-get_version_asset
+  - projects-list_classes
+  - projects-list_members
+  - projects-list_project_tags
+  - projects-list_projects
+  - projects-list_version_assets
+  - projects-list_versions
+  - projects-project_assets_batch_add
+  - projects-project_assets_batch_remove
+  - projects-project_assets_batch_update
+  - projects-project_batch_approve
+  - projects-project_batch_assign
+  - projects-project_batch_delete_annotations
+  - projects-project_batch_reject
+  - projects-project_batch_set_status
+  - projects-project_batch_unassign
+  - projects-project_bulk_add_assets
+  - projects-project_bulk_approve
+  - projects-project_bulk_assign
+  - projects-project_bulk_delete_annotations
+  - projects-project_bulk_reject
+  - projects-project_bulk_remove_assets
+  - projects-project_bulk_set_status
+  - projects-project_bulk_unassign
+  - projects-project_bulk_update_tags
+  - projects-project_tag_summary
+  - projects-remove_member
+  - projects-update_attribute
+  - projects-update_class
+  - projects-update_member
+  - projects-update_project
+  - projects-update_project_tag
+  - projects-update_version
+- tag: projects-visualization
+  operation_count: 1
+  operations:
+  - projects-visualization-annotations_multi_source
+- tag: projects-workflow
+  operation_count: 16
+  operations:
+  - projects-workflow-approve_asset
+  - projects-workflow-assign_asset
+  - projects-workflow-batch_create_annotations
+  - projects-workflow-claim_asset
+  - projects-workflow-create_annotation
+  - projects-workflow-delete_annotation
+  - projects-workflow-get_labeling_context
+  - projects-workflow-get_my_queue
+  - projects-workflow-list_asset_states
+  - projects-workflow-queue_stats
+  - projects-workflow-reject_asset
+  - projects-workflow-reopen_asset
+  - projects-workflow-skip_asset
+  - projects-workflow-submit_asset
+  - projects-workflow-unassign_asset
+  - projects-workflow-update_annotation
+- tag: segment
+  operation_count: 1
+  operations:
+  - segment-segment
+- tag: tenants
+  operation_count: 1
+  operations:
+  - tenants-create_tenant
+- tag: training
+  operation_count: 7
+  operations:
+  - training-cancel_training_run
+  - training-create_training_run
+  - training-get_training_catalog
+  - training-get_training_metrics
+  - training-get_training_run
+  - training-get_training_stats
+  - training-list_training_runs
+- tag: untagged
+  operation_count: 1
+  operations:
+  - default-health
+- tag: users
+  operation_count: 8
+  operations:
+  - users-change_my_password
+  - users-create_user_seeded
+  - users-get_me
+  - users-leave_workspace
+  - users-list_users
+  - users-remove_member
+  - users-update_me
+  - users-update_user_role
+- tag: versions
+  operation_count: 1
+  operations:
+  - versions-list_tenant_versions
+coverage:
+  rest_operations: 164
+  rest_operations_bound_to_a_tool: 0
+  mcp_tools_total: null
+  mcp_tools_bound: 0
+  graphql_fields_total: null
+  binding_confidence: n/a — nothing bound
+  reason: Both non-REST surfaces are auth-gated; the MCP surface is a docs-search server, not an API projection.
