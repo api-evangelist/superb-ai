@@ -17,6 +17,17 @@ created: '2026-08-29'
 modified: '2026-08-29'
 tags:
 - Artificial Intelligence
+- Machine-Learning
+- Computer-Vision
+- Data Labeling
+- Annotation
+- MLOps
+- Training Data
+- Model Training
+- Inference
+- Datasets
+tags_raw:
+- Artificial Intelligence
 - Machine Learning
 - Computer Vision
 - Data Labeling
@@ -37,6 +48,12 @@ apis:
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
   tags:
+  - MLOps
+  - Computer-Vision
+  - Data Labeling
+  - Annotation
+  - Model Training
+  tags_raw:
   - MLOps
   - Computer Vision
   - Data Labeling
