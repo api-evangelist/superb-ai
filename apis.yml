@@ -8,6 +8,19 @@ description: Superb AI (Superb AI Inc.) is a vision-intelligence company that tu
   is used by manufacturing, logistics, mobility and physical-security teams, and is delivered as cloud,
   private-cloud and air-gapped on-premise deployments. Developers reach it through a multi-tenant REST
   API, a first-party Python SDK family and the spb command-line interface.
+accessModel:
+  pricing: unknown
+  onboarding: unknown
+  trial: false
+  try_now: false
+  public: false
+  label: Unknown
+  confidence: low
+  source:
+  - authentication
+  - security
+  generated: '2026-09-03'
+  method: derived
 image: https://superb-ai.com/logo/superb-logo-circle.png
 url: https://raw.githubusercontent.com/api-evangelist/superb-ai/refs/heads/main/apis.yml
 x-type: company
