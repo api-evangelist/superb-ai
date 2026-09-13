@@ -8,33 +8,34 @@ deployment:
   endpoint: https://docs.superb-ai.com/mcp
   auth: oauth
   verified: probed
-note: >-
-  Superb AI serves a remote MCP endpoint on its own documentation host. It is PLATFORM-AUTHORED,
-  not hand-built by Superb AI: docs.superb-ai.com is a ReadMe.io site (response headers carry
-  `readme-subdomain: superb-ai`, `readme-repo: superb-ai-a092f07e6ab3`, and ReadMe-specific CORS
-  headers such as `x-readme-conversation-id`), and ReadMe ships this /mcp endpoint for every
-  project it hosts. It is therefore a DOCUMENTATION-SEARCH server over the Superb AI docs corpus,
-  not an agent surface over the MLOps Platform API — an agent connecting to it can read the docs,
-  it cannot create a project or upload an asset. No MCP server exists for the platform API itself.
+  probe_prior: (never probed)
+  probe: gated
+  probe_why: JSON-RPC error envelope -- the MCP server answered
+  checked: '2026-09-11'
+  source: claimed-backlog re-probe 2026-09-11
+note: 'Superb AI serves a remote MCP endpoint on its own documentation host. It is PLATFORM-AUTHORED,
+  not hand-built by Superb AI: docs.superb-ai.com is a ReadMe.io site (response headers carry `readme-subdomain:
+  superb-ai`, `readme-repo: superb-ai-a092f07e6ab3`, and ReadMe-specific CORS headers such as `x-readme-conversation-id`),
+  and ReadMe ships this /mcp endpoint for every project it hosts. It is therefore a DOCUMENTATION-SEARCH
+  server over the Superb AI docs corpus, not an agent surface over the MLOps Platform API — an agent connecting
+  to it can read the docs, it cannot create a project or upload an asset. No MCP server exists for the
+  platform API itself.'
 x-evidence:
   fetched: '2026-08-29'
   url: https://docs.superb-ai.com/mcp
-  method: 'POST {"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+  method: POST {"jsonrpc":"2.0","id":1,"method":"tools/list"}
   http_status: 401
   content_type: application/json; charset=utf-8
   body: '{"jsonrpc":"2.0","error":{"code":-32001,"message":"Authorization required"},"id":null}'
-  interpretation: >-
-    A well-formed JSON-RPC 2.0 error response (not an HTML page and not a generic gateway 401)
-    proves an MCP server is listening at this path. `initialize` returns the same challenge, so
-    the tool list is auth-gated and could not be enumerated anonymously.
+  interpretation: A well-formed JSON-RPC 2.0 error response (not an HTML page and not a generic gateway
+    401) proves an MCP server is listening at this path. `initialize` returns the same challenge, so the
+    tool list is auth-gated and could not be enumerated anonymously.
 tools:
   status: gated
   enumerated: false
-  note: >-
-    tools/list requires authorization. NOT DERIVED AND NOT GUESSED — no tool names are recorded
-    here, because inventing a tool list for a server whose manifest we could not read would
-    misrepresent the surface. Authenticated introspection is required to capture the real
-    inputSchemas.
+  note: tools/list requires authorization. NOT DERIVED AND NOT GUESSED — no tool names are recorded here,
+    because inventing a tool list for a server whose manifest we could not read would misrepresent the
+    surface. Authenticated introspection is required to capture the real inputSchemas.
 discovery:
   oauth_protected_resource:
     url: https://docs.superb-ai.com/.well-known/oauth-protected-resource/mcp
@@ -43,9 +44,8 @@ discovery:
     url: https://docs.superb-ai.com/.well-known/oauth-authorization-server
     status: 404
     note: Returned the ReadMe SPA HTML shell, not a document.
-  note: >-
-    No RFC 9728 protected-resource metadata is served, so an MCP client cannot discover the
-    authorization server programmatically from this endpoint.
+  note: No RFC 9728 protected-resource metadata is served, so an MCP client cannot discover the authorization
+    server programmatically from this endpoint.
 probed_alternatives:
 - url: https://mcp.superb-ai.com/mcp
   status: 0
