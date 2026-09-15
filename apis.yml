@@ -51,7 +51,7 @@ tags_raw:
 - Inference
 - Datasets
 apis:
-- aid: superb-ai-mlops-platform-api
+- aid: superb-ai:superb-ai-mlops-platform-api
   name: Superb AI MLOps Platform API
   description: Multi-tenant REST backend for the Superb Platform. 164 operations across tenants, workspaces,
     image datasets and assets, projects and labeling workflow, annotations, comments, auto-label runs,
