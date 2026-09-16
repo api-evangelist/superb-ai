@@ -51,38 +51,285 @@ tags_raw:
 - Inference
 - Datasets
 apis:
-- aid: superb-ai:superb-ai-mlops-platform-api
-  name: Superb AI MLOps Platform API
-  description: Multi-tenant REST backend for the Superb Platform. 164 operations across tenants, workspaces,
-    image datasets and assets, projects and labeling workflow, annotations, comments, auto-label runs,
-    model training, foundation models, deployments and exports. Bearer-token (Amazon Cognito) authentication
-    with per-request workspace membership resolution, cursor pagination, an Idempotency-Key header on
-    bulk operations, and a stable machine-readable error-code enum.
+- aid: superb-ai:superb-ai-activity-api
+  name: Superb AI Activity API
+  description: The activity API from Superb AI — 3 operation(s) for activity.
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
   tags:
-  - MLOps
-  - Computer-Vision
-  - Data Labeling
-  - Annotation
-  - Model Training
-  tags_raw:
-  - MLOps
-  - Computer Vision
-  - Data Labeling
-  - Annotation
-  - Model Training
+  - activity
   properties:
   - type: OpenAPI
-    url: openapi/superb-ai-mlops-platform-openapi.json
-  - type: Overlay
-    url: overlays/superb-ai-mlops-platform-overlay.yaml
+    url: openapi/superb-ai-activity-api-openapi.yml
+- aid: superb-ai:superb-ai-annotations-api
+  name: Superb AI Annotations API
+  description: The annotations API from Superb AI — 9 operation(s) for annotations.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - annotations
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-annotations-api-openapi.yml
+- aid: superb-ai:superb-ai-api-keys-api
+  name: Superb AI API Keys API
+  description: The api-keys API from Superb AI — 2 operation(s) for api-keys.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - api-keys
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-api-keys-api-openapi.yml
+- aid: superb-ai:superb-ai-auth-api
+  name: Superb AI Auth API
+  description: The auth API from Superb AI — 4 operation(s) for auth.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - auth
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-auth-api-openapi.yml
+- aid: superb-ai:superb-ai-auto-label-api
+  name: Superb AI Auto Label API
+  description: The auto-label API from Superb AI — 4 operation(s) for auto-label.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - auto-label
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-auto-label-api-openapi.yml
+- aid: superb-ai:superb-ai-comments-api
+  name: Superb AI Comments API
+  description: The comments API from Superb AI — 5 operation(s) for comments.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - comments
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-comments-api-openapi.yml
+- aid: superb-ai:superb-ai-datasets-api
+  name: Superb AI Datasets API
+  description: The datasets API from Superb AI — 1 operation(s) for datasets.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - datasets
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-datasets-api-openapi.yml
+- aid: superb-ai:superb-ai-deployments-api
+  name: Superb AI Deployments API
+  description: The deployments API from Superb AI — 4 operation(s) for deployments.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - deployments
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-deployments-api-openapi.yml
+- aid: superb-ai:superb-ai-exports-api
+  name: Superb AI Exports API
+  description: The exports API from Superb AI — 3 operation(s) for exports.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - exports
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-exports-api-openapi.yml
+- aid: superb-ai:superb-ai-foundation-models-api
+  name: Superb AI Foundation Models API
+  description: The foundation-models API from Superb AI — 3 operation(s) for foundation-models.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - foundation-models
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-foundation-models-api-openapi.yml
+- aid: superb-ai:superb-ai-health-api
+  name: Superb AI Health API
+  description: The Health API from Superb AI — 1 operation(s) for health.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - Health
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-health-api-openapi.yml
+- aid: superb-ai:superb-ai-image-assets-api
+  name: Superb AI Image Assets API
+  description: The image_assets API from Superb AI — 10 operation(s) for image_assets.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - image_assets
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-image-assets-api-openapi.yml
+- aid: superb-ai:superb-ai-image-datasets-api
+  name: Superb AI Image Datasets API
+  description: The image_datasets API from Superb AI — 4 operation(s) for image_datasets.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - image_datasets
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-image-datasets-api-openapi.yml
+- aid: superb-ai:superb-ai-invitations-api
+  name: Superb AI Invitations API
+  description: The invitations API from Superb AI — 2 operation(s) for invitations.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - invitations
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-invitations-api-openapi.yml
+- aid: superb-ai:superb-ai-jobs-api
+  name: Superb AI Jobs API
+  description: The jobs API from Superb AI — 2 operation(s) for jobs.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - jobs
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-jobs-api-openapi.yml
+- aid: superb-ai:superb-ai-labeling-time-api
+  name: Superb AI Labeling Time API
+  description: The labeling-time API from Superb AI — 2 operation(s) for labeling-time.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - labeling-time
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-labeling-time-api-openapi.yml
+- aid: superb-ai:superb-ai-me-api
+  name: Superb AI Me API
+  description: The me API from Superb AI — 4 operation(s) for me.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - me
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-me-api-openapi.yml
+- aid: superb-ai:superb-ai-models-api
+  name: Superb AI Models API
+  description: The models API from Superb AI — 2 operation(s) for models.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - models
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-models-api-openapi.yml
+- aid: superb-ai:superb-ai-project-guidelines-api
+  name: Superb AI Project Guidelines API
+  description: The project-guidelines API from Superb AI — 2 operation(s) for project-guidelines.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - project-guidelines
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-project-guidelines-api-openapi.yml
+- aid: superb-ai:superb-ai-projects-api
+  name: Superb AI Projects API
+  description: The projects API from Superb AI — 34 operation(s) for projects.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - projects
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-projects-api-openapi.yml
+- aid: superb-ai:superb-ai-projects-visualization-api
+  name: Superb AI Projects Visualization API
+  description: >-
+    The projects-visualization API from Superb AI — 1 operation(s) for projects-visualization.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - projects-visualization
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-projects-visualization-api-openapi.yml
+- aid: superb-ai:superb-ai-projects-workflow-api
+  name: Superb AI Projects Workflow API
+  description: The projects-workflow API from Superb AI — 15 operation(s) for projects-workflow.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - projects-workflow
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-projects-workflow-api-openapi.yml
+- aid: superb-ai:superb-ai-segment-api
+  name: Superb AI Segment API
+  description: The segment API from Superb AI — 1 operation(s) for segment.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - segment
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-segment-api-openapi.yml
+- aid: superb-ai:superb-ai-tenants-api
+  name: Superb AI Tenants API
+  description: The tenants API from Superb AI — 1 operation(s) for tenants.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - tenants
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-tenants-api-openapi.yml
+- aid: superb-ai:superb-ai-training-api
+  name: Superb AI Training API
+  description: The training API from Superb AI — 6 operation(s) for training.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - training
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-training-api-openapi.yml
+- aid: superb-ai:superb-ai-users-api
+  name: Superb AI Users API
+  description: The users API from Superb AI — 4 operation(s) for users.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - users
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-users-api-openapi.yml
+- aid: superb-ai:superb-ai-versions-api
+  name: Superb AI Versions API
+  description: The versions API from Superb AI — 1 operation(s) for versions.
+  humanURL: https://docs.bdai.superb-ai.com
+  baseURL: https://api.bdai.superb-ai.com
+  tags:
+  - versions
+  properties:
+  - type: OpenAPI
+    url: openapi/superb-ai-versions-api-openapi.yml
 maintainers:
 - FN: Kin Lane
   email: kin@apievangelist.com
 - FN: APIs.json
   email: info@apis.io
 common:
+- type: Overlay
+  url: overlays/superb-ai-mlops-platform-overlay.yaml
 - type: Website
   url: https://superb-ai.com/en
 - type: DeveloperPortal
