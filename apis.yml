@@ -57,6 +57,8 @@ apis:
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
   tags:
+  - Activity
+  tags_raw:
   - activity
   properties:
   - type: OpenAPI
@@ -67,6 +69,8 @@ apis:
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
   tags:
+  - Annotation
+  tags_raw:
   - annotations
   properties:
   - type: OpenAPI
@@ -77,6 +81,8 @@ apis:
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
   tags:
+  - APIKeys
+  tags_raw:
   - api-keys
   properties:
   - type: OpenAPI
@@ -87,6 +93,8 @@ apis:
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
   tags:
+  - Authentication
+  tags_raw:
   - auth
   properties:
   - type: OpenAPI
@@ -97,6 +105,8 @@ apis:
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
   tags:
+  - Autolabel
+  tags_raw:
   - auto-label
   properties:
   - type: OpenAPI
@@ -107,6 +117,8 @@ apis:
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
   tags:
+  - Comments
+  tags_raw:
   - comments
   properties:
   - type: OpenAPI
@@ -117,6 +129,8 @@ apis:
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
   tags:
+  - Datasets
+  tags_raw:
   - datasets
   properties:
   - type: OpenAPI
@@ -127,6 +141,8 @@ apis:
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
   tags:
+  - Deployment
+  tags_raw:
   - deployments
   properties:
   - type: OpenAPI
@@ -137,6 +153,8 @@ apis:
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
   tags:
+  - Export
+  tags_raw:
   - exports
   properties:
   - type: OpenAPI
@@ -147,6 +165,8 @@ apis:
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
   tags:
+  - Foundation Models
+  tags_raw:
   - foundation-models
   properties:
   - type: OpenAPI
@@ -166,7 +186,8 @@ apis:
   description: The image_assets API from Superb AI — 10 operation(s) for image_assets.
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
-  tags:
+  tags: []
+  tags_raw:
   - image_assets
   properties:
   - type: OpenAPI
@@ -176,7 +197,8 @@ apis:
   description: The image_datasets API from Superb AI — 4 operation(s) for image_datasets.
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
-  tags:
+  tags: []
+  tags_raw:
   - image_datasets
   properties:
   - type: OpenAPI
@@ -187,6 +209,8 @@ apis:
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
   tags:
+  - Invitations
+  tags_raw:
   - invitations
   properties:
   - type: OpenAPI
@@ -197,6 +221,8 @@ apis:
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
   tags:
+  - Job
+  tags_raw:
   - jobs
   properties:
   - type: OpenAPI
@@ -217,6 +243,8 @@ apis:
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
   tags:
+  - Me
+  tags_raw:
   - me
   properties:
   - type: OpenAPI
@@ -227,6 +255,8 @@ apis:
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
   tags:
+  - Models
+  tags_raw:
   - models
   properties:
   - type: OpenAPI
@@ -247,6 +277,8 @@ apis:
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
   tags:
+  - Project
+  tags_raw:
   - projects
   properties:
   - type: OpenAPI
@@ -278,6 +310,8 @@ apis:
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
   tags:
+  - Segment
+  tags_raw:
   - segment
   properties:
   - type: OpenAPI
@@ -288,6 +322,8 @@ apis:
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
   tags:
+  - Tenants
+  tags_raw:
   - tenants
   properties:
   - type: OpenAPI
@@ -298,6 +334,8 @@ apis:
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
   tags:
+  - Training
+  tags_raw:
   - training
   properties:
   - type: OpenAPI
@@ -308,6 +346,8 @@ apis:
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
   tags:
+  - User
+  tags_raw:
   - users
   properties:
   - type: OpenAPI
@@ -318,6 +358,8 @@ apis:
   humanURL: https://docs.bdai.superb-ai.com
   baseURL: https://api.bdai.superb-ai.com
   tags:
+  - Versions
+  tags_raw:
   - versions
   properties:
   - type: OpenAPI
