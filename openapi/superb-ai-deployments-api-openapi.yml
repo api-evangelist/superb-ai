@@ -1,0 +1,989 @@
+openapi: 3.2.0
+info:
+  title: MLOps Platform Deployments API
+  description: Multi-tenant labeling-platform backend.
+  version: 0.1.0
+tags:
+- name: Deployments
+paths:
+  /tenants/{slug}/models/{model_id}/deployments:
+    post:
+      tags:
+      - Deployments
+      summary: Deploy Model
+      description: 'Launch the model on the shared Multi-Model Endpoint (ADR-0081): synchronously upload its
+
+        Triton model tarball to the MME repo → status `active`. Idempotent: an existing live deployment
+
+        of the model is returned instead of a second one. 429 if the tenant is at its concurrent cap.'
+      operationId: deployments-deploy_model
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: model_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Model Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeploymentCreate'
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeploymentResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/deployments:
+    get:
+      tags:
+      - Deployments
+      summary: List Deployments
+      operationId: deployments-list_deployments
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          description: Max rows per page.
+          default: 50
+          title: Limit
+        description: Max rows per page.
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+          title: Cursor
+        description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeploymentPage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/deployments/{deployment_id}:
+    get:
+      tags:
+      - Deployments
+      summary: Get Deployment
+      operationId: deployments-get_deployment
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: deployment_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Deployment Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeploymentDetail'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+      - Deployments
+      summary: Stop Deployment
+      operationId: deployments-stop_deployment
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: deployment_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Deployment Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/deployments/{deployment_id}/predict:
+    post:
+      tags:
+      - Deployments
+      summary: Predict
+      operationId: deployments-predict
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: deployment_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Deployment Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PredictRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PredictResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    PredictResponse:
+      properties:
+        predictions:
+          items:
+            $ref: '#/components/schemas/Prediction'
+          type: array
+          title: Predictions
+          description: Predictions for the image.
+        image:
+          $ref: '#/components/schemas/ImageSize'
+          description: Decoded image dimensions.
+        inference_ms:
+          type: integer
+          title: Inference Ms
+          description: Server-side inference time in milliseconds.
+      type: object
+      required:
+      - predictions
+      - image
+      - inference_ms
+      title: PredictResponse
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    DeploymentLabel:
+      properties:
+        class_id:
+          type: integer
+          title: Class Id
+          description: 0-indexed model class.
+        name:
+          type: string
+          title: Name
+          description: Human-readable class name.
+        color:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Color
+          description: Display color for the class, if set.
+      type: object
+      required:
+      - class_id
+      - name
+      title: DeploymentLabel
+    DeploymentPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/DeploymentResponse'
+          type: array
+          title: Items
+          description: The deployments on this page.
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+          description: Opaque cursor for the next page; null when this is the last page.
+      type: object
+      required:
+      - items
+      title: DeploymentPage
+    Prediction:
+      properties:
+        type:
+          $ref: '#/components/schemas/OutputGeometry'
+          description: Geometry kind of this prediction.
+        class_id:
+          type: integer
+          title: Class Id
+          description: 0-indexed model class of the prediction.
+        class_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Class Name
+          description: Class name, if resolvable.
+        geometry:
+          oneOf:
+          - $ref: '#/components/schemas/BboxGeometry'
+          - $ref: '#/components/schemas/PolygonGeometry'
+          - $ref: '#/components/schemas/KeypointGeometry'
+          title: Geometry
+          description: Typed geometry (bbox/polygon/keypoint) — the same discriminated shape as annotation.geometry, so a prediction maps onto an annotation without translation.
+          discriminator:
+            propertyName: type
+            mapping:
+              bbox: '#/components/schemas/BboxGeometry'
+              keypoint: '#/components/schemas/KeypointGeometry'
+              polygon: '#/components/schemas/PolygonGeometry'
+        confidence:
+          type: number
+          title: Confidence
+          description: Model confidence for this prediction.
+      type: object
+      required:
+      - type
+      - class_id
+      - geometry
+      - confidence
+      title: Prediction
+    ImageSize:
+      properties:
+        width:
+          type: integer
+          title: Width
+          description: Image width in pixels.
+          default: 0
+        height:
+          type: integer
+          title: Height
+          description: Image height in pixels.
+          default: 0
+      type: object
+      title: ImageSize
+      description: 'Decoded image dimensions echoed on a predict response, so the FE can scale
+
+        pixel-space geometry without re-reading the image. Shared by the deployment
+
+        and foundation (ZERO) predict responses.'
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    CapabilityDescriptor:
+      properties:
+        task:
+          $ref: '#/components/schemas/TrainingTask'
+          description: Training task the deployed model performs.
+        output:
+          $ref: '#/components/schemas/OutputGeometry'
+          description: Geometry kind the model emits.
+        class_map:
+          items:
+            $ref: '#/components/schemas/DeploymentLabel'
+          type: array
+          title: Class Map
+          description: The model's class list.
+        image_sources:
+          items:
+            type: string
+          type: array
+          title: Image Sources
+          description: Accepted image input sources for predict.
+          default:
+          - image_b64
+        params:
+          additionalProperties:
+            $ref: '#/components/schemas/ParamSpec'
+          type: object
+          title: Params
+          description: Tunable predict parameters (confidence, iou, max_detections) with bounds and defaults from the model's validation-split sweep — the operational serving defaults (see ParamSpec.default for why these differ from the scorecard's test-split `optimal_confidence`).
+      type: object
+      required:
+      - task
+      - output
+      - class_map
+      - params
+      title: CapabilityDescriptor
+      description: Task-keyed contract the FE renders the playground from (ADR-0067).
+    TrainingTask:
+      type: string
+      enum:
+      - detection
+      - segmentation
+      title: TrainingTask
+    PolygonGeometry:
+      properties:
+        type:
+          type: string
+          const: polygon
+          title: Type
+          default: polygon
+        polygons:
+          items:
+            $ref: '#/components/schemas/PolygonPart'
+          type: array
+          minItems: 1
+          title: Polygons
+      type: object
+      required:
+      - polygons
+      title: PolygonGeometry
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    DeploymentStatus:
+      type: string
+      enum:
+      - deploying
+      - ready
+      - stopped
+      - failed
+      title: DeploymentStatus
+    PolygonPart:
+      properties:
+        exterior:
+          items:
+            prefixItems:
+            - type: number
+            - type: number
+            type: array
+            maxItems: 2
+            minItems: 2
+          type: array
+          minItems: 3
+          title: Exterior
+        holes:
+          items:
+            items:
+              prefixItems:
+              - type: number
+              - type: number
+              type: array
+              maxItems: 2
+              minItems: 2
+            type: array
+          type: array
+          title: Holes
+      type: object
+      required:
+      - exterior
+      title: PolygonPart
+      description: 'One part of a (possibly multi-part) polygon: an exterior ring + optional hole rings.'
+    KeypointNodeGeom:
+      properties:
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        visibility:
+          type: integer
+          maximum: 2.0
+          minimum: 0.0
+          title: Visibility
+          default: 2
+      type: object
+      required:
+      - x
+      - y
+      title: KeypointNodeGeom
+    DeploymentResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Deployment identifier.
+        model_id:
+          type: string
+          format: uuid
+          title: Model Id
+          description: Trained model backing this deployment.
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+          description: Project the deployment belongs to.
+        name:
+          type: string
+          title: Name
+          description: The model's name, for display.
+        task:
+          $ref: '#/components/schemas/TrainingTask'
+          description: Training task the deployed model performs.
+        status:
+          $ref: '#/components/schemas/DeploymentStatus'
+          description: 'Lifecycle state: deploying (warming), ready (predict is fast), stopped/failed (terminal).'
+        gpu:
+          type: string
+          title: Gpu
+          description: Server-set MME instance type (informational).
+        last_activity_at:
+          type: string
+          format: date-time
+          title: Last Activity At
+          description: Informational 'last used' timestamp; no time-based teardown.
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+          description: Failure detail when status is failed, else null.
+        created_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Created By
+          description: User who created the deployment, if known.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: When the deployment was created.
+      type: object
+      required:
+      - id
+      - model_id
+      - project_id
+      - name
+      - task
+      - status
+      - gpu
+      - last_activity_at
+      - error
+      - created_by
+      - created_at
+      title: DeploymentResponse
+    DeploymentDetail:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Deployment identifier.
+        model_id:
+          type: string
+          format: uuid
+          title: Model Id
+          description: Trained model backing this deployment.
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+          description: Project the deployment belongs to.
+        name:
+          type: string
+          title: Name
+          description: The model's name, for display.
+        task:
+          $ref: '#/components/schemas/TrainingTask'
+          description: Training task the deployed model performs.
+        status:
+          $ref: '#/components/schemas/DeploymentStatus'
+          description: 'Lifecycle state: deploying (warming), ready (predict is fast), stopped/failed (terminal).'
+        gpu:
+          type: string
+          title: Gpu
+          description: Server-set MME instance type (informational).
+        last_activity_at:
+          type: string
+          format: date-time
+          title: Last Activity At
+          description: Informational 'last used' timestamp; no time-based teardown.
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+          description: Failure detail when status is failed, else null.
+        created_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Created By
+          description: User who created the deployment, if known.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: When the deployment was created.
+        capability:
+          anyOf:
+          - $ref: '#/components/schemas/CapabilityDescriptor'
+          - type: 'null'
+          description: Playground capability contract; present once status is ready.
+      type: object
+      required:
+      - id
+      - model_id
+      - project_id
+      - name
+      - task
+      - status
+      - gpu
+      - last_activity_at
+      - error
+      - created_by
+      - created_at
+      title: DeploymentDetail
+    DeploymentCreate:
+      properties: {}
+      type: object
+      title: DeploymentCreate
+    BboxGeometry:
+      properties:
+        type:
+          type: string
+          const: bbox
+          title: Type
+          default: bbox
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        w:
+          type: number
+          exclusiveMinimum: 0.0
+          title: W
+        h:
+          type: number
+          exclusiveMinimum: 0.0
+          title: H
+      type: object
+      required:
+      - x
+      - y
+      - w
+      - h
+      title: BboxGeometry
+    PredictRequest:
+      properties:
+        image_b64:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Image B64
+          description: Base64-encoded image bytes.
+        confidence:
+          anyOf:
+          - type: number
+            maximum: 1.0
+            minimum: 0.0
+          - type: 'null'
+          title: Confidence
+          description: Confidence threshold; predictions below it are dropped.
+        iou:
+          anyOf:
+          - type: number
+            maximum: 1.0
+            minimum: 0.0
+          - type: 'null'
+          title: Iou
+          description: IoU threshold for non-max suppression.
+        max_detections:
+          anyOf:
+          - type: integer
+            maximum: 1000.0
+            minimum: 1.0
+          - type: 'null'
+          title: Max Detections
+          description: Maximum number of predictions to return.
+        classes:
+          anyOf:
+          - items:
+              type: integer
+            type: array
+          - type: 'null'
+          title: Classes
+          description: Restrict predictions to these class_ids.
+      type: object
+      title: PredictRequest
+    ParamSpec:
+      properties:
+        min:
+          type: number
+          title: Min
+          description: Minimum allowed value for the parameter.
+        max:
+          type: number
+          title: Max
+          description: Maximum allowed value for the parameter.
+        default:
+          type: number
+          title: Default
+          description: 'Applied when the parameter is omitted from predict. Seeded from the model''s train-time VALIDATION split: detection confidence and IoU are swept jointly under serving-identical per-class NMS; segmentation exposes confidence only because its serving postprocessor does not apply mask NMS. max_detections is data-derived (max ground-truth instances in any single val image, floor 10, cap 1000). Deliberately NOT the scorecard''s `optimal_confidence`, which is a test-split diagnostic measured without NMS — the two answer different questions and will differ slightly.'
+      type: object
+      required:
+      - min
+      - max
+      - default
+      title: ParamSpec
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    KeypointGeometry:
+      properties:
+        type:
+          type: string
+          const: keypoint
+          title: Type
+          default: keypoint
+        points:
+          items:
+            $ref: '#/components/schemas/KeypointNodeGeom'
+          type: array
+          minItems: 1
+          title: Points
+      type: object
+      required:
+      - points
+      title: KeypointGeometry
+    OutputGeometry:
+      type: string
+      enum:
+      - bbox
+      - polygon
+      title: OutputGeometry
+      description: 'Geometry kinds a model can emit (subset of AnnotationType). Used by the
+
+        serving/deployment + foundation-model capability descriptors.'
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      description: Cognito access token
+      scheme: bearer

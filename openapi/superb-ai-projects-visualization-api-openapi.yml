@@ -1,0 +1,495 @@
+openapi: 3.2.0
+info:
+  title: MLOps Platform Projects Visualization API
+  description: Multi-tenant labeling-platform backend.
+  version: 0.1.0
+tags:
+- name: projects-visualization
+paths:
+  /tenants/{slug}/datasets/images/{dataset_id}/assets/{asset_id}/annotations:
+    get:
+      tags:
+      - projects-visualization
+      summary: Annotations Multi Source
+      description: 'Return per-source annotations for one asset, for visualization rendering.
+
+
+        `version_id=null` means live current state (queries the annotation table directly).
+
+        `version_id` set → reads from the version''s S3 manifest (slice 3b/3c). For 3a we
+
+        only support live (null); requesting a frozen version returns 501.'
+      operationId: projects-visualization-annotations_multi_source
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: dataset_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Dataset Id
+      - name: asset_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Asset Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: sources
+        in: query
+        required: true
+        schema:
+          type: string
+          description: 'JSON array: [{"project_id":"...","version_id":null|"..."}]'
+          title: Sources
+        description: 'JSON array: [{"project_id":"...","version_id":null|"..."}]'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MultiSourceAnnotations'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    PolygonPartRead:
+      properties:
+        exterior:
+          items:
+            prefixItems:
+            - type: number
+            - type: number
+            type: array
+            maxItems: 2
+            minItems: 2
+          type: array
+          title: Exterior
+        holes:
+          items:
+            items:
+              prefixItems:
+              - type: number
+              - type: number
+              type: array
+              maxItems: 2
+              minItems: 2
+            type: array
+          type: array
+          title: Holes
+      additionalProperties: true
+      type: object
+      required:
+      - exterior
+      title: PolygonPartRead
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    AnnotationResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Annotation id (client-minted UUID, ADR-0092).
+        asset_id:
+          type: string
+          format: uuid
+          title: Asset Id
+          description: Id of the asset this annotation is on.
+        class_id:
+          type: string
+          format: uuid
+          title: Class Id
+          description: Id of the project class this annotation belongs to.
+        type:
+          $ref: '#/components/schemas/AnnotationType'
+          description: Annotation type (bbox, polygon, keypoint, or classification).
+        parent_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Parent Id
+          description: Parent annotation id, if this is nested.
+        instance_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Instance Id
+          description: Instance grouping id linking annotations of the same object.
+        geometry:
+          anyOf:
+          - oneOf:
+            - $ref: '#/components/schemas/BboxGeometryRead'
+            - $ref: '#/components/schemas/PolygonGeometryRead'
+            - $ref: '#/components/schemas/KeypointGeometryRead'
+            discriminator:
+              propertyName: type
+              mapping:
+                bbox: '#/components/schemas/BboxGeometryRead'
+                keypoint: '#/components/schemas/KeypointGeometryRead'
+                polygon: '#/components/schemas/PolygonGeometryRead'
+          - type: 'null'
+          title: Geometry
+          description: Pixel-coordinate typed geometry (bbox/polygon/keypoint, ADR-0091); null for classification.
+        data:
+          additionalProperties: true
+          type: object
+          title: Data
+          description: Free-form attribute/classification values for this annotation.
+        source:
+          $ref: '#/components/schemas/AnnotationSource'
+          description: How the annotation was produced (manual, imported, or model).
+        locked:
+          type: boolean
+          title: Locked
+          description: Per-shape protection lock (ADR-0084); absent in legacy snapshots → false.
+          default: false
+        created_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Created By
+          description: User who created the annotation, if known.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: Creation timestamp.
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+          description: Last-update timestamp.
+      type: object
+      required:
+      - id
+      - asset_id
+      - class_id
+      - type
+      - parent_id
+      - instance_id
+      - geometry
+      - data
+      - source
+      - created_by
+      - created_at
+      - updated_at
+      title: AnnotationResponse
+    AnnotationsBySource:
+      properties:
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+        version_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Version Id
+        shapes:
+          items:
+            $ref: '#/components/schemas/AnnotationResponse'
+          type: array
+          title: Shapes
+        annotations:
+          items:
+            $ref: '#/components/schemas/AnnotationResponse'
+          type: array
+          title: Annotations
+      type: object
+      required:
+      - project_id
+      - version_id
+      title: AnnotationsBySource
+      description: 'Per-source bucket for the multi-source visualization endpoint.
+
+
+        `annotations` is a legacy alias of `shapes`; deprecated.'
+    BboxGeometryRead:
+      properties:
+        type:
+          type: string
+          const: bbox
+          title: Type
+          default: bbox
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        w:
+          type: number
+          title: W
+        h:
+          type: number
+          title: H
+      additionalProperties: true
+      type: object
+      required:
+      - x
+      - y
+      - w
+      - h
+      title: BboxGeometryRead
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    MultiSourceAnnotations:
+      properties:
+        asset_id:
+          type: string
+          format: uuid
+          title: Asset Id
+        sources:
+          items:
+            $ref: '#/components/schemas/AnnotationsBySource'
+          type: array
+          title: Sources
+      type: object
+      required:
+      - asset_id
+      - sources
+      title: MultiSourceAnnotations
+    AnnotationType:
+      type: string
+      enum:
+      - bbox
+      - polygon
+      - keypoint
+      - classification
+      title: AnnotationType
+    AnnotationSource:
+      type: string
+      enum:
+      - manual
+      - imported
+      - model
+      title: AnnotationSource
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    PolygonGeometryRead:
+      properties:
+        type:
+          type: string
+          const: polygon
+          title: Type
+          default: polygon
+        polygons:
+          items:
+            $ref: '#/components/schemas/PolygonPartRead'
+          type: array
+          title: Polygons
+      additionalProperties: true
+      type: object
+      required:
+      - polygons
+      title: PolygonGeometryRead
+    KeypointNodeGeomRead:
+      properties:
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        visibility:
+          type: integer
+          title: Visibility
+          default: 2
+      additionalProperties: true
+      type: object
+      required:
+      - x
+      - y
+      title: KeypointNodeGeomRead
+    KeypointGeometryRead:
+      properties:
+        type:
+          type: string
+          const: keypoint
+          title: Type
+          default: keypoint
+        points:
+          items:
+            $ref: '#/components/schemas/KeypointNodeGeomRead'
+          type: array
+          title: Points
+      additionalProperties: true
+      type: object
+      required:
+      - points
+      title: KeypointGeometryRead
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      description: Cognito access token
+      scheme: bearer

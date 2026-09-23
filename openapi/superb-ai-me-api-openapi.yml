@@ -1,0 +1,523 @@
+openapi: 3.2.0
+info:
+  title: MLOps Platform Me API
+  description: Multi-tenant labeling-platform backend.
+  version: 0.1.0
+tags:
+- name: Me
+paths:
+  /me/tenants:
+    get:
+      tags:
+      - Me
+      summary: List My Tenants
+      description: Every workspace this account belongs to, newest membership first.
+      operationId: me-list_my_tenants
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyTenantsResponse'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - HTTPBearer: []
+    post:
+      tags:
+      - Me
+      summary: Create My Tenant
+      description: 'Create a workspace as the authenticated account, who becomes its admin.
+
+        The membership row copies the account''s profile (email/name) from WorkOS.'
+      operationId: me-create_my_tenant
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantCreateMe'
+        required: true
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantMembership'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - HTTPBearer: []
+  /me/invitations:
+    get:
+      tags:
+      - Me
+      summary: List My Invitations
+      description: 'Pending, unexpired invitations addressed to this account''s email —
+
+        the exact-match rule (ADR-0113): the invited address must equal the
+
+        account''s email, case-insensitively; domains don''t count.'
+      operationId: me-list_my_invitations
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyInvitationsResponse'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+      - HTTPBearer: []
+  /me/invitations/{invitation_id}/accept:
+    post:
+      tags:
+      - Me
+      summary: Accept Invitation
+      description: 'Join the workspace: membership row with the invited role (profile copied
+
+        from the account), WorkOS org membership mirrored, transport invitation
+
+        revoked. Idempotence: an already-member account gets 409 USER_EMAIL_TAKEN
+
+        only via a re-created invitation — this row goes terminal on success.'
+      operationId: me-accept_invitation
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: invitation_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Invitation Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantMembership'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /me/invitations/{invitation_id}/decline:
+    post:
+      tags:
+      - Me
+      summary: Decline Invitation
+      description: Turn the invitation down. Terminal; the admin can re-invite later.
+      operationId: me-decline_invitation
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: invitation_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Invitation Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    MyInvitationsResponse:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/MyInvitation'
+          type: array
+          title: Items
+          description: Pending, unexpired invitations whose email exactly matches the account's email.
+      type: object
+      required:
+      - items
+      title: MyInvitationsResponse
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    TenantCreateMe:
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Name
+          description: Display name.
+        slug:
+          type: string
+          maxLength: 30
+          minLength: 3
+          title: Slug
+          description: URL handle (lowercase alphanumeric with single hyphens); unique platform-wide.
+      type: object
+      required:
+      - name
+      - slug
+      title: TenantCreateMe
+      description: 'Body for `POST /me/tenants` — create a workspace as the authenticated
+
+        account (who becomes its admin). No owner block: the account exists.'
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    WorkspaceRole:
+      type: string
+      enum:
+      - admin
+      - member
+      title: WorkspaceRole
+    MyTenantsResponse:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/TenantMembership'
+          type: array
+          title: Items
+          description: Every workspace this account belongs to. Unpaginated — bounded by how many workspaces one person can realistically join.
+      type: object
+      required:
+      - items
+      title: MyTenantsResponse
+    TenantMembership:
+      properties:
+        tenant_id:
+          type: string
+          format: uuid
+          title: Tenant Id
+          description: Tenant id (stable reference).
+        slug:
+          type: string
+          title: Slug
+          description: URL handle — routes into `/tenants/{slug}/…`.
+        name:
+          type: string
+          title: Name
+          description: Display name of the workspace.
+        role:
+          $ref: '#/components/schemas/WorkspaceRole'
+          description: This account's workspace role here.
+        joined_at:
+          type: string
+          format: date-time
+          title: Joined At
+          description: When this membership was created.
+      type: object
+      required:
+      - tenant_id
+      - slug
+      - name
+      - role
+      - joined_at
+      title: TenantMembership
+      description: 'One workspace this account belongs to (`GET /me/tenants` item, and the
+
+        result of accepting an invitation).'
+    MyInvitation:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Invitation id — accept/decline target.
+        tenant_slug:
+          type: string
+          title: Tenant Slug
+          description: Workspace the invitation joins.
+        tenant_name:
+          type: string
+          title: Tenant Name
+          description: Workspace display name.
+        role:
+          $ref: '#/components/schemas/WorkspaceRole'
+          description: Role granted on acceptance.
+        invited_by_email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Invited By Email
+          description: Email of the admin who sent it, when still resolvable.
+        expires_at:
+          type: string
+          format: date-time
+          title: Expires At
+          description: After this, the invitation can't be accepted.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: When the invitation was sent.
+      type: object
+      required:
+      - id
+      - tenant_slug
+      - tenant_name
+      - role
+      - invited_by_email
+      - expires_at
+      - created_at
+      title: MyInvitation
+      description: 'A pending invitation addressed to this account''s email
+
+        (`GET /me/invitations` item). Accept/decline via its id.'
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      description: Cognito access token
+      scheme: bearer

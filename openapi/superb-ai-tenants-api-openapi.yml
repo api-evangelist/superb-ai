@@ -1,0 +1,302 @@
+openapi: 3.2.0
+info:
+  title: MLOps Platform Tenants API
+  description: Multi-tenant labeling-platform backend.
+  version: 0.1.0
+tags:
+- name: Tenants
+paths:
+  /tenants:
+    post:
+      tags:
+      - Tenants
+      summary: Create Tenant
+      operationId: tenants-create_tenant
+      parameters:
+      - name: x-bootstrap-secret
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: X-Bootstrap-Secret
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TenantCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    OwnerCreate:
+      properties:
+        email:
+          type: string
+          maxLength: 254
+          format: email
+          title: Email
+          description: Email address of the tenant owner; used as their login identity.
+        first_name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: First Name
+          description: Given name of the tenant owner.
+        last_name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Last Name
+          description: Family name of the tenant owner.
+        password:
+          type: string
+          maxLength: 128
+          minLength: 10
+          title: Password
+          description: Initial password for the tenant owner account.
+      type: object
+      required:
+      - email
+      - first_name
+      - last_name
+      - password
+      title: OwnerCreate
+    TenantCreate:
+      properties:
+        slug:
+          type: string
+          maxLength: 30
+          minLength: 3
+          title: Slug
+          description: URL-safe unique identifier for the tenant (lowercase alphanumeric with single hyphens).
+        name:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Name
+          description: Human-readable display name of the tenant.
+        owner:
+          $ref: '#/components/schemas/OwnerCreate'
+          description: Details of the initial owner account created alongside the tenant.
+      type: object
+      required:
+      - slug
+      - name
+      - owner
+      title: TenantCreate
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    TenantResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Unique identifier of the tenant.
+        slug:
+          type: string
+          title: Slug
+          description: URL-safe unique identifier for the tenant.
+        name:
+          type: string
+          title: Name
+          description: Human-readable display name of the tenant.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: Timestamp when the tenant was created.
+        owner:
+          $ref: '#/components/schemas/OwnerResponse'
+          description: The tenant's owner user.
+      type: object
+      required:
+      - id
+      - slug
+      - name
+      - created_at
+      - owner
+      title: TenantResponse
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    OwnerResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Unique identifier of the owner user.
+        email:
+          type: string
+          title: Email
+          description: Email address of the owner user.
+        first_name:
+          type: string
+          title: First Name
+          description: Given name of the owner user.
+        last_name:
+          type: string
+          title: Last Name
+          description: Family name of the owner user.
+      type: object
+      required:
+      - id
+      - email
+      - first_name
+      - last_name
+      title: OwnerResponse
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      description: Cognito access token
+      scheme: bearer

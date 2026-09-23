@@ -1,0 +1,467 @@
+openapi: 3.2.0
+info:
+  title: MLOps Platform Labeling Time API
+  description: Multi-tenant labeling-platform backend.
+  version: 0.1.0
+tags:
+- name: labeling-time
+paths:
+  /tenants/{slug}/projects/{project_id}/labeling-time/heartbeat:
+    post:
+      tags:
+      - labeling-time
+      summary: Record active seconds for the calling user. Any project member
+      description: 'Fire one heartbeat from the FE timer. Server records the time
+
+        against (caller, project, asset, class_id, today).
+
+
+        ADR-0046 §4 mitigations:
+
+        #2 — `active_seconds` > 30 → 422 at pydantic validate (cap is in the schema).
+
+        #3 — `heartbeat_id` deduped within a 5-min sliding window. Replays return 204 silently.
+
+        #4 — Wall-clock ceiling is applied at REPORT time, not here.
+
+
+        `user_id` comes from the JWT — labelers can only record their own time.'
+      operationId: labeling-time-post_heartbeat
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabelingTimeHeartbeat'
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/labeling-time:
+    get:
+      tags:
+      - labeling-time
+      summary: Aggregated active-seconds report. group_by drives the row shape
+      description: 'Aggregated active-seconds. See ADR-0046 §2 for the wire shape.
+
+
+        Apply the wall-clock ceiling (Tier-1 mitigation #4) after the SQL
+
+        group: for every (user, asset) pair in the result, compare the summed
+
+        active_seconds against the max(workflow.submitted - workflow.claimed)
+
+        wall-clock window. Cap at the ceiling.
+
+
+        Caller-tz semantics (added 2026-05-22):
+
+        • `tz` defaults to `UTC` — backwards-compatible no-op for callers
+
+        that don''t pass it.
+
+        • When set, `day` rows are calendar days in that tz (computed via
+
+        PG `AT TIME ZONE` over the bucket''s stored (day, hour_utc) pair).
+
+        • `from`/`to` are matched against the SAME tz-local day so the
+
+        "today" window stays consistent across the filter + group.'
+      operationId: labeling-time-get_report
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: group_by
+        in: query
+        required: false
+        schema:
+          type: string
+          description: 'Comma-separated list of dimensions. Valid: user, class, asset, day. Any non-empty subset, in any order. Each appears as a column on every row; rows are grouped + summed across the rest. Default ''user'' (per-labeler totals).'
+          default: user
+          title: Group By
+        description: 'Comma-separated list of dimensions. Valid: user, class, asset, day. Any non-empty subset, in any order. Each appears as a column on every row; rows are grouped + summed across the rest. Default ''user'' (per-labeler totals).'
+      - name: user_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: Restrict to one user. Managers / admins can pass any user; labelers / reviewers are server-side forced to themselves regardless of what they pass.
+          title: User Id
+        description: Restrict to one user. Managers / admins can pass any user; labelers / reviewers are server-side forced to themselves regardless of what they pass.
+      - name: asset_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: Restrict to one asset. Useful for the asset-detail-view 'you spent X seconds on this asset' card. Pairs with user_id for per-(user, asset) totals.
+          title: Asset Id
+        description: Restrict to one asset. Useful for the asset-detail-view 'you spent X seconds on this asset' card. Pairs with user_id for per-(user, asset) totals.
+      - name: from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: From
+      - name: to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: To
+      - name: tz
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: IANA timezone name (e.g. `Asia/Seoul`, `America/Los_Angeles`). When set, the `day` group dimension and the `from`/`to` range are interpreted in this tz — so a KST user's 'labeled today' card stops resetting at 9am local. Defaults to UTC. Unknown names → 400.
+          title: Tz
+        description: IANA timezone name (e.g. `Asia/Seoul`, `America/Los_Angeles`). When set, the `day` group dimension and the `from`/`to` range are interpreted in this tz — so a KST user's 'labeled today' card stops resetting at 9am local. Defaults to UTC. Unknown names → 400.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabelingTimeReport'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    LabelingTimeReport:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/LabelingTimeRow'
+          type: array
+          title: Items
+          description: Aggregated labeling-time rows, one per group_by dimension combination.
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+      type: object
+      required:
+      - items
+      title: LabelingTimeReport
+      description: GET /labeling-time response.
+    LabelingTimeRow:
+      properties:
+        user_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: User Id
+          description: Labeler this row aggregates, when group_by includes 'user'.
+        class_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Class Id
+          description: Project class this row aggregates, when group_by includes 'class'.
+        asset_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Asset Id
+          description: Project asset this row aggregates, when group_by includes 'asset'.
+        day:
+          anyOf:
+          - type: string
+            format: date
+          - type: 'null'
+          title: Day
+          description: Calendar day this row aggregates, when group_by includes 'day'.
+        total_seconds:
+          type: integer
+          title: Total Seconds
+          description: Total active labeling seconds for this row's dimension combination.
+      type: object
+      required:
+      - total_seconds
+      title: LabelingTimeRow
+      description: 'One report row. Columns are populated when their dimension is in
+
+        the group_by list — otherwise they''re absent (treated as aggregated).'
+    LabelingTimeHeartbeat:
+      properties:
+        asset_id:
+          type: string
+          format: uuid
+          title: Asset Id
+          description: Project asset the labeler is actively working on.
+        class_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Class Id
+          description: Project class currently being labeled, if any. Omit when the active time isn't attributable to a specific class.
+        active_seconds:
+          type: integer
+          maximum: 30.0
+          exclusiveMinimum: 0.0
+          title: Active Seconds
+          description: Active seconds since the previous heartbeat. Capped at 30s (= 2× the 15s heartbeat cadence) to prevent crafted-payload inflation.
+        heartbeat_id:
+          type: string
+          format: uuid
+          title: Heartbeat Id
+          description: Client-generated UUID v4 per heartbeat. Server deduplicates within a 5-minute sliding window per user; replays are silently no-op'd (204).
+      type: object
+      required:
+      - asset_id
+      - active_seconds
+      - heartbeat_id
+      title: LabelingTimeHeartbeat
+      description: 'Body of POST /labeling-time/heartbeat. Fired by the FE every ~15s
+
+        while a labeler is actively working on a project asset.'
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      description: Cognito access token
+      scheme: bearer

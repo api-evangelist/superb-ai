@@ -1,0 +1,544 @@
+openapi: 3.2.0
+info:
+  title: MLOps Platform Versions API
+  description: Multi-tenant labeling-platform backend.
+  version: 0.1.0
+tags:
+- name: Versions
+paths:
+  /tenants/{slug}/versions:
+    get:
+      tags:
+      - Versions
+      summary: List Tenant Versions
+      description: 'Every version in the workspace, newest first. Each item carries `project_id`
+
+        so the caller can attribute it to its owning project/dataset.'
+      operationId: versions-list_tenant_versions
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          description: Max rows per page.
+          default: 50
+          title: Limit
+        description: Max rows per page.
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+          title: Cursor
+        description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+      - name: q
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 255
+          - type: 'null'
+          description: Case-insensitive substring search (min 1 char). Wildcards are matched literally.
+          title: Q
+        description: Case-insensitive substring search (min 1 char). Wildcards are matched literally.
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/VersionStatus'
+          - type: 'null'
+          description: '`pending` | `building` | `ready` | `failed`. Filter by manifest build state.'
+          title: Status
+        description: '`pending` | `building` | `ready` | `failed`. Filter by manifest build state.'
+      - name: created_at_from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Inclusive lower bound (>=) on `created_at` (ISO-8601).
+          title: Created At From
+        description: Inclusive lower bound (>=) on `created_at` (ISO-8601).
+      - name: created_at_to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Exclusive upper bound (<) on `created_at` (ISO-8601).
+          title: Created At To
+        description: Exclusive upper bound (<) on `created_at` (ISO-8601).
+      - name: include_total
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: When true, response carries `total` = COUNT(*) for the same filter (ignores cursor/limit).
+          default: false
+          title: Include Total
+        description: When true, response carries `total` = COUNT(*) for the same filter (ignores cursor/limit).
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionPage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    VisibilityModel:
+      type: string
+      enum:
+      - binary
+      - coco_ternary
+      title: VisibilityModel
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    VersionStatus:
+      type: string
+      enum:
+      - pending
+      - building
+      - ready
+      - failed
+      title: VersionStatus
+    KeypointTopology:
+      properties:
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+          default: 1
+        dim:
+          type: integer
+          enum:
+          - 2
+          - 3
+          title: Dim
+          default: 2
+        nodes:
+          items:
+            $ref: '#/components/schemas/KeypointNode'
+          type: array
+          maxItems: 512
+          minItems: 1
+          title: Nodes
+        edges:
+          items:
+            items:
+              type: integer
+            type: array
+          type: array
+          title: Edges
+        visibility_model:
+          $ref: '#/components/schemas/VisibilityModel'
+          default: coco_ternary
+      type: object
+      required:
+      - nodes
+      title: KeypointTopology
+      description: 'Per-label keypoint topology — names the nodes, defines skeleton edges.
+
+        ADR-0030. Stored on `ProjectClass.keypoint_topology` as JSONB.
+
+
+        `nodes` are 0-indexed by their position in the array; the `id` field is
+
+        the explicit canonical index and MUST equal the array index. `edges` are
+
+        0-indexed pairs into `nodes`. Empty `edges` = single-keypoint label
+
+        (no skeleton render).'
+    VersionPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/VersionResponse'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+        total:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Total
+      type: object
+      required:
+      - items
+      title: VersionPage
+    FrozenClass:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        color:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Color
+        allowed_types:
+          items:
+            type: string
+          type: array
+          title: Allowed Types
+        keypoint_topology:
+          anyOf:
+          - $ref: '#/components/schemas/KeypointTopology'
+          - type: 'null'
+        archived:
+          type: boolean
+          title: Archived
+          default: false
+      type: object
+      required:
+      - id
+      - name
+      title: FrozenClass
+      description: 'One class as frozen into a `ProjectVersion.frozen_classes` snapshot at
+
+        version-create time. Mirrors the writer at `routes/projects.py` create_version.
+
+
+        `keypoint_topology` is typed as the same `KeypointTopology` the write-to-class
+
+        path validates (ADR-0104): the frozen copy is that validated JSONB verbatim,
+
+        and the shape hasn''t changed since ADR-0030, so re-declaring it costs nothing
+
+        and gives the SDK the real type. `classification_config` is deliberately NOT
+
+        frozen. Post-migration-0075 the inner key is `classes` (renamed from the
+
+        legacy `labels`, ADR-0097), so all live rows are uniform.'
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    VersionResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Version id.
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+          description: Id of the project this version snapshots.
+        name:
+          type: string
+          title: Name
+          description: Version name.
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+          description: Optional version description.
+        status:
+          $ref: '#/components/schemas/VersionStatus'
+          description: Build status of the version (pending, building, ready, or failed).
+        frozen_asset_count:
+          type: integer
+          title: Frozen Asset Count
+          description: Number of assets frozen into this version.
+        frozen_class_count:
+          type: integer
+          title: Frozen Class Count
+          description: Number of classes frozen into this version.
+        frozen_classes:
+          $ref: '#/components/schemas/FrozenClassSet'
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+          description: Failure message when status is failed.
+        created_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Created By
+          description: User who created the version, if known.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: Creation timestamp.
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+          description: Last-update timestamp.
+        completed_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Completed At
+          description: When the version build completed, if done.
+      type: object
+      required:
+      - id
+      - project_id
+      - name
+      - description
+      - status
+      - frozen_asset_count
+      - frozen_class_count
+      - error
+      - created_by
+      - created_at
+      - updated_at
+      - completed_at
+      title: VersionResponse
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    KeypointPosition:
+      properties:
+        x:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: X
+        y:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Y
+      type: object
+      required:
+      - x
+      - y
+      title: KeypointPosition
+      description: 'Normalized (0-1) (x, y) inside a unit bbox. Origin is top-left; y grows
+
+        down. The FE multiplies by the drawn bbox dimensions to seed each joint
+
+        when the user creates a new keypoint annotation by dragging a rect.'
+    KeypointNode:
+      properties:
+        id:
+          type: integer
+          minimum: 0.0
+          title: Id
+        name:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Name
+        default_position:
+          anyOf:
+          - $ref: '#/components/schemas/KeypointPosition'
+          - type: 'null'
+      type: object
+      required:
+      - id
+      - name
+      title: KeypointNode
+    FrozenClassSet:
+      properties:
+        classes:
+          items:
+            $ref: '#/components/schemas/FrozenClass'
+          type: array
+          title: Classes
+      type: object
+      title: FrozenClassSet
+      description: 'The `ProjectVersion.frozen_classes` blob: `{"classes": [FrozenClass, ...]}`.
+
+        Typed on the wire (`VersionResponse.frozen_classes`) — rows are uniform
+
+        post-0075. Storage stays JSON (`.model_dump(mode="json")` into JSONB).'
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      description: Cognito access token
+      scheme: bearer

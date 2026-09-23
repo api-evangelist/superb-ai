@@ -1,0 +1,429 @@
+openapi: 3.2.0
+info:
+  title: MLOps Platform Segment API
+  description: Multi-tenant labeling-platform backend.
+  version: 0.1.0
+tags:
+- name: Segment
+paths:
+  /tenants/{slug}/projects/{project_id}/assets/{asset_id}/segment:
+    post:
+      tags:
+      - Segment
+      summary: Segment
+      description: 'Promptable segmentation on one image (any project member). Prompts and the
+
+        returned polygon are in original-image pixels. Returns the single best mask for the
+
+        prompt (or none). `503` when the SAM endpoint isn''t running (outside operating hours).'
+      operationId: segment-segment
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: asset_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Asset Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SegmentRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SegmentResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    OutputGeometry:
+      type: string
+      enum:
+      - bbox
+      - polygon
+      title: OutputGeometry
+      description: 'Geometry kinds a model can emit (subset of AnnotationType). Used by the
+
+        serving/deployment + foundation-model capability descriptors.'
+    PolygonPartRead:
+      properties:
+        exterior:
+          items:
+            prefixItems:
+            - type: number
+            - type: number
+            type: array
+            maxItems: 2
+            minItems: 2
+          type: array
+          title: Exterior
+        holes:
+          items:
+            items:
+              prefixItems:
+              - type: number
+              - type: number
+              type: array
+              maxItems: 2
+              minItems: 2
+            type: array
+          type: array
+          title: Holes
+      additionalProperties: true
+      type: object
+      required:
+      - exterior
+      title: PolygonPartRead
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    SegmentSuggestion:
+      properties:
+        type:
+          $ref: '#/components/schemas/OutputGeometry'
+          description: Geometry kind SAM emitted for this suggestion.
+          default: polygon
+        geometry:
+          oneOf:
+          - $ref: '#/components/schemas/BboxGeometryRead'
+          - $ref: '#/components/schemas/PolygonGeometryRead'
+          - $ref: '#/components/schemas/KeypointGeometryRead'
+          title: Geometry
+          description: Typed geometry wrapping SAM's flat polygon output (ADR-0091/0104) — the same shape `annotation.geometry` stores, so the FE commits an accepted suggestion through the normal annotation-create path unchanged.
+          discriminator:
+            propertyName: type
+            mapping:
+              bbox: '#/components/schemas/BboxGeometryRead'
+              keypoint: '#/components/schemas/KeypointGeometryRead'
+              polygon: '#/components/schemas/PolygonGeometryRead'
+        score:
+          type: number
+          title: Score
+          description: SAM's confidence for this mask.
+      type: object
+      required:
+      - geometry
+      - score
+      title: SegmentSuggestion
+    BboxGeometryRead:
+      properties:
+        type:
+          type: string
+          const: bbox
+          title: Type
+          default: bbox
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        w:
+          type: number
+          title: W
+        h:
+          type: number
+          title: H
+      additionalProperties: true
+      type: object
+      required:
+      - x
+      - y
+      - w
+      - h
+      title: BboxGeometryRead
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    SegmentPoint:
+      properties:
+        x:
+          type: number
+          title: X
+          description: Click x in ORIGINAL image pixels.
+        y:
+          type: number
+          title: Y
+          description: Click y in ORIGINAL image pixels.
+        label:
+          type: integer
+          maximum: 1.0
+          minimum: 0.0
+          title: Label
+          description: 1 = positive (include this region), 0 = negative (exclude). Refine a mask by adding negative clicks on over-segmented areas, positive clicks to grow it.
+          default: 1
+      type: object
+      required:
+      - x
+      - y
+      title: SegmentPoint
+    KeypointNodeGeomRead:
+      properties:
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        visibility:
+          type: integer
+          title: Visibility
+          default: 2
+      additionalProperties: true
+      type: object
+      required:
+      - x
+      - y
+      title: KeypointNodeGeomRead
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    PolygonGeometryRead:
+      properties:
+        type:
+          type: string
+          const: polygon
+          title: Type
+          default: polygon
+        polygons:
+          items:
+            $ref: '#/components/schemas/PolygonPartRead'
+          type: array
+          title: Polygons
+      additionalProperties: true
+      type: object
+      required:
+      - polygons
+      title: PolygonGeometryRead
+    SegmentResponse:
+      properties:
+        suggestions:
+          items:
+            $ref: '#/components/schemas/SegmentSuggestion'
+          type: array
+          title: Suggestions
+          description: Zero or one suggestion (SAM returns the best mask for the prompt). Not persisted — the labeler assigns a class and commits via the normal annotation create.
+        inference_ms:
+          type: integer
+          title: Inference Ms
+          description: Server-side SAM inference time in milliseconds.
+      type: object
+      required:
+      - suggestions
+      - inference_ms
+      title: SegmentResponse
+    KeypointGeometryRead:
+      properties:
+        type:
+          type: string
+          const: keypoint
+          title: Type
+          default: keypoint
+        points:
+          items:
+            $ref: '#/components/schemas/KeypointNodeGeomRead'
+          type: array
+          title: Points
+      additionalProperties: true
+      type: object
+      required:
+      - points
+      title: KeypointGeometryRead
+    SegmentRequest:
+      properties:
+        points:
+          items:
+            $ref: '#/components/schemas/SegmentPoint'
+          type: array
+          maxItems: 64
+          title: Points
+          description: Click prompts. Positive/negative points that seed and refine the mask.
+        box:
+          anyOf:
+          - items:
+              type: number
+            type: array
+          - type: 'null'
+          title: Box
+          description: Optional bounding-box prompt [x1, y1, x2, y2] in ORIGINAL image pixels.
+      type: object
+      title: SegmentRequest
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      description: Cognito access token
+      scheme: bearer

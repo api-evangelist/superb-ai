@@ -1,0 +1,668 @@
+openapi: 3.2.0
+info:
+  title: MLOps Platform Models API
+  description: Multi-tenant labeling-platform backend.
+  version: 0.1.0
+tags:
+- name: Models
+paths:
+  /tenants/{slug}/models:
+    get:
+      tags:
+      - Models
+      summary: List Models
+      description: 'The tenant model registry — every trained model across all projects, newest
+
+        first. `?project_id=` narrows to one project''s lineage.'
+      operationId: models-list_models
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: 'optional: only this project''s models'
+          title: Project Id
+        description: 'optional: only this project''s models'
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          description: Max rows per page.
+          default: 50
+          title: Limit
+        description: Max rows per page.
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+          title: Cursor
+        description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainedModelListPage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/models/{model_id}:
+    get:
+      tags:
+      - Models
+      summary: Get Model
+      operationId: models-get_model
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: model_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Model Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainedModelResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    patch:
+      tags:
+      - Models
+      summary: Update Model
+      description: 'Edit a trained model (ADR-0072) — name and/or description (partial). Name is
+
+        unique per tenant (case-insensitive). Workspace-admin only (ML surface). 409 on
+
+        name collision.'
+      operationId: models-update_model
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: model_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Model Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrainedModelUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainedModelResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+      - Models
+      summary: Delete Model
+      description: 'Delete a trained model (the deletable product) — drops the row and enqueues
+
+        async S3 cleanup of its weights (ADR-0064; runs are NOT deletable). Hard delete,
+
+        no soft-delete/archive. Cascades to any deployment rows of this model (FK).'
+      operationId: models-delete_model
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: model_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Model Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    PerClassMetrics:
+      properties:
+        class:
+          type: string
+          title: Class
+        precision:
+          type: number
+          title: Precision
+        recall:
+          type: number
+          title: Recall
+        f1:
+          type: number
+          title: F1
+        support:
+          type: integer
+          title: Support
+      additionalProperties: false
+      type: object
+      required:
+      - class
+      - precision
+      - recall
+      - f1
+      - support
+      title: PerClassMetrics
+      description: One class's P/R/F1 + GT support at the chosen threshold.
+    OverallMetrics:
+      properties:
+        precision:
+          type: number
+          title: Precision
+          default: 0.0
+        recall:
+          type: number
+          title: Recall
+          default: 0.0
+        f1:
+          type: number
+          title: F1
+          default: 0.0
+        map:
+          type: number
+          title: Map
+          default: 0.0
+        map_50:
+          type: number
+          title: Map 50
+          default: 0.0
+      additionalProperties: false
+      type: object
+      title: OverallMetrics
+      description: 'Overall detection/segmentation metrics at the F1-optimal confidence.
+
+        `map`/`map_50` are injected post-hoc by `trainer._score_split` (torchmetrics),
+
+        so `evaluate()` returns them unset — hence Optional-with-default.'
+    ConfusionMatrix:
+      properties:
+        labels:
+          items:
+            type: string
+          type: array
+          title: Labels
+        matrix:
+          items:
+            items:
+              type: integer
+            type: array
+          type: array
+          title: Matrix
+      additionalProperties: false
+      type: object
+      required:
+      - labels
+      - matrix
+      title: ConfusionMatrix
+      description: K classes + a trailing 'background' bucket for FP/missed.
+    TrainedModelUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 255
+          - type: 'null'
+          title: Name
+          description: New display name (unique per tenant, case-insensitive); omit to leave unchanged.
+        description:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Description
+          description: New description; send null to clear it, omit to leave unchanged.
+      type: object
+      title: TrainedModelUpdate
+      description: 'Edit a trained model (ADR-0072) — name and/or description (partial; send only
+
+        what changes). Name is unique per tenant (case-insensitive); `description` may be
+
+        set to null to clear it.'
+    TrainingTask:
+      type: string
+      enum:
+      - detection
+      - segmentation
+      title: TrainingTask
+    TrainingMetricsSummary:
+      properties:
+        optimal_confidence:
+          type: number
+          title: Optimal Confidence
+          default: 0.0
+        overall:
+          $ref: '#/components/schemas/OverallMetrics'
+        per_class:
+          items:
+            $ref: '#/components/schemas/PerClassMetrics'
+          type: array
+          title: Per Class
+        confusion_matrix:
+          anyOf:
+          - $ref: '#/components/schemas/ConfusionMatrix'
+          - type: 'null'
+        num_test:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Num Test
+      type: object
+      title: TrainingMetricsSummary
+      description: 'The full scorecard persisted to `TrainedModel.metrics_summary` and echoed
+
+        on `TrainedModelResponse.metrics_summary`. Lenient on read (`extra="ignore"`)
+
+        so a future added key never 500s a model read; `num_test` is set only on the
+
+        final (full) scorecard, so it is Optional.'
+    TrainedModelListPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/TrainedModelResponse'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+      type: object
+      required:
+      - items
+      title: TrainedModelListPage
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    TrainedModelResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Trained-model id.
+        name:
+          type: string
+          title: Name
+          description: Display name (unique per tenant, case-insensitive).
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+          description: Optional free-text description; null if unset.
+        task:
+          $ref: '#/components/schemas/TrainingTask'
+          description: Task the model performs (detection or segmentation).
+        model:
+          type: string
+          title: Model
+          description: Catalog model key the run used (e.g. 'rf-detr-nano').
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+          description: 'Lineage: which project''s data produced this model (tenant registry).'
+        training_run_id:
+          type: string
+          format: uuid
+          title: Training Run Id
+          description: Training run that produced this model.
+        project_version_id:
+          type: string
+          format: uuid
+          title: Project Version Id
+          description: Frozen project version the run trained on.
+        class_map:
+          additionalProperties:
+            type: string
+          type: object
+          title: Class Map
+          description: Model class index → class name.
+        metrics_summary:
+          $ref: '#/components/schemas/TrainingMetricsSummary'
+          description: Summary evaluation metrics for the trained model.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: When the model was registered.
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+          description: When the model was last updated.
+      type: object
+      required:
+      - id
+      - name
+      - description
+      - task
+      - model
+      - project_id
+      - training_run_id
+      - project_version_id
+      - class_map
+      - metrics_summary
+      - created_at
+      - updated_at
+      title: TrainedModelResponse
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      description: Cognito access token
+      scheme: bearer

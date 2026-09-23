@@ -1,0 +1,382 @@
+openapi: 3.2.0
+info:
+  title: MLOps Platform Auth API
+  description: Multi-tenant labeling-platform backend.
+  version: 0.1.0
+tags:
+- name: Auth
+paths:
+  /auth/authorize:
+    get:
+      tags:
+      - Auth
+      summary: Authorize
+      description: 'Return the hosted-AuthKit URL for the FE to redirect the user to.
+
+        Account-level: no organization scoping — workspace choice happens in-app
+
+        after login (`GET /me/tenants`).'
+      operationId: auth-authorize
+      parameters:
+      - name: redirect_uri
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: FE callback URL to return to after login. Must be in the allowlist; defaults to the first allowed URI.
+          title: Redirect Uri
+        description: FE callback URL to return to after login. Must be in the allowlist; defaults to the first allowed URI.
+      - name: state
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Opaque FE state, round-tripped to the callback unchanged (e.g. a return-to path). No longer carries a tenant — login is account-level (ADR-0113).
+          title: State
+        description: Opaque FE state, round-tripped to the callback unchanged (e.g. a return-to path). No longer carries a tenant — login is account-level (ADR-0113).
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthorizeResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/callback:
+    post:
+      tags:
+      - Auth
+      summary: Callback
+      description: 'Exchange the AuthKit `code` for an account-level token pair. Works for
+
+        every arrival — normal login, fresh sign-up, and the invitation-email
+
+        landing — because no tenant context is needed: the FE follows up with
+
+        `GET /me/tenants` / `GET /me/invitations` to route the user.'
+      operationId: auth-callback
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CallbackRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokens'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/refresh:
+    post:
+      tags:
+      - Auth
+      summary: Refresh
+      operationId: auth-refresh
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthTokens'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /auth/logout:
+    post:
+      tags:
+      - Auth
+      summary: Logout
+      description: 'Revoke the WorkOS session behind the presented access token. Idempotent —
+
+        an invalid/expired token means there''s nothing to revoke. Account-level:
+
+        needs no tenant, and works for an account with zero memberships.'
+      operationId: auth-logout
+      parameters:
+      - name: authorization
+        in: header
+        required: true
+        schema:
+          type: string
+          description: Bearer access token (the session to revoke is read from it)
+          title: Authorization
+        description: Bearer access token (the session to revoke is read from it)
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    AuthorizeResponse:
+      properties:
+        authorization_url:
+          type: string
+          title: Authorization Url
+          description: Hosted AuthKit URL to redirect the user to.
+      type: object
+      required:
+      - authorization_url
+      title: AuthorizeResponse
+      description: 'The hosted-AuthKit URL the FE redirects the browser to for sign-in/sign-up
+
+        (ADR-0053). After login, WorkOS redirects back to the configured callback with
+
+        a one-time `code`.'
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    AuthTokens:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+          description: 'JWT access token; send as `Authorization: Bearer <token>`.'
+        refresh_token:
+          type: string
+          title: Refresh Token
+          description: Long-lived token; exchange via /auth/refresh.
+      type: object
+      required:
+      - access_token
+      - refresh_token
+      title: AuthTokens
+      description: 'Tokens issued by WorkOS. The access token is a short-lived (~5 min) JWT sent
+
+        as `Authorization: Bearer <token>`; the refresh token trades for a new pair via
+
+        /auth/refresh. (WorkOS issues no separate id_token — identity claims live in the
+
+        access token.)'
+    RefreshRequest:
+      properties:
+        refresh_token:
+          type: string
+          minLength: 1
+          title: Refresh Token
+          description: A refresh token from /auth/callback or a prior /auth/refresh.
+      type: object
+      required:
+      - refresh_token
+      title: RefreshRequest
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    CallbackRequest:
+      properties:
+        code:
+          type: string
+          minLength: 1
+          title: Code
+          description: One-time authorization code from the AuthKit redirect.
+      type: object
+      required:
+      - code
+      title: CallbackRequest
+      description: Body for POST /auth/callback — the `code` WorkOS appended to the redirect.
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      description: Cognito access token
+      scheme: bearer

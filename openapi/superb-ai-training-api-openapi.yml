@@ -1,0 +1,1193 @@
+openapi: 3.2.0
+info:
+  title: MLOps Platform Training API
+  description: Multi-tenant labeling-platform backend.
+  version: 0.1.0
+tags:
+- name: Training
+paths:
+  /tenants/{slug}/projects/{project_id}/versions/{version_id}/training-runs:
+    post:
+      tags:
+      - Training
+      summary: Create Training Run
+      operationId: training-create_training_run
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: version_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Version Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrainingRunCreate'
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingRunResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags:
+      - Training
+      summary: List Training Runs
+      operationId: training-list_training_runs
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: version_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Version Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          description: Max rows per page.
+          default: 50
+          title: Limit
+        description: Max rows per page.
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Cursor
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingRunListPage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/versions/{version_id}/training-runs/{run_id}:
+    get:
+      tags:
+      - Training
+      summary: Get Training Run
+      operationId: training-get_training_run
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: version_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Version Id
+      - name: run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Run Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingRunResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/versions/{version_id}/training-runs/{run_id}/metrics:
+    get:
+      tags:
+      - Training
+      summary: Get Training Metrics
+      description: 'The live per-epoch training curve (ADR-0064): train/val loss + val mAP /
+
+        mAP@50 / precision / recall per epoch. Poll alongside the run status while a
+
+        run is `running` to draw the loss + accuracy charts; rows accrue one per
+
+        completed epoch. Cheap: ≤300 rows/run on the `(run, epoch)` index.'
+      operationId: training-get_training_metrics
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: version_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Version Id
+      - name: run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Run Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingMetricsResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/versions/{version_id}/training-runs/{run_id}/cancel:
+    post:
+      tags:
+      - Training
+      summary: Cancel Training Run
+      operationId: training-cancel_training_run
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: version_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Version Id
+      - name: run_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Run Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingRunResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/versions/{version_id}/training-stats:
+    get:
+      tags:
+      - Training
+      summary: Get Training Stats
+      description: 'Pre-train readiness for one task — image/instance counts + per-class
+
+        distribution, so the FE can show a preview + raise its own warnings before a
+
+        run starts. O(1) read of the freeze-time snapshot (self-heals legacy
+
+        versions on first call).'
+      operationId: training-get_training_stats
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: version_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Version Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: task
+        in: query
+        required: true
+        schema:
+          $ref: '#/components/schemas/TrainingTask'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrainingStatsResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/training/catalog:
+    get:
+      tags:
+      - Training
+      summary: Get Training Catalog
+      operationId: training-get_training_catalog
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CatalogModelResponse'
+                title: Response Training-Get Training Catalog
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    TrainingStatsClass:
+      properties:
+        class_id:
+          type: string
+          format: uuid
+          title: Class Id
+          description: Class id.
+        name:
+          type: string
+          title: Name
+          description: Class display name.
+        instance_count:
+          type: integer
+          title: Instance Count
+          description: Total annotations of this class (of the task geometry).
+        image_count:
+          type: integer
+          title: Image Count
+          description: Distinct images containing this class.
+      type: object
+      required:
+      - class_id
+      - name
+      - instance_count
+      - image_count
+      title: TrainingStatsClass
+    CatalogEpochsKnob:
+      properties:
+        default:
+          type: integer
+          title: Default
+          description: Default epoch count when the run omits `epochs`.
+        min:
+          type: integer
+          title: Min
+          description: Lowest accepted `epochs` value.
+        max:
+          type: integer
+          title: Max
+          description: Highest accepted `epochs` value.
+      type: object
+      required:
+      - default
+      - min
+      - max
+      title: CatalogEpochsKnob
+    TrainingRunResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Training-run id.
+        project_version_id:
+          type: string
+          format: uuid
+          title: Project Version Id
+          description: Frozen project version this run trains on.
+        name:
+          type: string
+          title: Name
+          description: Display name for the training run.
+        task:
+          $ref: '#/components/schemas/TrainingTask'
+          description: Task the run trains for (detection or segmentation).
+        model:
+          type: string
+          title: Model
+          description: Catalog model key (e.g. 'rf-detr-nano').
+        status:
+          $ref: '#/components/schemas/TrainingRunStatus'
+          description: Current run status.
+        epochs:
+          type: integer
+          title: Epochs
+          description: Configured number of training epochs.
+        epochs_completed:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Epochs Completed
+          description: Epochs finished so far; null before training starts.
+        split:
+          $ref: '#/components/schemas/SplitConfig'
+          description: Resolved train/val/test split config for this run.
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+          description: Failure message when status is failed; else null.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: When the run was created.
+        started_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Started At
+          description: When training started; null while queued.
+        completed_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Completed At
+          description: When the run finished; null until terminal.
+      type: object
+      required:
+      - id
+      - project_version_id
+      - name
+      - task
+      - model
+      - status
+      - epochs
+      - epochs_completed
+      - split
+      - error
+      - created_at
+      - started_at
+      - completed_at
+      title: TrainingRunResponse
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    CatalogSplitKnob:
+      properties:
+        default:
+          $ref: '#/components/schemas/CatalogSplitDefault'
+          description: Split applied when the run omits one.
+        strategies:
+          items:
+            $ref: '#/components/schemas/SplitStrategy'
+          type: array
+          title: Strategies
+          description: Accepted split strategies.
+      type: object
+      required:
+      - default
+      - strategies
+      title: CatalogSplitKnob
+    TrainingTask:
+      type: string
+      enum:
+      - detection
+      - segmentation
+      title: TrainingTask
+    SplitConfig:
+      properties:
+        strategy:
+          $ref: '#/components/schemas/SplitStrategy'
+          description: Train/val/test split strategy.
+          default: random
+        train:
+          type: number
+          exclusiveMaximum: 1.0
+          exclusiveMinimum: 0.0
+          title: Train
+          description: Train-split ratio (0,1).
+          default: 0.8
+        val:
+          type: number
+          exclusiveMaximum: 1.0
+          minimum: 0.0
+          title: Val
+          description: Validation-split ratio [0,1).
+          default: 0.1
+        test:
+          type: number
+          exclusiveMaximum: 1.0
+          minimum: 0.0
+          title: Test
+          description: Test-split ratio [0,1).
+          default: 0.1
+        seed:
+          type: integer
+          title: Seed
+          description: Seed for the deterministic ratio split.
+          default: 42
+        train_tag:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Train Tag
+          description: 'Manual split (ADR-0065): frozen tag marking the train split; null falls back to a seeded ratio split.'
+        val_tag:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Val Tag
+          description: 'Manual split (ADR-0065): frozen tag marking the val split; null falls back to a seeded ratio split.'
+        test_tag:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Test Tag
+          description: 'Manual split (ADR-0065): frozen tag marking the test split; null falls back to a seeded ratio split.'
+      type: object
+      title: SplitConfig
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    TrainingMetricPoint:
+      properties:
+        epoch:
+          type: integer
+          title: Epoch
+          description: Epoch index for this point on the curve.
+        train_loss:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Train Loss
+          description: Training loss this epoch; null if unavailable.
+        val_loss:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Val Loss
+          description: Validation loss this epoch; null if there is no val split.
+        val_map:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Val Map
+          description: Validation mAP@[.50:.95]; null if no val split.
+        val_map_50:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Val Map 50
+          description: Validation mAP@.50; null if no val split.
+        val_precision:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Val Precision
+          description: Validation precision this epoch; null if no val split.
+        val_recall:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Val Recall
+          description: Validation recall this epoch; null if no val split.
+      type: object
+      required:
+      - epoch
+      - train_loss
+      - val_loss
+      - val_map
+      - val_map_50
+      - val_precision
+      - val_recall
+      title: TrainingMetricPoint
+      description: 'One epoch on the live training curve (ADR-0064). Losses fall out of the
+
+        loop each epoch; the val accuracy metrics come from a per-epoch eval pass on
+
+        the val split. Any field may be null (e.g. a run with no val split → losses
+
+        only).'
+    TrainingRunListPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/TrainingRunResponse'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+      type: object
+      required:
+      - items
+      title: TrainingRunListPage
+    TrainingMetricsResponse:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/TrainingMetricPoint'
+          type: array
+          title: Items
+      type: object
+      required:
+      - items
+      title: TrainingMetricsResponse
+    CatalogPatienceKnob:
+      properties:
+        default:
+          type: integer
+          title: Default
+          description: Default patience (epochs without val-mAP improvement).
+        min:
+          type: integer
+          title: Min
+          description: Lowest accepted `patience` value.
+        max:
+          anyOf:
+          - type: integer
+          - type: string
+            const: epochs
+          title: Max
+          description: Highest accepted `patience`; the literal string 'epochs' means the bound is dynamic — the run's own chosen epoch count.
+      type: object
+      required:
+      - default
+      - min
+      - max
+      title: CatalogPatienceKnob
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    CatalogEarlyStoppingKnob:
+      properties:
+        default:
+          type: boolean
+          title: Default
+          description: Whether early stopping is on when the run omits it.
+      type: object
+      required:
+      - default
+      title: CatalogEarlyStoppingKnob
+    SplitStrategy:
+      type: string
+      enum:
+      - random
+      - stratified
+      - manual
+      title: SplitStrategy
+      description: Train/val/test split strategy (stored in training-run options JSONB).
+    CatalogModelResponse:
+      properties:
+        key:
+          type: string
+          title: Key
+          description: Catalog model key (selection id, e.g. 'rf-detr-nano').
+        name:
+          type: string
+          title: Name
+          description: Display name (e.g. 'RF-DETR Nano').
+        task:
+          $ref: '#/components/schemas/TrainingTask'
+          description: Task the variant trains for (detection or segmentation).
+        options:
+          $ref: '#/components/schemas/CatalogOptions'
+          description: 'Configurable-knob schema: defaults and bounds for epochs / early_stopping / patience / split.'
+      type: object
+      required:
+      - key
+      - name
+      - task
+      - options
+      title: CatalogModelResponse
+    CatalogOptions:
+      properties:
+        epochs:
+          $ref: '#/components/schemas/CatalogEpochsKnob'
+        early_stopping:
+          $ref: '#/components/schemas/CatalogEarlyStoppingKnob'
+        patience:
+          $ref: '#/components/schemas/CatalogPatienceKnob'
+        split:
+          $ref: '#/components/schemas/CatalogSplitKnob'
+      type: object
+      required:
+      - epochs
+      - early_stopping
+      - patience
+      - split
+      title: CatalogOptions
+    TrainingRunCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Name
+          description: Display name for the training run.
+        task:
+          $ref: '#/components/schemas/TrainingTask'
+          description: Task the run trains for (detection or segmentation).
+        model:
+          type: string
+          title: Model
+          description: Catalog model key (e.g. 'rf-detr-nano').
+        epochs:
+          anyOf:
+          - type: integer
+            maximum: 300.0
+            minimum: 1.0
+          - type: 'null'
+          title: Epochs
+          description: Number of training epochs; null uses the catalog default.
+        early_stopping:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Early Stopping
+          description: Stop early on val-loss plateau; null uses the catalog default.
+        patience:
+          anyOf:
+          - type: integer
+            minimum: 1.0
+          - type: 'null'
+          title: Patience
+          description: Epochs without improvement before early-stop; null uses the catalog default.
+        split:
+          anyOf:
+          - $ref: '#/components/schemas/SplitConfig'
+          - type: 'null'
+          description: Train/val/test split config; null uses the catalog default.
+      type: object
+      required:
+      - name
+      - task
+      - model
+      title: TrainingRunCreate
+    TrainingStatsResponse:
+      properties:
+        task:
+          $ref: '#/components/schemas/TrainingTask'
+          description: Task these stats are computed for.
+        images_total:
+          type: integer
+          title: Images Total
+          description: Frozen images in the version.
+        images_trainable:
+          type: integer
+          title: Images Trainable
+          description: 'Detection: all (empties = negatives); segmentation: images with >=1 mask.'
+        images_empty:
+          type: integer
+          title: Images Empty
+          description: Images with no annotation of the task geometry.
+        instances_total:
+          type: integer
+          title: Instances Total
+          description: Total annotation instances of the task geometry.
+        classes:
+          items:
+            $ref: '#/components/schemas/TrainingStatsClass'
+          type: array
+          title: Classes
+          description: Per-class instance and image counts.
+      type: object
+      required:
+      - task
+      - images_total
+      - images_trainable
+      - images_empty
+      - instances_total
+      - classes
+      title: TrainingStatsResponse
+      description: 'Pre-train readiness for one task on a frozen version (ADR-0064). The FE
+
+        renders this and raises its own advisory warnings; the BE only hard-blocks
+
+        genuine impossibility at create time.'
+    CatalogSplitDefault:
+      properties:
+        strategy:
+          $ref: '#/components/schemas/SplitStrategy'
+          description: Default split strategy.
+        train:
+          type: number
+          title: Train
+          description: Default train fraction.
+        val:
+          type: number
+          title: Val
+          description: Default val fraction.
+        test:
+          type: number
+          title: Test
+          description: Default test fraction.
+        seed:
+          type: integer
+          title: Seed
+          description: Default split seed.
+      type: object
+      required:
+      - strategy
+      - train
+      - val
+      - test
+      - seed
+      title: CatalogSplitDefault
+    TrainingRunStatus:
+      type: string
+      enum:
+      - queued
+      - running
+      - succeeded
+      - failed
+      - canceled
+      title: TrainingRunStatus
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      description: Cognito access token
+      scheme: bearer

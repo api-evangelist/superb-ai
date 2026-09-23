@@ -1,0 +1,1068 @@
+openapi: 3.2.0
+info:
+  title: MLOps Platform Comments API
+  description: Multi-tenant labeling-platform backend.
+  version: 0.1.0
+tags:
+- name: Comments
+paths:
+  /tenants/{slug}/projects/{project_id}/assets/{asset_id}/comments:
+    post:
+      tags:
+      - Comments
+      summary: Create Comment
+      description: 'Create a root comment or a reply. Replies inherit the root''s anchor +
+
+        asset_id; only `body` (and `parent_id`) are required.'
+      operationId: comments-create_comment
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: asset_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Asset Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentCreateRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags:
+      - Comments
+      summary: List Asset Comments
+      description: 'Per-asset thread list. Cursor-paginated (created_at desc, id desc).
+
+
+        Default view returns root comments only (parent_id IS NULL). Pass
+
+        `?parent_id=` to load replies under a specific thread.'
+      operationId: comments-list_asset_comments
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: asset_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Asset Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/CommentStatus'
+          - type: 'null'
+          description: Filter root threads by status. Replies are returned with their root.
+          title: Status
+        description: Filter root threads by status. Replies are returned with their root.
+      - name: parent_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: When set, returns only replies under this root (flat list).
+          title: Parent Id
+        description: When set, returns only replies under this root (flat list).
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          description: Max rows per page.
+          default: 50
+          title: Limit
+        description: Max rows per page.
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+          title: Cursor
+        description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+      - name: include_total
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: When true, response carries `total` = COUNT(*) for the same filter (ignores cursor/limit). ~8ms median at 100k comments/project.
+          default: false
+          title: Include Total
+        description: When true, response carries `total` = COUNT(*) for the same filter (ignores cursor/limit). ~8ms median at 100k comments/project.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentListPage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/comments:
+    get:
+      tags:
+      - Comments
+      summary: List Project Comments
+      description: 'Project-wide comment feed (the "issues" view). Roots only by default —
+
+        threading is loaded per-asset, not in the project feed.'
+      operationId: comments-list_project_comments
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/CommentStatus'
+          - type: 'null'
+          description: Filter root threads by status. Invalid values 422.
+          title: Status
+        description: Filter root threads by status. Invalid values 422.
+      - name: author
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: Filter to threads opened by this user (the comment's `author_id`).
+          title: Author
+        description: Filter to threads opened by this user (the comment's `author_id`).
+      - name: asset_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: Filter to threads anchored on this asset.
+          title: Asset Id
+        description: Filter to threads anchored on this asset.
+      - name: created_at_from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Inclusive lower bound (>=) on `created_at` (ISO-8601).
+          title: Created At From
+        description: Inclusive lower bound (>=) on `created_at` (ISO-8601).
+      - name: created_at_to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Exclusive upper bound (<) on `created_at` (ISO-8601).
+          title: Created At To
+        description: Exclusive upper bound (<) on `created_at` (ISO-8601).
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          description: Max rows per page.
+          default: 50
+          title: Limit
+        description: Max rows per page.
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+          title: Cursor
+        description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+      - name: include_total
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: When true, response carries `total` = COUNT(*) for the same filter (ignores cursor/limit).
+          default: false
+          title: Include Total
+        description: When true, response carries `total` = COUNT(*) for the same filter (ignores cursor/limit).
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentListPage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/comments/{comment_id}:
+    patch:
+      tags:
+      - Comments
+      summary: Update Comment
+      description: 'Edit a comment''s body and/or its anchor (drag-to-move). Author or project
+
+        manager only. Anchor edits apply to root comments only — a reply''s anchor is
+
+        inherited from its root and can''t be moved independently.'
+      operationId: comments-update_comment
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: comment_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Comment Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentUpdateRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+      - Comments
+      summary: Delete Comment
+      description: Soft-delete. Replies are preserved (their parent_id still resolves).
+      operationId: comments-delete_comment
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: comment_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Comment Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/comments/{comment_id}/resolve:
+    post:
+      tags:
+      - Comments
+      summary: Resolve Comment
+      description: 'Mark a root comment resolved. Replies don''t carry status; resolving a
+
+        reply 404s (use the root''s id). Idempotent.'
+      operationId: comments-resolve_comment
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: comment_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Comment Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/comments/{comment_id}/reopen:
+    post:
+      tags:
+      - Comments
+      summary: Reopen Comment
+      description: Reopen a resolved root comment. Idempotent.
+      operationId: comments-reopen_comment
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: comment_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Comment Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    AnchorKind:
+      type: string
+      enum:
+      - asset
+      - point
+      - box
+      - annotation
+      title: AnchorKind
+    DatasetKind:
+      type: string
+      enum:
+      - image
+      - video
+      title: DatasetKind
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    CommentOrigin:
+      type: string
+      enum:
+      - user
+      - workflow_reject
+      title: CommentOrigin
+    CommentStatus:
+      type: string
+      enum:
+      - open
+      - resolved
+      title: CommentStatus
+    PointAnchor:
+      properties:
+        x:
+          type: number
+          maximum: 2.0
+          minimum: -1.0
+          title: X
+        y:
+          type: number
+          maximum: 2.0
+          minimum: -1.0
+          title: Y
+      type: object
+      required:
+      - x
+      - y
+      title: PointAnchor
+    BoxAnchor:
+      properties:
+        x:
+          type: number
+          maximum: 2.0
+          minimum: -1.0
+          title: X
+        y:
+          type: number
+          maximum: 2.0
+          minimum: -1.0
+          title: Y
+        w:
+          type: number
+          maximum: 3.0
+          exclusiveMinimum: 0.0
+          title: W
+        h:
+          type: number
+          maximum: 3.0
+          exclusiveMinimum: 0.0
+          title: H
+      type: object
+      required:
+      - x
+      - y
+      - w
+      - h
+      title: BoxAnchor
+    CommentCreateRequest:
+      properties:
+        anchor_kind:
+          type: string
+          enum:
+          - asset
+          - point
+          - box
+          - annotation
+          - point3d
+          - cuboid3d
+          title: Anchor Kind
+          default: asset
+        anchor_coords:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Anchor Coords
+        annotation_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Annotation Id
+        parent_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Parent Id
+        body:
+          type: string
+          maxLength: 10000
+          minLength: 1
+          title: Body
+      type: object
+      required:
+      - body
+      title: CommentCreateRequest
+      description: "POST /projects/{pid}/assets/{aid}/comments.\n\nAnchor is one-of:\n  - kind=asset: no coords, no annotation_id\n  - kind=point: coords={\"x\", \"y\"}\n  - kind=box: coords={\"x\", \"y\", \"w\", \"h\"}\n  - kind=annotation: annotation_id required\nReplies: set parent_id (and inherit anchor from the root server-side)."
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    CommentResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+        asset_id:
+          type: string
+          format: uuid
+          title: Asset Id
+        asset_kind:
+          $ref: '#/components/schemas/DatasetKind'
+        anchor_kind:
+          $ref: '#/components/schemas/AnchorKind'
+        anchor_coords:
+          anyOf:
+          - $ref: '#/components/schemas/PointAnchor'
+          - $ref: '#/components/schemas/BoxAnchor'
+          - type: 'null'
+          title: Anchor Coords
+        annotation_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Annotation Id
+        parent_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Parent Id
+        body:
+          type: string
+          title: Body
+        author_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Author Id
+        status:
+          $ref: '#/components/schemas/CommentStatus'
+        origin:
+          $ref: '#/components/schemas/CommentOrigin'
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        seq:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Seq
+        reply_count:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Reply Count
+      type: object
+      required:
+      - id
+      - project_id
+      - asset_id
+      - asset_kind
+      - anchor_kind
+      - annotation_id
+      - parent_id
+      - body
+      - author_id
+      - status
+      - origin
+      - created_at
+      - updated_at
+      title: CommentResponse
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    CommentListPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/CommentResponse'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+        total:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Total
+      type: object
+      required:
+      - items
+      title: CommentListPage
+    CommentUpdateRequest:
+      properties:
+        body:
+          anyOf:
+          - type: string
+            maxLength: 10000
+            minLength: 1
+          - type: 'null'
+          title: Body
+        anchor_kind:
+          anyOf:
+          - type: string
+            enum:
+            - asset
+            - point
+            - box
+            - annotation
+            - point3d
+            - cuboid3d
+          - type: 'null'
+          title: Anchor Kind
+        anchor_coords:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Anchor Coords
+        annotation_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Annotation Id
+        frame_number:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Frame Number
+      type: object
+      title: CommentUpdateRequest
+      description: 'PATCH /comments/{id}. Body and/or anchor edit (root comments only).
+
+
+        Send only what changes. If *any* anchor field is present, the whole anchor is
+
+        replaced and re-validated as a unit — so you can''t end up `kind=box` with a
+
+        stale `point` coord. Anchor edits are rejected on replies (route-level).'
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      description: Cognito access token
+      scheme: bearer

@@ -1,0 +1,1086 @@
+openapi: 3.2.0
+info:
+  title: MLOps Platform Auto Label API
+  description: Multi-tenant labeling-platform backend.
+  version: 0.1.0
+tags:
+- name: auto-label
+paths:
+  /tenants/{slug}/projects/{project_id}/auto-label/config:
+    get:
+      tags:
+      - auto-label
+      summary: Get Config
+      operationId: auto-label-get_config
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutoLabelConfigResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+      - auto-label
+      summary: Put Config
+      description: 'Set the project''s auto-label policy (manager). Validates the deployment
+
+        exists and resolves the class map; the deployment need not be *ready* at config
+
+        time (it can be brought up later).'
+      operationId: auto-label-put_config
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutoLabelConfig'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutoLabelConfigResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/auto-label/runs:
+    post:
+      tags:
+      - auto-label
+      summary: Create Run
+      description: 'Start a batch pre-label run over a scope (manager). Always runs as an ephemeral
+
+        AWS Batch GPU job (ADR-0075): it reads the trained model''s weights from S3, so it
+
+        needs neither a running endpoint nor competes with the interactive deployment''s
+
+        serving capacity. Pre-checks config + per-tenant job cap.'
+      operationId: auto-label-create_run
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idempotency-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutoLabelRunRequest'
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags:
+      - auto-label
+      summary: List Runs
+      operationId: auto-label-list_runs
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          description: Max rows per page.
+          default: 50
+          title: Limit
+        description: Max rows per page.
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+          title: Cursor
+        description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobPage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/auto-label/runs/{job_id}/cancel:
+    post:
+      tags:
+      - auto-label
+      summary: Cancel Run
+      description: 'Cancel an in-flight run (it spends inference $). Sets a terminal `canceled`
+
+        status the worker honors at the next chunk boundary.'
+      operationId: auto-label-cancel_run
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Job Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/assets/{asset_id}/auto-label:
+    post:
+      tags:
+      - auto-label
+      summary: Suggest
+      description: 'Run the project''s configured deployment on one image and return suggestions
+
+        (not persisted — the labeler accepts/edits, then commits via the normal
+
+        annotation create). Gated on labeler-assist being on and the deployment ready.'
+      operationId: auto-label-suggest
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: asset_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Asset Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutoLabelSuggestRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AutoLabelSuggestResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    JobKind:
+      type: string
+      enum:
+      - build_project_version_manifest
+      - bulk_delete_image_assets
+      - bulk_update_tags_project
+      - bulk_add_assets_project
+      - bulk_remove_assets_project
+      - bulk_assign_assets_project
+      - bulk_unassign_assets_project
+      - bulk_approve_assets_project
+      - bulk_reject_assets_project
+      - bulk_create_annotations
+      - bulk_delete_annotations
+      - embed_dataset
+      - export_dataset
+      - auto_label_project
+      - cleanup_s3_objects
+      - delete_project_cascade
+      - delete_dataset_cascade
+      - duplicate_project_scope
+      - bulk_set_status_assets_project
+      title: JobKind
+    AutoLabelConfig:
+      properties:
+        model_ref:
+          $ref: '#/components/schemas/ModelRef'
+        class_map:
+          anyOf:
+          - additionalProperties:
+              type: string
+              format: uuid
+            type: object
+          - type: 'null'
+          title: Class Map
+        confidence_threshold:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Confidence Threshold
+          default: 0.5
+        labeler_assist_enabled:
+          type: boolean
+          title: Labeler Assist Enabled
+          default: false
+        auto_advance_all_high_conf:
+          type: boolean
+          title: Auto Advance All High Conf
+          default: false
+      type: object
+      required:
+      - model_ref
+      title: AutoLabelConfig
+      description: 'Per-project auto-label policy (manager-owned). `class_map` maps the model''s
+
+        class id (string key) → a project class id; omit it to auto-derive when the
+
+        model was trained from this project''s version (names match 1:1).'
+    AutoLabelSuggestion:
+      properties:
+        class_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Class Id
+        class_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Class Name
+        type:
+          $ref: '#/components/schemas/OutputGeometry'
+        geometry:
+          oneOf:
+          - $ref: '#/components/schemas/BboxGeometry'
+          - $ref: '#/components/schemas/PolygonGeometry'
+          - $ref: '#/components/schemas/KeypointGeometry'
+          title: Geometry
+          discriminator:
+            propertyName: type
+            mapping:
+              bbox: '#/components/schemas/BboxGeometry'
+              keypoint: '#/components/schemas/KeypointGeometry'
+              polygon: '#/components/schemas/PolygonGeometry'
+        confidence:
+          type: number
+          title: Confidence
+      type: object
+      required:
+      - class_id
+      - class_name
+      - type
+      - geometry
+      - confidence
+      title: AutoLabelSuggestion
+      description: 'One predicted object. `class_id` is null when the model class couldn''t be
+
+        mapped to a project class (FE prompts the labeler to assign before commit).'
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    AutoLabelRunRequest:
+      properties:
+        asset_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Asset Ids
+        all:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: All
+        confidence_threshold:
+          anyOf:
+          - type: number
+            maximum: 1.0
+            minimum: 0.0
+          - type: 'null'
+          title: Confidence Threshold
+        skip_annotated:
+          type: boolean
+          title: Skip Annotated
+          default: true
+        on_existing:
+          type: string
+          enum:
+          - overwrite
+          - append
+          title: On Existing
+          default: append
+        on_overlap:
+          type: string
+          enum:
+          - respect
+          - replace
+          title: On Overlap
+          default: respect
+      type: object
+      title: AutoLabelRunRequest
+      description: "Start a batch pre-label run. Exactly one of `asset_ids` / `all` (`all` = every\nasset in the project).\n\nExisting-annotation policy is a single 3-level funnel (ADR-0075 rev 2) — easy to\nreason about, and **human work is always protected**: a bulk run NEVER deletes or\nreplaces a human-made (manual/imported) annotation; only AI-generated (`model`)\nannotations are ever cleared.\n\n  1. `skip_annotated` (default true) — only label assets with zero annotations.\n     The safe \"pre-label the untouched pile\". If false, drill into 2.\n  2. `on_existing` — for assets that already have annotations:\n       • \"overwrite\" → clear the asset's AI labels and write fresh AI (human kept);\n         the \"I retrained, refresh the un-reviewed pile\" case.\n       • \"append\" (default) → keep everything, add new AI, per 3.\n  3. `on_overlap` — when an appended prediction overlaps an existing annotation:\n       • \"respect\" (default) → drop the prediction (fill only the gaps that a\n         human/AI annotation didn't already cover).\n       • \"replace\" → the prediction wins over an overlapping *AI* annotation\n         (deletes it); over a *human* annotation it always yields (human protected).\n\n`on_existing` / `on_overlap` are ignored when `skip_annotated` is true. Overlap is\nIoU-gated on bounding boxes (polygons by their bounds — a v1 approximation)."
+    PolygonGeometry:
+      properties:
+        type:
+          type: string
+          const: polygon
+          title: Type
+          default: polygon
+        polygons:
+          items:
+            $ref: '#/components/schemas/PolygonPart'
+          type: array
+          minItems: 1
+          title: Polygons
+      type: object
+      required:
+      - polygons
+      title: PolygonGeometry
+    AutoLabelConfigResponse:
+      properties:
+        config:
+          anyOf:
+          - $ref: '#/components/schemas/AutoLabelConfig'
+          - type: 'null'
+        ready:
+          type: boolean
+          title: Ready
+        ready_reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ready Reason
+      type: object
+      required:
+      - config
+      - ready
+      title: AutoLabelConfigResponse
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    PolygonPart:
+      properties:
+        exterior:
+          items:
+            prefixItems:
+            - type: number
+            - type: number
+            type: array
+            maxItems: 2
+            minItems: 2
+          type: array
+          minItems: 3
+          title: Exterior
+        holes:
+          items:
+            items:
+              prefixItems:
+              - type: number
+              - type: number
+              type: array
+              maxItems: 2
+              minItems: 2
+            type: array
+          type: array
+          title: Holes
+      type: object
+      required:
+      - exterior
+      title: PolygonPart
+      description: 'One part of a (possibly multi-part) polygon: an exterior ring + optional hole rings.'
+    KeypointNodeGeom:
+      properties:
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        visibility:
+          type: integer
+          maximum: 2.0
+          minimum: 0.0
+          title: Visibility
+          default: 2
+      type: object
+      required:
+      - x
+      - y
+      title: KeypointNodeGeom
+    AutoLabelSuggestRequest:
+      properties:
+        confidence:
+          anyOf:
+          - type: number
+            maximum: 1.0
+            minimum: 0.0
+          - type: 'null'
+          title: Confidence
+      type: object
+      title: AutoLabelSuggestRequest
+      description: 'In-editor assist for one image — runs the project''s configured trained-model
+
+        deployment. Body is optional; `confidence` overrides the project threshold for
+
+        this call only.'
+    AutoLabelSuggestResponse:
+      properties:
+        suggestions:
+          items:
+            $ref: '#/components/schemas/AutoLabelSuggestion'
+          type: array
+          title: Suggestions
+        inference_ms:
+          type: integer
+          title: Inference Ms
+      type: object
+      required:
+      - suggestions
+      - inference_ms
+      title: AutoLabelSuggestResponse
+    BboxGeometry:
+      properties:
+        type:
+          type: string
+          const: bbox
+          title: Type
+          default: bbox
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        w:
+          type: number
+          exclusiveMinimum: 0.0
+          title: W
+        h:
+          type: number
+          exclusiveMinimum: 0.0
+          title: H
+      type: object
+      required:
+      - x
+      - y
+      - w
+      - h
+      title: BboxGeometry
+    ModelRefKind:
+      type: string
+      enum:
+      - deployment
+      - foundation
+      title: ModelRefKind
+      description: Which model backs an auto-label run (stored in project.auto_label_config JSONB).
+    JobResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Server-assigned job identifier.
+        kind:
+          $ref: '#/components/schemas/JobKind'
+          description: The kind of work this job performs.
+        target:
+          additionalProperties: true
+          type: object
+          title: Target
+          description: Kind-specific parameters describing what the job operates on (shape varies per `kind`; internal orchestration fields are omitted).
+        status:
+          $ref: '#/components/schemas/JobStatus'
+          description: Current lifecycle state of the job.
+        total:
+          type: integer
+          title: Total
+          description: Total number of work items the job will process.
+        processed:
+          type: integer
+          title: Processed
+          description: Number of work items processed so far.
+        succeeded:
+          type: integer
+          title: Succeeded
+          description: Number of processed items that succeeded.
+        failed:
+          type: integer
+          title: Failed
+          description: Number of processed items that failed.
+        skipped:
+          type: integer
+          title: Skipped
+          description: Number of items skipped (ineligible / already in target state).
+          default: 0
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+          description: Failure message when the job errored, else null.
+        result_summary:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Result Summary
+          description: Kind-specific summary of the outcome, populated as the job runs and finishes. Stays a plain object here because the key set varies per `kind` (the union isn't a useful client type); the per-kind keys are registry-validated on the write side (`app/job_results.py`), so a given `kind` always carries the same shape.
+        created_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Created By
+          description: User who created the job, or null if system-initiated.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: When the job was created.
+        completed_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Completed At
+          description: When the job reached a terminal state, or null if still in flight.
+        pct:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Pct
+          description: 'Derived progress percent. A COMPLETED job is always 100 — even a no-op
+
+            with total==0 finished all of its (zero) work; showing 0/null on a done job
+
+            was misleading. Otherwise processed/total, or None when total is unknown
+
+            (freshly-queued, denominator not yet resolved).'
+          readOnly: true
+      type: object
+      required:
+      - id
+      - kind
+      - target
+      - status
+      - total
+      - processed
+      - succeeded
+      - failed
+      - error
+      - created_by
+      - created_at
+      - completed_at
+      - pct
+      title: JobResponse
+    JobStatus:
+      type: string
+      enum:
+      - pending
+      - queued
+      - running
+      - completed
+      - failed
+      - canceled
+      title: JobStatus
+    JobPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/JobResponse'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+        total:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Total
+      type: object
+      required:
+      - items
+      title: JobPage
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    KeypointGeometry:
+      properties:
+        type:
+          type: string
+          const: keypoint
+          title: Type
+          default: keypoint
+        points:
+          items:
+            $ref: '#/components/schemas/KeypointNodeGeom'
+          type: array
+          minItems: 1
+          title: Points
+      type: object
+      required:
+      - points
+      title: KeypointGeometry
+    ModelRef:
+      properties:
+        kind:
+          $ref: '#/components/schemas/ModelRefKind'
+        deployment_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Deployment Id
+        foundation_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Foundation Key
+      type: object
+      required:
+      - kind
+      title: ModelRef
+      description: 'Which model auto-label uses. `deployment` = a trained-model SageMaker
+
+        endpoint (batch + assist); `foundation` = an open-vocab model like ZERO
+
+        (assist only — see ADR-0075).'
+    OutputGeometry:
+      type: string
+      enum:
+      - bbox
+      - polygon
+      title: OutputGeometry
+      description: 'Geometry kinds a model can emit (subset of AnnotationType). Used by the
+
+        serving/deployment + foundation-model capability descriptors.'
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      description: Cognito access token
+      scheme: bearer

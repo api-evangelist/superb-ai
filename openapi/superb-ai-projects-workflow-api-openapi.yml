@@ -1,0 +1,2826 @@
+openapi: 3.2.0
+info:
+  title: MLOps Platform Projects Workflow API
+  description: Multi-tenant labeling-platform backend.
+  version: 0.1.0
+tags:
+- name: projects-workflow
+paths:
+  /tenants/{slug}/projects/{project_id}/assets/{asset_id}/claim:
+    post:
+      tags:
+      - projects-workflow
+      summary: Claim Asset
+      description: 'Labeler claims a to_label task for themselves.
+
+
+        Allowed when the project''s `assignment_mode=''self_claim''` AND the task is
+
+        not already assigned to someone else. In `manual` mode, only the assigned
+
+        labeler can claim — and they get there via /assign first.'
+      operationId: projects-workflow-claim_asset
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: asset_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Asset Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetStateResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/assets/{asset_id}/assign:
+    post:
+      tags:
+      - projects-workflow
+      summary: Assign Asset
+      description: 'Manager assigns a task to a specific user. The user must be a project
+
+        member with role labeler/reviewer/manager (anyone who can label).'
+      operationId: projects-workflow-assign_asset
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: asset_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Asset Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetStateResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/assets/{asset_id}/unassign:
+    post:
+      tags:
+      - projects-workflow
+      summary: Unassign Asset
+      description: 'Manager clears the current assignee. If the row is `in_progress`,
+
+        status reverts to `to_label`. No-op (skipped) when already unassigned.'
+      operationId: projects-workflow-unassign_asset
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: asset_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Asset Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetStateResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/assets/{asset_id}/submit:
+    post:
+      tags:
+      - projects-workflow
+      summary: Submit Asset
+      description: Labeler submits their work for review. Must be the assigned labeler.
+      operationId: projects-workflow-submit_asset
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: asset_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Asset Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetStateResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/assets/{asset_id}/approve:
+    post:
+      tags:
+      - projects-workflow
+      summary: Approve Asset
+      operationId: projects-workflow-approve_asset
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: asset_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Asset Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetStateResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/assets/{asset_id}/reject:
+    post:
+      tags:
+      - projects-workflow
+      summary: Reject Asset
+      description: Reviewer rejects work — auto-routes back to the original labeler.
+      operationId: projects-workflow-reject_asset
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: asset_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Asset Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetStateResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/assets/{asset_id}/skip:
+    post:
+      tags:
+      - projects-workflow
+      summary: Skip Asset
+      description: 'Labeler sets the asset aside — ''nothing to label'' or unusable data (ADR-0110).
+
+        Terminal `skipped` state, distinct from a done label. No reason captured (the
+
+        skip guide is looser; labeler judgment is trusted). Waives required
+
+        classifications — skip means there''s nothing to answer, including no scene.'
+      operationId: projects-workflow-skip_asset
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: asset_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Asset Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetStateResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/assets/{asset_id}/reopen:
+    post:
+      tags:
+      - projects-workflow
+      summary: Reopen Asset
+      description: 'Reviewer/manager revives a skipped asset back into the queue (ADR-0110) —
+
+        e.g. when data is scarce and a set-aside asset must be labeled after all.'
+      operationId: projects-workflow-reopen_asset
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: asset_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Asset Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetStateResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/queue:
+    get:
+      tags:
+      - projects-workflow
+      summary: Get My Queue
+      description: 'Labeler''s queue: tasks they should work on now.
+
+
+        - Their assigned in_progress / to_label tasks
+
+        - In `self_claim` mode, also unassigned to_label tasks (claimable)
+
+
+        Optional `?status=` and `?rework=` filters power the 4-card hero UX
+
+        (All / New / Rework / Continue) per ADR-0029.'
+      operationId: projects-workflow-get_my_queue
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          description: Max rows per page.
+          default: 50
+          title: Limit
+        description: Max rows per page.
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+          title: Cursor
+        description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - enum:
+            - to_label
+            - in_progress
+            type: string
+          - type: 'null'
+          description: 'Optional: `to_label` or `in_progress`. Maps the FE 4-card hero (per ADR-0029).'
+          title: Status
+        description: 'Optional: `to_label` or `in_progress`. Maps the FE 4-card hero (per ADR-0029).'
+      - name: rework
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          description: 'Optional: `true` filters to `rework_count > 0`; `false` to `rework_count = 0`. Combine with `status=in_progress` for the Rework / Continue split.'
+          title: Rework
+        description: 'Optional: `true` filters to `rework_count > 0`; `false` to `rework_count = 0`. Combine with `status=in_progress` for the Rework / Continue split.'
+      - name: include
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: 'CSV: `thumbnail_url` to embed a presigned thumbnail URL on each row''s `asset.thumbnail_url`. Unknown values → 400.'
+          title: Include
+        description: 'CSV: `thumbnail_url` to embed a presigned thumbnail URL on each row''s `asset.thumbnail_url`. Unknown values → 400.'
+      - name: include_total
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: When true, response carries `total` = COUNT(*) for the same filter (ignores cursor/limit). `/queue/stats` is the cheaper choice for the unfiltered hero counts.
+          default: false
+          title: Include Total
+        description: When true, response carries `total` = COUNT(*) for the same filter (ignores cursor/limit). `/queue/stats` is the cheaper choice for the unfiltered hero counts.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetStatePage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/queue/stats:
+    get:
+      tags:
+      - projects-workflow
+      summary: Queue Stats
+      description: 'Bucket counts for the labeler''s 4-card hero (ADR-0029).
+
+
+        Scoped to the caller''s queue (their assigned tasks + the unassigned pool
+
+        when `assignment_mode=self_claim`). Same scoping rules as `/queue`.'
+      operationId: projects-workflow-queue_stats
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueStatsResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/assets:
+    get:
+      tags:
+      - projects-workflow
+      summary: List Asset States
+      description: 'Paginated list of asset states across the project (manager dashboard).
+
+
+        `?q=` matches the asset filename; `?tags=` is contains-ALL over the
+
+        per-(project,asset) tag set (ADR-0050); `?classes=` is ANY-of over the asset''s
+
+        live annotations (ADR-0100). Each has a negative twin (`tags_none`,
+
+        `classes_none`, `status_not`, plus the `assigned`/`tagged` tri-states) that
+
+        composes by AND — "all of these, except those" (ADR-0115).'
+      operationId: projects-workflow-list_asset_states
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          description: Max rows per page.
+          default: 50
+          title: Limit
+        description: Max rows per page.
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+          title: Cursor
+        description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/WorkflowStatus'
+          - type: 'null'
+          description: Filter to a single `WorkflowStatus` (`to_label`, `in_progress`, `in_review`, `done`). Unknown values → 422.
+          title: Status
+        description: Filter to a single `WorkflowStatus` (`to_label`, `in_progress`, `in_review`, `done`). Unknown values → 422.
+      - name: status_not
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              $ref: '#/components/schemas/WorkflowStatus'
+          - type: 'null'
+          description: Repeatable `?status_not=done&status_not=skipped` — exclude the listed statuses (ADR-0115). Unknown values → 422; a value repeated in `status` → 400.
+          title: Status Not
+        description: Repeatable `?status_not=done&status_not=skipped` — exclude the listed statuses (ADR-0115). Unknown values → 422; a value repeated in `status` → 400.
+      - name: assigned_to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: Filter to tasks assigned to a specific labeler (manager dashboard).
+          title: Assigned To
+        description: Filter to tasks assigned to a specific labeler (manager dashboard).
+      - name: assigned
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          description: '`true`: tasks assigned to anyone; `false`: the unassigned pool (ADR-0115). Contradictory with `assigned_to` when false (400).'
+          title: Assigned
+        description: '`true`: tasks assigned to anyone; `false`: the unassigned pool (ADR-0115). Contradictory with `assigned_to` when false (400).'
+      - name: reviewer_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: Filter to tasks last reviewed by a specific reviewer.
+          title: Reviewer Id
+        description: Filter to tasks last reviewed by a specific reviewer.
+      - name: rework_count_min
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: integer
+            minimum: 1
+          - type: 'null'
+          description: Filter to tasks with `rework_count >= N`. Useful for QA queues.
+          title: Rework Count Min
+        description: Filter to tasks with `rework_count >= N`. Useful for QA queues.
+      - name: tags
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: 'Repeatable `?tags=a&tags=b`. Contains-ALL: matches rows whose tag set includes every listed value (ADR-0050).'
+          title: Tags
+        description: 'Repeatable `?tags=a&tags=b`. Contains-ALL: matches rows whose tag set includes every listed value (ADR-0050).'
+      - name: tags_none
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+          - type: 'null'
+          description: Repeatable `?tags_none=a&tags_none=b`. Excludes rows carrying ANY listed tag (untagged rows match). Combine with `tags` for “all of these, except those” (ADR-0115). A value repeated in `tags` → 400.
+          title: Tags None
+        description: Repeatable `?tags_none=a&tags_none=b`. Excludes rows carrying ANY listed tag (untagged rows match). Combine with `tags` for “all of these, except those” (ADR-0115). A value repeated in `tags` → 400.
+      - name: tagged
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          description: '`true`: rows with at least one tag; `false`: untagged rows. Contradictory with `tags` when false (400).'
+          title: Tagged
+        description: '`true`: rows with at least one tag; `false`: untagged rows. Contradictory with `tags` when false (400).'
+      - name: classes
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+              format: uuid
+          - type: 'null'
+          description: 'Repeatable `?classes=a&classes=b`. ANY-of: matches assets carrying at least one annotation of any listed class (ADR-0100). Unknown class ids match nothing.'
+          title: Classes
+        description: 'Repeatable `?classes=a&classes=b`. ANY-of: matches assets carrying at least one annotation of any listed class (ADR-0100). Unknown class ids match nothing.'
+      - name: classes_none
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+              format: uuid
+          - type: 'null'
+          description: Repeatable `?classes_none=a&classes_none=b`. Excludes assets carrying at least one annotation of any listed class (ADR-0115). Unknown class ids exclude nothing. A value repeated in `classes` → 400.
+          title: Classes None
+        description: Repeatable `?classes_none=a&classes_none=b`. Excludes assets carrying at least one annotation of any listed class (ADR-0115). Unknown class ids exclude nothing. A value repeated in `classes` → 400.
+      - name: annotated
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          description: '`true`: assets with at least one annotation; `false`: assets with none (the to-label blanks). Contradictory with `classes` when false (400).'
+          title: Annotated
+        description: '`true`: assets with at least one annotation; `false`: assets with none (the to-label blanks). Contradictory with `classes` when false (400).'
+      - name: source
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              $ref: '#/components/schemas/AnnotationSource'
+          - type: 'null'
+          description: 'Repeatable `?source=manual&source=model`. ANY-of: matches assets carrying at least one annotation whose source is any listed provenance (`manual`/`imported`/`model`).'
+          title: Source
+        description: 'Repeatable `?source=manual&source=model`. ANY-of: matches assets carrying at least one annotation whose source is any listed provenance (`manual`/`imported`/`model`).'
+      - name: source_none
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              $ref: '#/components/schemas/AnnotationSource'
+          - type: 'null'
+          description: Repeatable `?source_none=a&source_none=b`. Excludes assets carrying at least one annotation whose source is any listed provenance (ADR-0115). A value repeated in `source` → 400.
+          title: Source None
+        description: Repeatable `?source_none=a&source_none=b`. Excludes assets carrying at least one annotation whose source is any listed provenance (ADR-0115). A value repeated in `source` → 400.
+      - name: q
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            minLength: 1
+            maxLength: 255
+          - type: 'null'
+          description: Case-insensitive substring search (min 1 char). Wildcards are matched literally.
+          title: Q
+        description: Case-insensitive substring search (min 1 char). Wildcards are matched literally.
+      - name: uploaded_by
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: Filter to assets uploaded by a specific user.
+          title: Uploaded By
+        description: Filter to assets uploaded by a specific user.
+      - name: created_at_from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Inclusive lower bound (>=) on `created_at` (ISO-8601).
+          title: Created At From
+        description: Inclusive lower bound (>=) on `created_at` (ISO-8601).
+      - name: created_at_to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Exclusive upper bound (<) on `created_at` (ISO-8601).
+          title: Created At To
+        description: Exclusive upper bound (<) on `created_at` (ISO-8601).
+      - name: include
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: 'CSV of per-row summary embeds (ADR-0133): `thumbnail_url` (presigned GET on `asset.thumbnail_url`), `annotation_source_counts` (live counts `{manual, imported, model}`), `classifications` (answered image-level classifications). Unknown values → 400.'
+          title: Include
+        description: 'CSV of per-row summary embeds (ADR-0133): `thumbnail_url` (presigned GET on `asset.thumbnail_url`), `annotation_source_counts` (live counts `{manual, imported, model}`), `classifications` (answered image-level classifications). Unknown values → 400.'
+      - name: include_total
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: When true, response carries `total` = COUNT(*) for the same filter (ignores cursor/limit).
+          default: false
+          title: Include Total
+        description: When true, response carries `total` = COUNT(*) for the same filter (ignores cursor/limit).
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetStatePage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/assets/{asset_id}:
+    get:
+      tags:
+      - projects-workflow
+      summary: Get Labeling Context
+      description: 'One-shot fetch for the labeler page: state + asset metadata + annotations
+
+        on this project + presigned download URL + project class_map. Saves the FE
+
+        ~4 round-trips per asset open.
+
+
+        Note: caller must be a project member (any role); workspace admins are implicit
+
+        project managers per `require_project_member`.'
+      operationId: projects-workflow-get_labeling_context
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: asset_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Asset Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabelingContext'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/assets/{asset_id}/annotations:
+    post:
+      tags:
+      - projects-workflow
+      summary: Create Annotation
+      operationId: projects-workflow-create_annotation
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: asset_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Asset Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnnotationCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnotationResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/assets/{asset_id}/annotations/batch-create:
+    post:
+      tags:
+      - projects-workflow
+      summary: Batch Create Annotations
+      description: 'Create many annotations on one asset in a single call (ADR-0061) — the
+
+        labeling submit path. All-or-nothing: any invalid row → 422 with its index,
+
+        nothing inserted. `source` is always `manual`. `replace=true` first clears
+
+        the asset''s existing annotations in this project. Cap MAX_SYNC_BATCH_SIZE.'
+      operationId: projects-workflow-batch_create_annotations
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: asset_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Asset Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnnotationBatchCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AnnotationResponse'
+                title: Response Projects-Workflow-Batch Create Annotations
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/annotations/{annotation_id}:
+    patch:
+      tags:
+      - projects-workflow
+      summary: Update Annotation
+      operationId: projects-workflow-update_annotation
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: annotation_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Annotation Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnnotationUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnotationResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags:
+      - projects-workflow
+      summary: Delete Annotation
+      operationId: projects-workflow-delete_annotation
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: annotation_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Annotation Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    AssignRequest:
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+      type: object
+      required:
+      - user_id
+      title: AssignRequest
+    AnnotationUpdate:
+      properties:
+        class_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Class Id
+        geometry:
+          anyOf:
+          - oneOf:
+            - $ref: '#/components/schemas/BboxGeometry'
+            - $ref: '#/components/schemas/PolygonGeometry'
+            - $ref: '#/components/schemas/KeypointGeometry'
+            discriminator:
+              propertyName: type
+              mapping:
+                bbox: '#/components/schemas/BboxGeometry'
+                keypoint: '#/components/schemas/KeypointGeometry'
+                polygon: '#/components/schemas/PolygonGeometry'
+          - type: 'null'
+          title: Geometry
+        data:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Data
+        instance_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Instance Id
+        locked:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Locked
+      type: object
+      title: AnnotationUpdate
+    ClassResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        kind:
+          $ref: '#/components/schemas/ClassKind'
+        name:
+          type: string
+          title: Name
+        color:
+          type: string
+          title: Color
+        allowed_types:
+          items:
+            type: string
+          type: array
+          title: Allowed Types
+        archived:
+          type: boolean
+          title: Archived
+        keypoint_topology:
+          anyOf:
+          - $ref: '#/components/schemas/KeypointTopology'
+          - type: 'null'
+        attributes:
+          items:
+            $ref: '#/components/schemas/AttributeResponse'
+          type: array
+          title: Attributes
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      type: object
+      required:
+      - id
+      - kind
+      - name
+      - color
+      - allowed_types
+      - archived
+      - created_at
+      - updated_at
+      title: ClassResponse
+      description: An object class with its owned attributes inline (ADR-0090 §3, Option A).
+    AnnotationBatchCreate:
+      properties:
+        annotations:
+          items:
+            $ref: '#/components/schemas/AnnotationCreate'
+          type: array
+          maxItems: 1000
+          minItems: 1
+          title: Annotations
+        replace:
+          type: boolean
+          title: Replace
+          default: false
+      type: object
+      required:
+      - annotations
+      title: AnnotationBatchCreate
+      description: 'Body for `POST /{pid}/assets/{aid}/annotations/batch-create` — sync, one
+
+        asset (asset in the path). `source` is always `manual` (the labeling path).
+
+        `replace=true` deletes the asset''s existing annotations before inserting.'
+    ImageClassificationResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        kind:
+          $ref: '#/components/schemas/ClassKind'
+        name:
+          type: string
+          title: Name
+        color:
+          type: string
+          title: Color
+        owner_class_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Owner Class Id
+        archived:
+          type: boolean
+          title: Archived
+        classification_config:
+          anyOf:
+          - $ref: '#/components/schemas/ClassificationConfig'
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      type: object
+      required:
+      - id
+      - kind
+      - name
+      - color
+      - archived
+      - created_at
+      - updated_at
+      title: ImageClassificationResponse
+    AssetDownloadUrl:
+      properties:
+        url:
+          type: string
+          title: Url
+        expires_at:
+          type: string
+          format: date-time
+          title: Expires At
+      type: object
+      required:
+      - url
+      - expires_at
+      title: AssetDownloadUrl
+      description: Presigned GET URL for asset content (canvas rendering).
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    AssetProperties:
+      properties:
+        width:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Width
+        height:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Height
+        format:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Format
+      additionalProperties: true
+      type: object
+      title: AssetProperties
+      description: 'Extracted image facts persisted on `ImageAsset.properties` (JSONB) and
+
+        echoed on the wire. Written once by `extract.extract_image` (typed →
+
+        `model_dump`); read leniently everywhere else (job_worker freeze, exports,
+
+        asset responses). `{}` when extraction soft-failed, so every field is
+
+        Optional-with-default — a legacy row that predates a later-added key, or a
+
+        failed extraction, must still parse. `extra="allow"` keeps unknown future
+
+        keys through a round-trip rather than dropping them.'
+    AttributeResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        owner_class_id:
+          type: string
+          format: uuid
+          title: Owner Class Id
+        color:
+          type: string
+          title: Color
+        archived:
+          type: boolean
+          title: Archived
+        classification_config:
+          anyOf:
+          - $ref: '#/components/schemas/ClassificationConfig'
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      type: object
+      required:
+      - id
+      - name
+      - owner_class_id
+      - color
+      - archived
+      - created_at
+      - updated_at
+      title: AttributeResponse
+    AssetSummary:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        filename:
+          type: string
+          title: Filename
+        content_type:
+          type: string
+          title: Content Type
+        status:
+          $ref: '#/components/schemas/AssetStatus'
+        properties:
+          $ref: '#/components/schemas/AssetProperties'
+        thumbnail_url:
+          anyOf:
+          - $ref: '#/components/schemas/AssetDownloadUrl'
+          - type: 'null'
+      type: object
+      required:
+      - id
+      - filename
+      - content_type
+      - status
+      - properties
+      title: AssetSummary
+      description: 'Compact asset reference for embedding in project asset-state rows so the
+
+        FE can render filename + dimensions without N+1 lookups. Does NOT include a
+
+        download URL — generating presigned URLs per row would be expensive on lists;
+
+        the FE calls /download-url per asset when actually rendering the canvas.'
+    WorkflowStatus:
+      type: string
+      enum:
+      - to_label
+      - in_progress
+      - in_review
+      - done
+      - skipped
+      title: WorkflowStatus
+    PolygonGeometry:
+      properties:
+        type:
+          type: string
+          const: polygon
+          title: Type
+          default: polygon
+        polygons:
+          items:
+            $ref: '#/components/schemas/PolygonPart'
+          type: array
+          minItems: 1
+          title: Polygons
+      type: object
+      required:
+      - polygons
+      title: PolygonGeometry
+    AssetStateResponse:
+      properties:
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+          description: Project id.
+        asset_id:
+          type: string
+          format: uuid
+          title: Asset Id
+          description: Asset id.
+        asset:
+          anyOf:
+          - $ref: '#/components/schemas/AssetSummary'
+          - type: 'null'
+          description: Asset summary; populated when the caller JOINed. FE uses this for cards.
+        status:
+          $ref: '#/components/schemas/WorkflowStatus'
+          description: Workflow status (to_label, in_progress, in_review, or done).
+        assigned_to:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Assigned To
+          description: User the asset is assigned to, if any.
+        assigned_to_user:
+          anyOf:
+          - $ref: '#/components/schemas/UserSummary'
+          - type: 'null'
+          description: Assignee profile; populated when the caller JOINed.
+        reviewer_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Reviewer Id
+          description: Reviewer user id, if any.
+        reviewer_user:
+          anyOf:
+          - $ref: '#/components/schemas/UserSummary'
+          - type: 'null'
+          description: Reviewer profile; populated when the caller JOINed.
+        rework_count:
+          type: integer
+          title: Rework Count
+          description: How many times the asset was sent back for rework.
+        last_reject_reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Last Reject Reason
+          description: Reason from the most recent rejection.
+        skipped_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Skipped At
+          description: When the asset was skipped (ADR-0110); null unless skipped.
+        last_submitted_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Submitted At
+          description: When the asset was last submitted.
+        last_reviewed_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Reviewed At
+          description: When the asset was last reviewed.
+        last_action_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Action At
+          description: Timestamp of the last workflow action.
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+          description: Last-update timestamp.
+        tags:
+          items:
+            type: string
+          type: array
+          title: Tags
+          description: Per-project tags on this (project, asset) pair (ADR-0050).
+        annotation_source_counts:
+          anyOf:
+          - additionalProperties:
+              type: integer
+            type: object
+          - type: 'null'
+          title: Annotation Source Counts
+          description: Per-provenance live annotation counts `{manual, imported, model}` (all keys always present, zeros included). Populated only with `?include=annotation_source_counts`.
+        classifications:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/ClassificationSummary'
+            type: array
+          - type: 'null'
+          title: Classifications
+          description: Answered image-level classifications on the asset. Populated only with `?include=classifications`.
+      type: object
+      required:
+      - project_id
+      - asset_id
+      - status
+      - assigned_to
+      - reviewer_id
+      - rework_count
+      - last_reject_reason
+      - last_submitted_at
+      - last_reviewed_at
+      - last_action_at
+      - updated_at
+      title: AssetStateResponse
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    PolygonPart:
+      properties:
+        exterior:
+          items:
+            prefixItems:
+            - type: number
+            - type: number
+            type: array
+            maxItems: 2
+            minItems: 2
+          type: array
+          minItems: 3
+          title: Exterior
+        holes:
+          items:
+            items:
+              prefixItems:
+              - type: number
+              - type: number
+              type: array
+              maxItems: 2
+              minItems: 2
+            type: array
+          type: array
+          title: Holes
+      type: object
+      required:
+      - exterior
+      title: PolygonPart
+      description: 'One part of a (possibly multi-part) polygon: an exterior ring + optional hole rings.'
+    KeypointNodeGeom:
+      properties:
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        visibility:
+          type: integer
+          maximum: 2.0
+          minimum: 0.0
+          title: Visibility
+          default: 2
+      type: object
+      required:
+      - x
+      - y
+      title: KeypointNodeGeom
+    UserSummary:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        email:
+          type: string
+          title: Email
+        first_name:
+          type: string
+          title: First Name
+        last_name:
+          type: string
+          title: Last Name
+      type: object
+      required:
+      - id
+      - email
+      - first_name
+      - last_name
+      title: UserSummary
+      description: 'Compact user reference for embedding in other responses (members,
+
+        asset_state, etc.) so the FE doesn''t have to do N+1 lookups for names.'
+    ClassificationSummary:
+      properties:
+        class_id:
+          type: string
+          format: uuid
+          title: Class Id
+          description: Image-classification class id.
+        name:
+          type: string
+          title: Name
+          description: Class display name.
+        value:
+          anyOf:
+          - type: string
+          - items:
+              type: string
+            type: array
+          title: Value
+          description: 'The stored answer (`data.answer`): a string (radio/text) or a list (checkbox).'
+      type: object
+      required:
+      - class_id
+      - name
+      - value
+      title: ClassificationSummary
+      description: One answered image-level classification on an asset (asset-list summary).
+    ClassificationOption:
+      properties:
+        value:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Value
+        display:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Display
+      type: object
+      required:
+      - value
+      - display
+      title: ClassificationOption
+    BboxGeometry:
+      properties:
+        type:
+          type: string
+          const: bbox
+          title: Type
+          default: bbox
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        w:
+          type: number
+          exclusiveMinimum: 0.0
+          title: W
+        h:
+          type: number
+          exclusiveMinimum: 0.0
+          title: H
+      type: object
+      required:
+      - x
+      - y
+      - w
+      - h
+      title: BboxGeometry
+    LabelingContext:
+      properties:
+        asset_state:
+          $ref: '#/components/schemas/AssetStateResponse'
+          description: The asset's per-project workflow state.
+        asset:
+          $ref: '#/components/schemas/AssetSummary'
+          description: Asset metadata for the labeler page.
+        download_url:
+          type: string
+          title: Download Url
+          description: Presigned GET URL for the asset's full-resolution bytes.
+        download_url_expires_at:
+          type: string
+          format: date-time
+          title: Download Url Expires At
+          description: When `download_url` expires.
+        shapes:
+          items:
+            $ref: '#/components/schemas/AnnotationResponse'
+          type: array
+          title: Shapes
+          description: All annotations on the asset in this project.
+        annotations:
+          items:
+            $ref: '#/components/schemas/AnnotationResponse'
+          type: array
+          title: Annotations
+          description: Legacy alias of `shapes`; prefer `shapes`.
+        classes:
+          items:
+            $ref: '#/components/schemas/ClassResponse'
+          type: array
+          title: Classes
+          description: Object classes with inline attributes (ADR-0090).
+        image_classifications:
+          items:
+            $ref: '#/components/schemas/ImageClassificationResponse'
+          type: array
+          title: Image Classifications
+          description: Image-level classifications for this project.
+      type: object
+      required:
+      - asset_state
+      - asset
+      - download_url
+      - download_url_expires_at
+      title: LabelingContext
+      description: 'Bundled labeler-page payload: state + asset metadata + annotations + classes
+
+        + presigned download URL. One round-trip instead of four.
+
+
+        `annotations` (legacy) is kept for backward-compat — it equals `shapes`.
+
+        New FE code should read `shapes` directly.'
+    VisibilityModel:
+      type: string
+      enum:
+      - binary
+      - coco_ternary
+      title: VisibilityModel
+    AnnotationCreate:
+      properties:
+        id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Id
+        class_id:
+          type: string
+          format: uuid
+          title: Class Id
+        type:
+          $ref: '#/components/schemas/AnnotationType'
+        geometry:
+          anyOf:
+          - oneOf:
+            - $ref: '#/components/schemas/BboxGeometry'
+            - $ref: '#/components/schemas/PolygonGeometry'
+            - $ref: '#/components/schemas/KeypointGeometry'
+            discriminator:
+              propertyName: type
+              mapping:
+                bbox: '#/components/schemas/BboxGeometry'
+                keypoint: '#/components/schemas/KeypointGeometry'
+                polygon: '#/components/schemas/PolygonGeometry'
+          - type: 'null'
+          title: Geometry
+        data:
+          additionalProperties: true
+          type: object
+          title: Data
+        instance_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Instance Id
+        parent_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Parent Id
+        locked:
+          type: boolean
+          title: Locked
+          default: false
+      type: object
+      required:
+      - class_id
+      - type
+      title: AnnotationCreate
+    ClassificationConfig:
+      properties:
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+          default: 1
+        input_type:
+          $ref: '#/components/schemas/ClassificationInputType'
+        options:
+          items:
+            $ref: '#/components/schemas/ClassificationOption'
+          type: array
+          title: Options
+        default:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Default
+        required:
+          type: boolean
+          title: Required
+          default: false
+      type: object
+      required:
+      - input_type
+      title: ClassificationConfig
+      description: 'Per-label config for `type=classification` annotations. Stored on
+
+        `ProjectClass.classification_config` as JSONB. ADR-0031.
+
+
+        `options` is required for `radio` / `checkbox`, ignored for `text`.
+
+        `default` (optional) names the pre-selected value (radio/text) or single
+
+        pre-selected option (checkbox). `required: true` makes the workflow
+
+        `submit` transition refuse if no annotation for this label exists on
+
+        the asset.'
+    RejectRequest:
+      properties:
+        reason:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Reason
+      type: object
+      title: RejectRequest
+    BboxGeometryRead:
+      properties:
+        type:
+          type: string
+          const: bbox
+          title: Type
+          default: bbox
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        w:
+          type: number
+          title: W
+        h:
+          type: number
+          title: H
+      additionalProperties: true
+      type: object
+      required:
+      - x
+      - y
+      - w
+      - h
+      title: BboxGeometryRead
+    AssetStatePage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/AssetStateResponse'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+        total:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Total
+      type: object
+      required:
+      - items
+      title: AssetStatePage
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    PolygonGeometryRead:
+      properties:
+        type:
+          type: string
+          const: polygon
+          title: Type
+          default: polygon
+        polygons:
+          items:
+            $ref: '#/components/schemas/PolygonPartRead'
+          type: array
+          title: Polygons
+      additionalProperties: true
+      type: object
+      required:
+      - polygons
+      title: PolygonGeometryRead
+    KeypointGeometry:
+      properties:
+        type:
+          type: string
+          const: keypoint
+          title: Type
+          default: keypoint
+        points:
+          items:
+            $ref: '#/components/schemas/KeypointNodeGeom'
+          type: array
+          minItems: 1
+          title: Points
+      type: object
+      required:
+      - points
+      title: KeypointGeometry
+    ClassKind:
+      type: string
+      enum:
+      - object
+      - classification
+      title: ClassKind
+    KeypointPosition:
+      properties:
+        x:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: X
+        y:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Y
+      type: object
+      required:
+      - x
+      - y
+      title: KeypointPosition
+      description: 'Normalized (0-1) (x, y) inside a unit bbox. Origin is top-left; y grows
+
+        down. The FE multiplies by the drawn bbox dimensions to seed each joint
+
+        when the user creates a new keypoint annotation by dragging a rect.'
+    QueueStatsResponse:
+      properties:
+        all:
+          type: integer
+          title: All
+          description: 'Total in-scope tasks: to_label + rework + continue.'
+        to_label:
+          type: integer
+          title: To Label
+          description: Tasks in `to_label` (the New card).
+        rework:
+          type: integer
+          title: Rework
+          description: '`in_progress` tasks with `rework_count > 0` (Rework card).'
+        continue:
+          type: integer
+          title: Continue
+          description: '`in_progress` tasks with `rework_count = 0` (Continue card).'
+      type: object
+      required:
+      - all
+      - to_label
+      - rework
+      - continue
+      title: QueueStatsResponse
+      description: Bucket counts for the labeler's 4-card hero (ADR-0029).
+    PolygonPartRead:
+      properties:
+        exterior:
+          items:
+            prefixItems:
+            - type: number
+            - type: number
+            type: array
+            maxItems: 2
+            minItems: 2
+          type: array
+          title: Exterior
+        holes:
+          items:
+            items:
+              prefixItems:
+              - type: number
+              - type: number
+              type: array
+              maxItems: 2
+              minItems: 2
+            type: array
+          type: array
+          title: Holes
+      additionalProperties: true
+      type: object
+      required:
+      - exterior
+      title: PolygonPartRead
+    AnnotationResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Annotation id (client-minted UUID, ADR-0092).
+        asset_id:
+          type: string
+          format: uuid
+          title: Asset Id
+          description: Id of the asset this annotation is on.
+        class_id:
+          type: string
+          format: uuid
+          title: Class Id
+          description: Id of the project class this annotation belongs to.
+        type:
+          $ref: '#/components/schemas/AnnotationType'
+          description: Annotation type (bbox, polygon, keypoint, or classification).
+        parent_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Parent Id
+          description: Parent annotation id, if this is nested.
+        instance_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Instance Id
+          description: Instance grouping id linking annotations of the same object.
+        geometry:
+          anyOf:
+          - oneOf:
+            - $ref: '#/components/schemas/BboxGeometryRead'
+            - $ref: '#/components/schemas/PolygonGeometryRead'
+            - $ref: '#/components/schemas/KeypointGeometryRead'
+            discriminator:
+              propertyName: type
+              mapping:
+                bbox: '#/components/schemas/BboxGeometryRead'
+                keypoint: '#/components/schemas/KeypointGeometryRead'
+                polygon: '#/components/schemas/PolygonGeometryRead'
+          - type: 'null'
+          title: Geometry
+          description: Pixel-coordinate typed geometry (bbox/polygon/keypoint, ADR-0091); null for classification.
+        data:
+          additionalProperties: true
+          type: object
+          title: Data
+          description: Free-form attribute/classification values for this annotation.
+        source:
+          $ref: '#/components/schemas/AnnotationSource'
+          description: How the annotation was produced (manual, imported, or model).
+        locked:
+          type: boolean
+          title: Locked
+          description: Per-shape protection lock (ADR-0084); absent in legacy snapshots → false.
+          default: false
+        created_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Created By
+          description: User who created the annotation, if known.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: Creation timestamp.
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+          description: Last-update timestamp.
+      type: object
+      required:
+      - id
+      - asset_id
+      - class_id
+      - type
+      - parent_id
+      - instance_id
+      - geometry
+      - data
+      - source
+      - created_by
+      - created_at
+      - updated_at
+      title: AnnotationResponse
+    KeypointTopology:
+      properties:
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+          default: 1
+        dim:
+          type: integer
+          enum:
+          - 2
+          - 3
+          title: Dim
+          default: 2
+        nodes:
+          items:
+            $ref: '#/components/schemas/KeypointNode'
+          type: array
+          maxItems: 512
+          minItems: 1
+          title: Nodes
+        edges:
+          items:
+            items:
+              type: integer
+            type: array
+          type: array
+          title: Edges
+        visibility_model:
+          $ref: '#/components/schemas/VisibilityModel'
+          default: coco_ternary
+      type: object
+      required:
+      - nodes
+      title: KeypointTopology
+      description: 'Per-label keypoint topology — names the nodes, defines skeleton edges.
+
+        ADR-0030. Stored on `ProjectClass.keypoint_topology` as JSONB.
+
+
+        `nodes` are 0-indexed by their position in the array; the `id` field is
+
+        the explicit canonical index and MUST equal the array index. `edges` are
+
+        0-indexed pairs into `nodes`. Empty `edges` = single-keypoint label
+
+        (no skeleton render).'
+    AssetStatus:
+      type: string
+      enum:
+      - pending
+      - processing
+      - ready
+      - failed
+      - deleted
+      title: AssetStatus
+    ClassificationInputType:
+      type: string
+      enum:
+      - radio
+      - checkbox
+      - text
+      title: ClassificationInputType
+    AnnotationType:
+      type: string
+      enum:
+      - bbox
+      - polygon
+      - keypoint
+      - classification
+      title: AnnotationType
+    AnnotationSource:
+      type: string
+      enum:
+      - manual
+      - imported
+      - model
+      title: AnnotationSource
+    KeypointNodeGeomRead:
+      properties:
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        visibility:
+          type: integer
+          title: Visibility
+          default: 2
+      additionalProperties: true
+      type: object
+      required:
+      - x
+      - y
+      title: KeypointNodeGeomRead
+    KeypointNode:
+      properties:
+        id:
+          type: integer
+          minimum: 0.0
+          title: Id
+        name:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Name
+        default_position:
+          anyOf:
+          - $ref: '#/components/schemas/KeypointPosition'
+          - type: 'null'
+      type: object
+      required:
+      - id
+      - name
+      title: KeypointNode
+    KeypointGeometryRead:
+      properties:
+        type:
+          type: string
+          const: keypoint
+          title: Type
+          default: keypoint
+        points:
+          items:
+            $ref: '#/components/schemas/KeypointNodeGeomRead'
+          type: array
+          title: Points
+      additionalProperties: true
+      type: object
+      required:
+      - points
+      title: KeypointGeometryRead
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      description: Cognito access token
+      scheme: bearer

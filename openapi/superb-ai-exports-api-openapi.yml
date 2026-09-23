@@ -1,0 +1,928 @@
+openapi: 3.2.0
+info:
+  title: MLOps Platform Exports API
+  description: Multi-tenant labeling-platform backend.
+  version: 0.1.0
+tags:
+- name: Exports
+paths:
+  /tenants/{slug}/projects/{project_id}/versions/{version_id}/exports:
+    post:
+      tags:
+      - Exports
+      summary: Create Export
+      description: 'Request an export of this frozen version. Async — returns 202 with a
+
+        queued row; poll `GET /jobs/{job_id}` (or the exports LIST) for status.
+
+
+        Two idempotency layers (ADR-0048 §Idempotency):
+
+        1. **Implicit** — `options_hash = sha256(format || canonical_options)`.
+
+        Partial unique index `idx_version_exports_live` enforces "at most one
+
+        live export per (version, format, options)". On collision, return the
+
+        existing row + `X-From-Cache: true` header (200 instead of 202).
+
+        2. **Explicit** — caller-supplied `Idempotency-Key` header (Stripe
+
+        pattern). Unique per tenant via `idx_version_exports_idemp_key`. Lets
+
+        the FE force "give me THIS specific row again" or "force-fresh by
+
+        using a new key."'
+      operationId: exports-create_export
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: version_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Version Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idempotency-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportCreateRequest'
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags:
+      - Exports
+      summary: List Exports
+      description: 'Newest first, cursor-paginated by `(created_at, id)`. Optional filters
+
+        (`format`, `status`, `created_at_from/to`) AND together (ADR-0055).'
+      operationId: exports-list_exports
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: version_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Version Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          description: Max rows per page.
+          default: 50
+          title: Limit
+        description: Max rows per page.
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+          title: Cursor
+        description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+      - name: format
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/ExportFormat'
+          - type: 'null'
+          description: Filter by bundle format (coco|yolo|delta). Invalid values 422.
+          title: Format
+        description: Filter by bundle format (coco|yolo|delta). Invalid values 422.
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/ExportStatus'
+          - type: 'null'
+          description: Filter by export status (pending|queued|running|ready|failed|expired). Invalid values 422.
+          title: Status
+        description: Filter by export status (pending|queued|running|ready|failed|expired). Invalid values 422.
+      - name: created_at_from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Inclusive lower bound (>=) on `created_at` (ISO-8601).
+          title: Created At From
+        description: Inclusive lower bound (>=) on `created_at` (ISO-8601).
+      - name: created_at_to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Exclusive upper bound (<) on `created_at` (ISO-8601).
+          title: Created At To
+        description: Exclusive upper bound (<) on `created_at` (ISO-8601).
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportListPage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/versions/{version_id}/exports/{export_id}/download:
+    get:
+      tags:
+      - Exports
+      summary: Get Export Download
+      description: 'Returns a fresh 1h-TTL presigned URL on every call.
+
+
+        S3 checks expiry at request start, so 1h covers arbitrary downloads.
+
+        Lambda role sessions cap above this regardless of what we pass.
+
+
+        Real presigning lands in Slice 11. Stub raises 425 (pending) since no
+
+        worker has produced a zip yet.'
+      operationId: exports-get_export_download
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: version_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Version Id
+      - name: export_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Export Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExportDownloadResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/versions/{version_id}/exports/{export_id}:
+    delete:
+      tags:
+      - Exports
+      summary: Delete Export
+      description: 'Force-delete an export row. Workspace admin only.
+
+
+        Does NOT delete the S3 object yet (Slice 11 wires the side-effect).
+
+        Lifecycle rule will GC it within 7 days regardless.'
+      operationId: exports-delete_export
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: version_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Version Id
+      - name: export_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Export Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ExportStatus:
+      type: string
+      enum:
+      - pending
+      - queued
+      - running
+      - ready
+      - failed
+      - expired
+      title: ExportStatus
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    ExportCreateRequest:
+      properties:
+        format:
+          $ref: '#/components/schemas/ExportFormat'
+          description: 'Export bundle format: coco, yolo, or delta.'
+        include_assets:
+          type: boolean
+          title: Include Assets
+          description: Whether to include the source asset files in the export bundle.
+          default: true
+        exclude_empty:
+          type: boolean
+          title: Exclude Empty
+          description: If true, skip assets that have no annotations from the export.
+          default: false
+      type: object
+      required:
+      - format
+      title: ExportCreateRequest
+      description: 'POST body. All fields optional except `format`.
+
+
+        Pydantic defaults to ignoring unknown fields (`extra=''ignore''`), so callers
+
+        that still send the deprecated `splits` / `split_seed` / `stratify_by`
+
+        fields from the v1 contract get a silent no-op. The export is always
+
+        unsplit regardless.'
+    SkippedDetail:
+      properties:
+        asset_id:
+          type: string
+          title: Asset Id
+        annotation_id:
+          anyOf:
+          - type: integer
+          - type: string
+          title: Annotation Id
+        annotation_type:
+          type: string
+          title: Annotation Type
+        reason:
+          type: string
+          title: Reason
+      type: object
+      required:
+      - asset_id
+      - annotation_id
+      - annotation_type
+      - reason
+      title: SkippedDetail
+      description: 'One annotation the bundler couldn''t represent (persisted serialization of
+
+        `FormatterSkip`). `asset_id` is stringified on write; `annotation_id` is int
+
+        (COCO/YOLO) or str (delta/manifest-miss sentinel).'
+    ExportListPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ExportResponse'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+      type: object
+      required:
+      - items
+      title: ExportListPage
+    ExportResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Unique identifier of this export.
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+          description: Identifier of the project this export belongs to.
+        format:
+          $ref: '#/components/schemas/ExportFormat'
+          description: 'Export bundle format: coco, yolo, or delta.'
+        status:
+          $ref: '#/components/schemas/ExportStatus'
+          description: Current status of the export.
+        size_bytes:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Size Bytes
+          description: Size of the produced export bundle in bytes; null until complete.
+        exported_count:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Exported Count
+          description: Number of assets successfully exported; null until complete.
+        skipped_count:
+          type: integer
+          title: Skipped Count
+          description: Number of assets skipped during export.
+        skipped_details:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/SkippedDetail'
+            type: array
+          - type: 'null'
+          title: Skipped Details
+          description: Details of skipped assets; null when nothing was skipped.
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+          description: Error message if the export failed; null otherwise.
+        job_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Job Id
+          description: Back-link to the worker-dispatch Job row; poll /jobs/{job_id} for progress.
+        result_details:
+          anyOf:
+          - oneOf:
+            - $ref: '#/components/schemas/CocoResultDetails'
+            - $ref: '#/components/schemas/YoloResultDetails'
+            - $ref: '#/components/schemas/DeltaResultDetails'
+            discriminator:
+              propertyName: format
+              mapping:
+                coco: '#/components/schemas/CocoResultDetails'
+                delta: '#/components/schemas/DeltaResultDetails'
+                yolo: '#/components/schemas/YoloResultDetails'
+          - type: 'null'
+          title: Result Details
+          description: Format-specific output stats, populated when status is terminal.
+        created_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Created By
+          description: Identifier of the user who requested the export.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: Timestamp when the export was created.
+        completed_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Completed At
+          description: Timestamp when the export reached a terminal status; null while in progress.
+      type: object
+      required:
+      - id
+      - project_id
+      - format
+      - status
+      - size_bytes
+      - exported_count
+      - skipped_count
+      - skipped_details
+      - error
+      - job_id
+      - created_by
+      - created_at
+      - completed_at
+      title: ExportResponse
+    DeltaResultDetails:
+      properties:
+        format:
+          type: string
+          const: delta
+          title: Format
+        schema_version:
+          type: string
+          title: Schema Version
+        num_assets:
+          type: integer
+          title: Num Assets
+        num_annotations:
+          type: integer
+          title: Num Annotations
+        annotations_by_type:
+          additionalProperties:
+            type: integer
+          type: object
+          title: Annotations By Type
+        classes:
+          items:
+            $ref: '#/components/schemas/ClassCountById'
+          type: array
+          title: Classes
+        classes_truncated:
+          type: boolean
+          title: Classes Truncated
+          default: false
+        classes_total:
+          type: integer
+          title: Classes Total
+          default: 0
+      type: object
+      required:
+      - format
+      - schema_version
+      - num_assets
+      - num_annotations
+      title: DeltaResultDetails
+      description: '`annotations_by_type` is genuinely open-ended by annotation type — the one
+
+        legit dict inside an otherwise-fixed model.'
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    ExportDownloadResponse:
+      properties:
+        url:
+          type: string
+          title: Url
+          description: Pre-signed HTTPS URL to download the export bundle; valid for 1 hour.
+      type: object
+      required:
+      - url
+      title: ExportDownloadResponse
+      description: 'Response from `/exports/{eid}/download` when ready.
+
+
+        Caller follows `url` with a normal HTTPS GET. S3 validates expiry at
+
+        request start so 1h TTL covers arbitrary-duration downloads.'
+    ExportFormat:
+      type: string
+      enum:
+      - coco
+      - yolo
+      - delta
+      title: ExportFormat
+    YoloResultDetails:
+      properties:
+        format:
+          type: string
+          const: yolo
+          title: Format
+        num_images:
+          type: integer
+          title: Num Images
+        num_labels:
+          type: integer
+          title: Num Labels
+        num_classes:
+          type: integer
+          title: Num Classes
+        classes:
+          items:
+            $ref: '#/components/schemas/ClassCountByIdx'
+          type: array
+          title: Classes
+        classes_truncated:
+          type: boolean
+          title: Classes Truncated
+          default: false
+        classes_total:
+          type: integer
+          title: Classes Total
+          default: 0
+      type: object
+      required:
+      - format
+      - num_images
+      - num_labels
+      - num_classes
+      title: YoloResultDetails
+    CocoResultDetails:
+      properties:
+        format:
+          type: string
+          const: coco
+          title: Format
+        num_images:
+          type: integer
+          title: Num Images
+        num_annotations:
+          type: integer
+          title: Num Annotations
+        num_categories:
+          type: integer
+          title: Num Categories
+        classes:
+          items:
+            $ref: '#/components/schemas/ClassCountById'
+          type: array
+          title: Classes
+        classes_truncated:
+          type: boolean
+          title: Classes Truncated
+          default: false
+        classes_total:
+          type: integer
+          title: Classes Total
+          default: 0
+      type: object
+      required:
+      - format
+      - num_images
+      - num_annotations
+      - num_categories
+      title: CocoResultDetails
+      description: '`result_details` for a COCO bundle. `classes`/`classes_truncated`/
+
+        `classes_total` were added when `_top_classes` landed — Optional-with-default
+
+        so a pre-that-change row still serializes.'
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    ClassCountByIdx:
+      properties:
+        name:
+          type: string
+          title: Name
+        count:
+          type: integer
+          title: Count
+        idx:
+          type: integer
+          title: Idx
+      type: object
+      required:
+      - name
+      - count
+      - idx
+      title: ClassCountByIdx
+      description: YOLO per-class entry (0-based dataset index).
+    ClassCountById:
+      properties:
+        name:
+          type: string
+          title: Name
+        count:
+          type: integer
+          title: Count
+        id:
+          anyOf:
+          - type: integer
+          - type: string
+          title: Id
+      type: object
+      required:
+      - name
+      - count
+      - id
+      title: ClassCountById
+      description: 'COCO/Delta per-class entry (id-keyed). COCO id is int; delta id is the
+
+        class UUID stringified — hence `int | str`.'
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      description: Cognito access token
+      scheme: bearer

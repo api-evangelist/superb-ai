@@ -1,0 +1,762 @@
+openapi: 3.2.0
+info:
+  title: MLOps Platform Activity API
+  description: Multi-tenant labeling-platform backend.
+  version: 0.1.0
+tags:
+- name: Activity
+paths:
+  /tenants/{slug}/activity:
+    get:
+      tags:
+      - Activity
+      summary: List Tenant Activity
+      description: 'Tenant-wide activity. Workspace **admin only**.
+
+
+        ADR-0035: when no `asset_id` / `subject_id` / `correlation_id` filter is
+
+        passed, reads from the rollup projection — one row per logical action.
+
+        Any of those filters switches to raw `activity_event` for per-event
+
+        detail. `correlation_id` is the drill-down primitive — pass a rollup
+
+        row''s `id` to expand it.'
+      operationId: activity-list_tenant_activity
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          description: Max rows per page.
+          default: 50
+          title: Limit
+        description: Max rows per page.
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+          title: Cursor
+        description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+      - name: actor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: Filter to events whose actor is this user (`actor_user_id`). Canonical name (ADR-0055).
+          title: Actor
+        description: Filter to events whose actor is this user (`actor_user_id`). Canonical name (ADR-0055).
+      - name: action
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 128
+          - type: 'null'
+          description: Prefix match — e.g. `?action=annotation` matches `annotation.submitted`.
+          title: Action
+        description: Prefix match — e.g. `?action=annotation` matches `annotation.submitted`.
+      - name: subject_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: Filter to events about this specific subject (e.g. an annotation UUID).
+          title: Subject Id
+        description: Filter to events about this specific subject (e.g. an annotation UUID).
+      - name: asset_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: Filter to events tagged with this asset (FE feedback 2026-05-07). Includes annotation/workflow events on this asset, not just events whose subject_id IS the asset. NULL-asset events (project- or tenant-scoped) are excluded.
+          title: Asset Id
+        description: Filter to events tagged with this asset (FE feedback 2026-05-07). Includes annotation/workflow events on this asset, not just events whose subject_id IS the asset. NULL-asset events (project- or tenant-scoped) are excluded.
+      - name: correlation_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: 'Drill-down filter: every event in the same logical-action group (rolled-up under one row in the default feed). Use the `id` of a rolled-up row (which IS the correlation_id) to expand it into per-event detail. Returns raw events, not the rollup.'
+          title: Correlation Id
+        description: 'Drill-down filter: every event in the same logical-action group (rolled-up under one row in the default feed). Use the `id` of a rolled-up row (which IS the correlation_id) to expand it into per-event detail. Returns raw events, not the rollup.'
+      - name: created_at_from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Inclusive lower bound (>=) on `created_at` (ISO-8601).
+          title: Created At From
+        description: Inclusive lower bound (>=) on `created_at` (ISO-8601).
+      - name: created_at_to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Exclusive upper bound (<) on `created_at` (ISO-8601).
+          title: Created At To
+        description: Exclusive upper bound (<) on `created_at` (ISO-8601).
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityPage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/activity:
+    get:
+      tags:
+      - Activity
+      summary: List Project Activity
+      description: 'Project activity feed. Project member required.
+
+
+        - `manager` / `reviewer` see all events on the project.
+
+        - `labeler` sees only events where they are the actor (own actions only).
+
+        - Workspace `admin` is implicit `manager` (per `get_effective_project_role`).
+
+        Non-members get **403**.'
+      operationId: activity-list_project_activity
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          description: Max rows per page.
+          default: 50
+          title: Limit
+        description: Max rows per page.
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+          title: Cursor
+        description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+      - name: actor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: Filter to events whose actor is this user (`actor_user_id`). Canonical name (ADR-0055).
+          title: Actor
+        description: Filter to events whose actor is this user (`actor_user_id`). Canonical name (ADR-0055).
+      - name: action
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 128
+          - type: 'null'
+          title: Action
+      - name: subject_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Subject Id
+      - name: asset_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: Filter to events tagged with this asset (FE feedback 2026-05-07).
+          title: Asset Id
+        description: Filter to events tagged with this asset (FE feedback 2026-05-07).
+      - name: correlation_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: Drill-down — expand one rolled-up row to its per-event detail.
+          title: Correlation Id
+        description: Drill-down — expand one rolled-up row to its per-event detail.
+      - name: created_at_from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Inclusive lower bound (>=) on `created_at` (ISO-8601).
+          title: Created At From
+        description: Inclusive lower bound (>=) on `created_at` (ISO-8601).
+      - name: created_at_to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Exclusive upper bound (<) on `created_at` (ISO-8601).
+          title: Created At To
+        description: Exclusive upper bound (<) on `created_at` (ISO-8601).
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityPage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/datasets/images/{dataset_id}/activity:
+    get:
+      tags:
+      - Activity
+      summary: List Dataset Activity
+      description: Dataset activity feed. **Workspace admin only** — dataset audit is data-ops territory.
+      operationId: activity-list_dataset_activity
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: dataset_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Dataset Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          description: Max rows per page.
+          default: 50
+          title: Limit
+        description: Max rows per page.
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+          title: Cursor
+        description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+      - name: actor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: Filter to events whose actor is this user (`actor_user_id`). Canonical name (ADR-0055).
+          title: Actor
+        description: Filter to events whose actor is this user (`actor_user_id`). Canonical name (ADR-0055).
+      - name: action
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            maxLength: 128
+          - type: 'null'
+          title: Action
+      - name: subject_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Subject Id
+      - name: asset_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: Filter to events tagged with this asset (FE feedback 2026-05-07).
+          title: Asset Id
+        description: Filter to events tagged with this asset (FE feedback 2026-05-07).
+      - name: correlation_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: Drill-down — expand one rolled-up row to its per-event detail.
+          title: Correlation Id
+        description: Drill-down — expand one rolled-up row to its per-event detail.
+      - name: created_at_from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Inclusive lower bound (>=) on `created_at` (ISO-8601).
+          title: Created At From
+        description: Inclusive lower bound (>=) on `created_at` (ISO-8601).
+      - name: created_at_to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Exclusive upper bound (<) on `created_at` (ISO-8601).
+          title: Created At To
+        description: Exclusive upper bound (<) on `created_at` (ISO-8601).
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivityPage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    ActivityEventResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        actor_user_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Actor User Id
+        actor_email:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Actor Email
+        actor_key_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Actor Key Id
+        actor_system:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Actor System
+        action:
+          type: string
+          title: Action
+        subject_type:
+          type: string
+          title: Subject Type
+        subject_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Subject Id
+        project_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Project Id
+        dataset_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Dataset Id
+        asset_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Asset Id
+        metadata:
+          additionalProperties: true
+          type: object
+          title: Metadata
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        count:
+          type: integer
+          title: Count
+          default: 1
+        event_count:
+          type: integer
+          title: Event Count
+          default: 1
+        sample_subject_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          title: Sample Subject Ids
+        first_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: First At
+        last_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last At
+      type: object
+      required:
+      - id
+      - actor_user_id
+      - actor_system
+      - action
+      - subject_type
+      - subject_id
+      - project_id
+      - dataset_id
+      - asset_id
+      - metadata
+      - created_at
+      title: ActivityEventResponse
+    ActivityPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ActivityEventResponse'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+      type: object
+      required:
+      - items
+      title: ActivityPage
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      description: Cognito access token
+      scheme: bearer

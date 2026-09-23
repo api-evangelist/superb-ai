@@ -1,0 +1,740 @@
+openapi: 3.2.0
+info:
+  title: MLOps Platform Foundation Models API
+  description: Multi-tenant labeling-platform backend.
+  version: 0.1.0
+tags:
+- name: Foundation Models
+paths:
+  /tenants/{slug}/foundation-models:
+    get:
+      tags:
+      - Foundation Models
+      summary: List Foundation Models
+      operationId: foundation-models-list_foundation_models
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FoundationModelPage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/foundation-models/{key}:
+    get:
+      tags:
+      - Foundation Models
+      summary: Get Foundation Model
+      operationId: foundation-models-get_foundation_model
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: key
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Key
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FoundationModelStatus'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/foundation-models/{key}/predict:
+    post:
+      tags:
+      - Foundation Models
+      summary: Predict
+      operationId: foundation-models-predict
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: key
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Key
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ZeroPredictRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ZeroPredictResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    FoundationModelPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/FoundationModelResponse'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+      type: object
+      required:
+      - items
+      title: FoundationModelPage
+      description: 'ADR-0012 pagination envelope. The catalog is a static bounded set, so it always
+
+        fits one page and `next_cursor` is always None — the shape is kept uniform with the
+
+        other list endpoints so clients can page-loop without special-casing.'
+    ImageSize:
+      properties:
+        width:
+          type: integer
+          title: Width
+          description: Image width in pixels.
+          default: 0
+        height:
+          type: integer
+          title: Height
+          description: Image height in pixels.
+          default: 0
+      type: object
+      title: ImageSize
+      description: 'Decoded image dimensions echoed on a predict response, so the FE can scale
+
+        pixel-space geometry without re-reading the image. Shared by the deployment
+
+        and foundation (ZERO) predict responses.'
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ImageRef:
+      properties:
+        image_b64:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Image B64
+          description: Base64-encoded image bytes.
+      type: object
+      title: ImageRef
+    PolygonGeometry:
+      properties:
+        type:
+          type: string
+          const: polygon
+          title: Type
+          default: polygon
+        polygons:
+          items:
+            $ref: '#/components/schemas/PolygonPart'
+          type: array
+          minItems: 1
+          title: Polygons
+      type: object
+      required:
+      - polygons
+      title: PolygonGeometry
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    PolygonPart:
+      properties:
+        exterior:
+          items:
+            prefixItems:
+            - type: number
+            - type: number
+            type: array
+            maxItems: 2
+            minItems: 2
+          type: array
+          minItems: 3
+          title: Exterior
+        holes:
+          items:
+            items:
+              prefixItems:
+              - type: number
+              - type: number
+              type: array
+              maxItems: 2
+              minItems: 2
+            type: array
+          type: array
+          title: Holes
+      type: object
+      required:
+      - exterior
+      title: PolygonPart
+      description: 'One part of a (possibly multi-part) polygon: an exterior ring + optional hole rings.'
+    KeypointNodeGeom:
+      properties:
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        visibility:
+          type: integer
+          maximum: 2.0
+          minimum: 0.0
+          title: Visibility
+          default: 2
+      type: object
+      required:
+      - x
+      - y
+      title: KeypointNodeGeom
+    FoundationModelResponse:
+      properties:
+        key:
+          type: string
+          title: Key
+        name:
+          type: string
+          title: Name
+        description:
+          type: string
+          title: Description
+        task:
+          type: string
+          const: detection
+          title: Task
+        output:
+          type: string
+          const: bbox
+          title: Output
+        prompt_modes:
+          items:
+            type: string
+          type: array
+          title: Prompt Modes
+          description: Supported prompt kinds (e.g. text, box) for this model.
+        image_sources:
+          items:
+            type: string
+          type: array
+          title: Image Sources
+          description: Accepted image input sources for predict.
+        params:
+          additionalProperties:
+            $ref: '#/components/schemas/ParamSpec'
+          type: object
+          title: Params
+          description: Tunable predict parameters (confidence) with bounds and defaults.
+      type: object
+      required:
+      - key
+      - name
+      - description
+      - task
+      - output
+      - prompt_modes
+      - image_sources
+      - params
+      title: FoundationModelResponse
+      description: One catalog entry (the playground's model picker + control schema).
+    ZeroPredictResponse:
+      properties:
+        predictions:
+          items:
+            $ref: '#/components/schemas/FoundationPrediction'
+          type: array
+          title: Predictions
+          description: Predictions for the image.
+        image:
+          $ref: '#/components/schemas/ImageSize'
+          description: Decoded image dimensions.
+        inference_ms:
+          type: integer
+          title: Inference Ms
+          description: Server-side inference time in milliseconds.
+      type: object
+      required:
+      - predictions
+      - image
+      - inference_ms
+      title: ZeroPredictResponse
+    BboxGeometry:
+      properties:
+        type:
+          type: string
+          const: bbox
+          title: Type
+          default: bbox
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        w:
+          type: number
+          exclusiveMinimum: 0.0
+          title: W
+        h:
+          type: number
+          exclusiveMinimum: 0.0
+          title: H
+      type: object
+      required:
+      - x
+      - y
+      - w
+      - h
+      title: BboxGeometry
+    FoundationPrediction:
+      properties:
+        type:
+          type: string
+          const: bbox
+          title: Type
+          description: Geometry kind of this prediction.
+        class_name:
+          type: string
+          title: Class Name
+          description: Predicted class name for the detection.
+        geometry:
+          oneOf:
+          - $ref: '#/components/schemas/BboxGeometry'
+          - $ref: '#/components/schemas/PolygonGeometry'
+          - $ref: '#/components/schemas/KeypointGeometry'
+          title: Geometry
+          description: Typed geometry (bbox) — the same discriminated shape as annotation.geometry.
+          discriminator:
+            propertyName: type
+            mapping:
+              bbox: '#/components/schemas/BboxGeometry'
+              keypoint: '#/components/schemas/KeypointGeometry'
+              polygon: '#/components/schemas/PolygonGeometry'
+        confidence:
+          type: number
+          title: Confidence
+          description: Model confidence for this prediction.
+      type: object
+      required:
+      - type
+      - class_name
+      - geometry
+      - confidence
+      title: FoundationPrediction
+    BoxPrompt:
+      properties:
+        box:
+          items:
+            type: number
+          type: array
+          maxItems: 4
+          minItems: 4
+          title: Box
+          description: '[x1,y1,x2,y2] pixels on ref_image.'
+        ref_image:
+          anyOf:
+          - $ref: '#/components/schemas/ImageRef'
+          - type: 'null'
+          description: Image the box is drawn on; defaults to the search image when omitted.
+        prompt:
+          type: string
+          title: Prompt
+          description: Free-text prompt naming the matches (ZERO needs a non-empty text).
+          default: object
+      type: object
+      required:
+      - box
+      title: BoxPrompt
+      description: 'A visual (few-shot) prompt: ''find things like the object in this box''.
+
+        `ref_image` defaults to the search image when omitted (box drawn on it directly).'
+    ParamSpec:
+      properties:
+        min:
+          type: number
+          title: Min
+          description: Minimum allowed value for the parameter.
+        max:
+          type: number
+          title: Max
+          description: Maximum allowed value for the parameter.
+        default:
+          type: number
+          title: Default
+          description: 'Applied when the parameter is omitted from predict. Seeded from the model''s train-time VALIDATION split: detection confidence and IoU are swept jointly under serving-identical per-class NMS; segmentation exposes confidence only because its serving postprocessor does not apply mask NMS. max_detections is data-derived (max ground-truth instances in any single val image, floor 10, cap 1000). Deliberately NOT the scorecard''s `optimal_confidence`, which is a test-split diagnostic measured without NMS — the two answer different questions and will differ slightly.'
+      type: object
+      required:
+      - min
+      - max
+      - default
+      title: ParamSpec
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    KeypointGeometry:
+      properties:
+        type:
+          type: string
+          const: keypoint
+          title: Type
+          default: keypoint
+        points:
+          items:
+            $ref: '#/components/schemas/KeypointNodeGeom'
+          type: array
+          minItems: 1
+          title: Points
+      type: object
+      required:
+      - points
+      title: KeypointGeometry
+    ZeroPredictRequest:
+      properties:
+        image:
+          $ref: '#/components/schemas/ImageRef'
+          description: The image to run prediction on.
+        text_prompts:
+          items:
+            type: string
+          type: array
+          title: Text Prompts
+          description: Open-vocab class names to detect.
+        box_prompts:
+          items:
+            $ref: '#/components/schemas/BoxPrompt'
+          type: array
+          title: Box Prompts
+          description: Few-shot visual example prompts.
+        confidence:
+          anyOf:
+          - type: number
+            maximum: 1.0
+            minimum: 0.0
+          - type: 'null'
+          title: Confidence
+          description: One slider mapped to both ZERO thresholds.
+      type: object
+      required:
+      - image
+      title: ZeroPredictRequest
+    FoundationModelStatus:
+      properties:
+        key:
+          type: string
+          title: Key
+        name:
+          type: string
+          title: Name
+        description:
+          type: string
+          title: Description
+        task:
+          type: string
+          const: detection
+          title: Task
+        output:
+          type: string
+          const: bbox
+          title: Output
+        prompt_modes:
+          items:
+            type: string
+          type: array
+          title: Prompt Modes
+          description: Supported prompt kinds (e.g. text, box) for this model.
+        image_sources:
+          items:
+            type: string
+          type: array
+          title: Image Sources
+          description: Accepted image input sources for predict.
+        params:
+          additionalProperties:
+            $ref: '#/components/schemas/ParamSpec'
+          type: object
+          title: Params
+          description: Tunable predict parameters (confidence) with bounds and defaults.
+        status:
+          type: string
+          enum:
+          - ready
+          - warming
+          - unavailable
+          title: Status
+      type: object
+      required:
+      - key
+      - name
+      - description
+      - task
+      - output
+      - prompt_modes
+      - image_sources
+      - params
+      - status
+      title: FoundationModelStatus
+      description: 'Catalog entry + live availability. `status`:
+
+        - ready       → endpoint InService, predict works
+
+        - warming     → endpoint creating (just brought up; ~3-8 min to ready)
+
+        - unavailable → endpoint down (off-hours; predict returns 503)'
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      description: Cognito access token
+      scheme: bearer

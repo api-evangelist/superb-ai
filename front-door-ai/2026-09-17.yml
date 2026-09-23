@@ -1,0 +1,30 @@
+# Front Door AI Index — superb-ai — 2026-09-17
+# AI vocabulary counted on the provider's root page. Generated; do not edit.
+# `score` is null unless ownership is `own` — see front_door_ai.py.
+front_door_ai:
+  slug: superb-ai
+  lexicon_version: '1.0'
+  probed_at: '2026-09-17'
+  host: superb-ai.com
+  final_host: superb-ai.com
+  ownership: own
+  owner: superb-ai
+  shares_host_with: null
+  inherited_from: null
+  verdict: scored
+  score: 54
+  host_score: 54
+  density: 40.85
+  words: 1322
+  tiers:
+    agentic: 1
+    core: 53
+    model: 0
+  ambiguous: 2
+  top_terms:
+    AI: 49
+    foundation model: 2
+    generative ai: 2
+    AI agent: 1
+    agent: 1
+    intelligence: 1

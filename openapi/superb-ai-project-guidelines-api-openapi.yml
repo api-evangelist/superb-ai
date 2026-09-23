@@ -1,0 +1,506 @@
+openapi: 3.2.0
+info:
+  title: MLOps Platform Project Guidelines API
+  description: Multi-tenant labeling-platform backend.
+  version: 0.1.0
+tags:
+- name: project-guidelines
+paths:
+  /tenants/{slug}/projects/{project_id}/guideline:
+    get:
+      tags:
+      - project-guidelines
+      summary: Read the project guideline (Markdown)
+      description: 'Read the guideline. Any project member + workspace admin can read.
+
+
+        Image URLs in the doc are refreshed to 1-hour presigned-GETs before
+
+        return so the labeler''s browser can render them without direct S3
+
+        access.'
+      operationId: project-guidelines-get_guideline
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectGuidelineResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+      - project-guidelines
+      summary: Upsert the project guideline. Project managers + workspace admin only
+      description: 'Upsert the guideline content. Manager-only.
+
+
+        Pydantic enforces the 1 MB cap at parse time → 422 over-size. The
+
+        activity feed records `project.guideline_updated` with char count
+
+        delta + image count (not the content itself — privacy + size).'
+      operationId: project-guidelines-upsert_guideline
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectGuidelineUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectGuidelineResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/guideline/images/upload-init:
+    post:
+      tags:
+      - project-guidelines
+      summary: Mint a presigned PUT URL for a guideline image. Manager-only
+      description: 'Mint a presigned PUT for a guideline image.
+
+
+        Caller PUTs the image bytes directly to S3 using `upload_url`, then
+
+        drops `public_url` into the guideline markdown as the ``.
+
+
+        `public_url` is a 1-hour presigned GET. When labelers read the
+
+        guideline later, `GET /guideline` regenerates these URLs to fresh
+
+        1-hour windows — the FE never needs to handle expiry.'
+      operationId: project-guidelines-init_guideline_image_upload
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuidelineImageUploadInitRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GuidelineImageUploadInitResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    GuidelineImageUploadInitRequest:
+      properties:
+        filename:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Filename
+          description: Original image filename to upload.
+        size_bytes:
+          type: integer
+          maximum: 10485760.0
+          exclusiveMinimum: 0.0
+          title: Size Bytes
+          description: Per-image hard cap is 10 MB; over → 422 here, 413 on the route.
+        content_type:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Content Type
+          description: MIME type of the image being uploaded.
+      type: object
+      required:
+      - filename
+      - size_bytes
+      - content_type
+      title: GuidelineImageUploadInitRequest
+    GuidelineImageUploadInitResponse:
+      properties:
+        upload_url:
+          type: string
+          title: Upload Url
+          description: Presigned PUT URL to upload the image bytes to.
+        public_url:
+          type: string
+          title: Public Url
+          description: Presigned GET URL (1-hour TTL) to embed in the guideline Markdown.
+        expires_at:
+          type: string
+          format: date-time
+          title: Expires At
+          description: When the presigned URLs expire.
+      type: object
+      required:
+      - upload_url
+      - public_url
+      - expires_at
+      title: GuidelineImageUploadInitResponse
+      description: 'Returned URLs are both presigned + scoped to one upload. The
+
+        `public_url` is a presigned GET valid for 1 hour; it''s the value the
+
+        FE drops into the markdown source. When the labeler reads the
+
+        guideline later via `GET /guideline`, the BE re-signs every image URL
+
+        in the doc to a fresh 1-hour window so labelers can always render.'
+    ProjectGuidelineResponse:
+      properties:
+        content_md:
+          type: string
+          title: Content Md
+          description: Stored guideline Markdown with image URLs re-signed to fresh 1-hour presigned GETs.
+        updated_by:
+          anyOf:
+          - $ref: '#/components/schemas/UserSummary'
+          - type: 'null'
+          description: User who last updated the guideline, if known.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: When the guideline was first created.
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+          description: When the guideline was last updated.
+      type: object
+      required:
+      - content_md
+      - created_at
+      - updated_at
+      title: ProjectGuidelineResponse
+      description: 'GET /guideline — what every project member sees.
+
+
+        `content_md` is the stored Markdown with any `guidelines/{pid}/...`
+
+        image URLs re-signed to fresh 1-hour TTL presigned-GET URLs so the
+
+        labeler''s browser can render them without direct S3 access.'
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    UserSummary:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        email:
+          type: string
+          title: Email
+        first_name:
+          type: string
+          title: First Name
+        last_name:
+          type: string
+          title: Last Name
+      type: object
+      required:
+      - id
+      - email
+      - first_name
+      - last_name
+      title: UserSummary
+      description: 'Compact user reference for embedding in other responses (members,
+
+        asset_state, etc.) so the FE doesn''t have to do N+1 lookups for names.'
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    ProjectGuidelineUpdate:
+      properties:
+        content_md:
+          type: string
+          maxLength: 1048576
+          title: Content Md
+          description: Markdown source (CommonMark + GFM). 1 MB cap — over → 422 here, 413 on the route. Image URLs in the doc should point at `guidelines/{project_id}/...` from this project's upload-init flow.
+      type: object
+      required:
+      - content_md
+      title: ProjectGuidelineUpdate
+      description: PUT /guideline body. Manager-only on the route.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      description: Cognito access token
+      scheme: bearer

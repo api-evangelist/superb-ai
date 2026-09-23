@@ -1,0 +1,2554 @@
+openapi: 3.2.0
+info:
+  title: MLOps Platform Annotations API
+  description: Multi-tenant labeling-platform backend.
+  version: 0.1.0
+tags:
+- name: Annotations
+paths:
+  /tenants/{slug}/projects/{project_id}/annotations:
+    get:
+      tags:
+      - Annotations
+      summary: List Annotations
+      description: 'Annotation-level cursor-paginated list (ADR-0029 Phase 1).
+
+
+        Default sort: `created_at DESC, id DESC` — backed by `ix_ann_project_created`
+
+        + `ix_ann_project_class`. Empirically <1 ms at 5M rows.
+
+
+        Phase 1 advertises NO `?sort=` parameter — only the default. Phase 2 will
+
+        add an allowlist + index when the FE asks.
+
+
+        When `version_id` is set, the read swaps to the S3 manifest backing that
+
+        project version (see ADR-0024). The fan-out is per-asset, so the request
+
+        must specify `asset_id` or `asset_ids` — version-wide enumeration is left
+
+        to a separate paginated endpoint (deferred until the FE asks for it).'
+      operationId: annotations-list_annotations
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 200
+          minimum: 1
+          description: Max rows per page.
+          default: 50
+          title: Limit
+        description: Max rows per page.
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+          title: Cursor
+        description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+      - name: class_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+              format: uuid
+          - type: 'null'
+          description: 'Repeatable class filter: `?class_id=a&class_id=b` → `class_id IN (...)`.'
+          title: Class Id
+        description: 'Repeatable class filter: `?class_id=a&class_id=b` → `class_id IN (...)`.'
+      - name: type
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - $ref: '#/components/schemas/AnnotationType'
+          - type: 'null'
+          description: Annotation type (the geometry discriminator). Exact match; invalid values 422.
+          title: Type
+        description: Annotation type (the geometry discriminator). Exact match; invalid values 422.
+      - name: source
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              $ref: '#/components/schemas/AnnotationSource'
+          - type: 'null'
+          description: Repeatable `?source=manual&source=model`. ANY-of provenance filter (`manual`/`imported`/`model`); a single value keeps the prior exact-match behavior.
+          title: Source
+        description: Repeatable `?source=manual&source=model`. ANY-of provenance filter (`manual`/`imported`/`model`); a single value keeps the prior exact-match behavior.
+      - name: source_none
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              $ref: '#/components/schemas/AnnotationSource'
+          - type: 'null'
+          description: Repeatable `?source_none=a&source_none=b`. Excludes annotations whose source is any listed provenance (negative twin, ADR-0115). A value repeated in `source` → 400.
+          title: Source None
+        description: Repeatable `?source_none=a&source_none=b`. Excludes annotations whose source is any listed provenance (negative twin, ADR-0115). A value repeated in `source` → 400.
+      - name: created_by
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: Filter to annotations authored by this user (labeler / model actor).
+          title: Created By
+        description: Filter to annotations authored by this user (labeler / model actor).
+      - name: asset_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: Filter to annotations on this single asset. Mutually exclusive with `asset_ids`.
+          title: Asset Id
+        description: Filter to annotations on this single asset. Mutually exclusive with `asset_ids`.
+      - name: asset_ids
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: array
+            items:
+              type: string
+              format: uuid
+          - type: 'null'
+          description: Repeatable `?asset_ids=a&asset_ids=b` → filter to annotations on any of these assets (max 100). Used by the FE grid view to merge per-asset annotation calls into one request. Mutually exclusive with `asset_id`.
+          title: Asset Ids
+        description: Repeatable `?asset_ids=a&asset_ids=b` → filter to annotations on any of these assets (max 100). Used by the FE grid view to merge per-asset annotation calls into one request. Mutually exclusive with `asset_id`.
+      - name: instance_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: Filter to annotations sharing this instance id (multi-shape instance grouping).
+          title: Instance Id
+        description: Filter to annotations sharing this instance id (multi-shape instance grouping).
+      - name: created_at_from
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Inclusive lower bound (>=) on `created_at` (ISO-8601).
+          title: Created At From
+        description: Inclusive lower bound (>=) on `created_at` (ISO-8601).
+      - name: created_at_to
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          description: Exclusive upper bound (<) on `created_at` (ISO-8601).
+          title: Created At To
+        description: Exclusive upper bound (<) on `created_at` (ISO-8601).
+      - name: include
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: 'CSV of sub-resources to embed: `asset`, `class`. Whole-record only.'
+          title: Include
+        description: 'CSV of sub-resources to embed: `asset`, `class`. Whole-record only.'
+      - name: include_total
+        in: query
+        required: false
+        schema:
+          type: boolean
+          description: When true, response carries `total` = COUNT(*) for the same filter (ignores cursor/limit). Sub-400ms at the 5M-row project cap; opt in only when the FE needs a 'showing X of Y' total.
+          default: false
+          title: Include Total
+        description: When true, response carries `total` = COUNT(*) for the same filter (ignores cursor/limit). Sub-400ms at the 5M-row project cap; opt in only when the FE needs a 'showing X of Y' total.
+      - name: version_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          description: When set, read annotations from this version's frozen S3 manifests instead of the live `annotation` table — same response shape, but the data is what was frozen at version-build time. Requires `asset_id` or `asset_ids` to scope the fan-out (capped at 100). Version must belong to this project (404 otherwise) and have `status=ready` (425 otherwise). All other filters (class_id, type, source, created_by, instance_id, created_at_*) are applied in memory after the manifest read. Sort + cursor pagination work the same way as the live path.
+          title: Version Id
+        description: When set, read annotations from this version's frozen S3 manifests instead of the live `annotation` table — same response shape, but the data is what was frozen at version-build time. Requires `asset_id` or `asset_ids` to scope the fan-out (capped at 100). Version must belong to this project (404 otherwise) and have `status=ready` (425 otherwise). All other filters (class_id, type, source, created_by, instance_id, created_at_*) are applied in memory after the manifest read. Sort + cursor pagination work the same way as the live path.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnotationListPage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/annotations/batch-delete:
+    post:
+      tags:
+      - Annotations
+      summary: Batch Delete Annotations
+      description: 'Delete up to 500 annotations by id, scoped to this project.
+
+
+        POST `batch-delete` (not DELETE-with-body — proxies strip request bodies on
+
+        DELETE per RFC 9110 §9.3.5 / cloud-LB behavior). Hard-cap 500 to keep p95 under
+
+        ~200 ms (per ADR-0029 perf test); FE chunks for larger sets.'
+      operationId: annotations-batch_delete_annotations
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnnotationBatchDeleteRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnotationBatchDeleteResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/annotations/batch-create:
+    post:
+      tags:
+      - Annotations
+      summary: Project Batch Create Annotations
+      description: 'Create a flat mapped list of annotations across many assets in one sync
+
+        call (ADR-0061) — the import/prediction path. Each row references its asset
+
+        by `asset_id` or `filename`. All-or-nothing: any invalid row → 422 with its
+
+        index, nothing inserted. Cap MAX_SYNC_BATCH_SIZE. manager+.'
+      operationId: annotations-project_batch_create_annotations
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectAnnotationBatchCreate'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectAnnotationBatchCreateResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/annotations/import-init:
+    post:
+      tags:
+      - Annotations
+      summary: Annotation Import Init
+      description: 'Mint a presigned PUT for a staged NDJSON import file (ADR-0061). The
+
+        file''s byte count is pinned at S3 (`size_bytes`), capped at
+
+        MAX_IMPORT_FILE_BYTES (over → 422 here). PUT the raw NDJSON, then pass the
+
+        returned `import_id` to `bulk-create`. 15-min TTL. manager+, rate-limited.'
+      operationId: annotations-annotation_import_init
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnnotationImportInitRequest'
+      responses:
+        '201':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnotationImportInitResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/annotations/bulk-create:
+    post:
+      tags:
+      - Annotations
+      summary: Project Bulk Create Annotations
+      description: 'Kick off an async annotation-create job (ADR-0061) — for large imports /
+
+        predictions. Body is EITHER `annotations` inline (≤~6 MB) OR an `import_id`
+
+        from `import-init` (staged NDJSON). The worker scans (count + size + parse),
+
+        then validates + inserts in resumable batches, reporting per-row errors.
+
+        manager+. Returns a Job (202).'
+      operationId: annotations-project_bulk_create_annotations
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: Idempotency-Key
+        in: header
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Idempotency-Key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectAnnotationBulkCreate'
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/annotations/batch:
+    post:
+      tags:
+      - Annotations
+      summary: Batch Edit Annotations
+      description: 'Create, update, and delete annotations in ONE atomic transaction — the
+
+        editor "save" path (ADR-0070). All-or-nothing: any validation or edit-lock
+
+        failure rolls back the whole batch and returns the offending items keyed by
+
+        `id`. `deletes` is idempotent (ids already gone are no-ops). Applied order is
+
+        create → update → delete; the response echoes each bucket''s ids (ADR-0092).
+
+
+        Caps: `MAX_SYNC_BATCH_SIZE` ops and `MAX_SYNC_BATCH_BYTES` body (the route
+
+        deps reject over-cap before parse). Edit-lock is enforced per touched asset
+
+        via the same stage-handoff matrix as single edit; manager/reviewer override.'
+      operationId: annotations-batch_edit_annotations
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnnotationBatchEditRequest'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnotationBatchEditResponse'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/assets/{asset_id}/revisions:
+    get:
+      tags:
+      - Annotations
+      summary: List Asset Revisions
+      description: 'List an asset''s commits (newest first). One entry per submit/approve/reject
+
+        boundary, with who committed it and how many annotations it captured.'
+      operationId: annotations-list_asset_revisions
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: asset_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Asset Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          description: Max rows per page.
+          default: 50
+          title: Limit
+        description: Max rows per page.
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+          title: Cursor
+        description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevisionSummaryPage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/assets/{asset_id}/revisions/{seq}:
+    get:
+      tags:
+      - Annotations
+      summary: Get Asset Revision
+      description: 'The full annotation snapshot at one commit — what the editor renders to
+
+        view or diff a past state.'
+      operationId: annotations-get_asset_revision
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: asset_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Asset Id
+      - name: seq
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+          title: Seq
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevisionDetail'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /tenants/{slug}/projects/{project_id}/annotations/{annotation_id}/revisions:
+    get:
+      tags:
+      - Annotations
+      summary: List Annotation Revisions
+      description: 'One shape''s state at each commit it appeared in (newest first) — the
+
+        GitHub-blame timeline for a single annotation.'
+      operationId: annotations-list_annotation_revisions
+      security:
+      - HTTPBearer: []
+      parameters:
+      - name: annotation_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Annotation Id
+      - name: slug
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Slug
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+          title: Project Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          description: Max rows per page.
+          default: 50
+          title: Limit
+        description: Max rows per page.
+      - name: cursor
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+          title: Cursor
+        description: Opaque pagination cursor from a previous response's `next_cursor`; omit for the first page.
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnnotationBlamePage'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+        '401':
+          description: Unauthenticated — missing, malformed, or expired Bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Authenticated but not authorized for this resource
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Resource not found in this tenant
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflict — resource state prevents this action
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate-limited (per-tenant token bucket)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    JobKind:
+      type: string
+      enum:
+      - build_project_version_manifest
+      - bulk_delete_image_assets
+      - bulk_update_tags_project
+      - bulk_add_assets_project
+      - bulk_remove_assets_project
+      - bulk_assign_assets_project
+      - bulk_unassign_assets_project
+      - bulk_approve_assets_project
+      - bulk_reject_assets_project
+      - bulk_create_annotations
+      - bulk_delete_annotations
+      - embed_dataset
+      - export_dataset
+      - auto_label_project
+      - cleanup_s3_objects
+      - delete_project_cascade
+      - delete_dataset_cascade
+      - duplicate_project_scope
+      - bulk_set_status_assets_project
+      title: JobKind
+    AnnotationBatchEditResponse:
+      properties:
+        created:
+          items:
+            type: string
+            format: uuid
+          type: array
+          title: Created
+        updated:
+          items:
+            type: string
+            format: uuid
+          type: array
+          title: Updated
+        deleted:
+          items:
+            type: string
+            format: uuid
+          type: array
+          title: Deleted
+      type: object
+      required:
+      - created
+      - updated
+      - deleted
+      title: AnnotationBatchEditResponse
+    AnnotationListPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/AnnotationListItem'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+        total:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Total
+      type: object
+      required:
+      - items
+      title: AnnotationListPage
+    KeypointNodeGeomRead:
+      properties:
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        visibility:
+          type: integer
+          title: Visibility
+          default: 2
+      additionalProperties: true
+      type: object
+      required:
+      - x
+      - y
+      title: KeypointNodeGeomRead
+    AnnotationListItem:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Annotation id (client-minted UUID, ADR-0092).
+        asset_id:
+          type: string
+          format: uuid
+          title: Asset Id
+          description: Id of the asset this annotation is on.
+        class_id:
+          type: string
+          format: uuid
+          title: Class Id
+          description: Id of the project class this annotation belongs to.
+        type:
+          $ref: '#/components/schemas/AnnotationType'
+          description: Annotation type (bbox, polygon, keypoint, or classification).
+        parent_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Parent Id
+          description: Parent annotation id, if this is nested.
+        instance_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Instance Id
+          description: Instance grouping id linking annotations of the same object.
+        geometry:
+          anyOf:
+          - oneOf:
+            - $ref: '#/components/schemas/BboxGeometryRead'
+            - $ref: '#/components/schemas/PolygonGeometryRead'
+            - $ref: '#/components/schemas/KeypointGeometryRead'
+            discriminator:
+              propertyName: type
+              mapping:
+                bbox: '#/components/schemas/BboxGeometryRead'
+                keypoint: '#/components/schemas/KeypointGeometryRead'
+                polygon: '#/components/schemas/PolygonGeometryRead'
+          - type: 'null'
+          title: Geometry
+          description: Pixel-coordinate typed geometry (bbox/polygon/keypoint, ADR-0091); null for classification.
+        data:
+          additionalProperties: true
+          type: object
+          title: Data
+          description: Free-form attribute/classification values for this annotation.
+        source:
+          $ref: '#/components/schemas/AnnotationSource'
+          description: How the annotation was produced (manual, imported, or model).
+        locked:
+          type: boolean
+          title: Locked
+          description: Per-shape protection lock (ADR-0084); absent in legacy snapshots → false.
+          default: false
+        created_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Created By
+          description: User who created the annotation, if known.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: Creation timestamp.
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+          description: Last-update timestamp.
+        asset:
+          anyOf:
+          - $ref: '#/components/schemas/AssetSummary'
+          - type: 'null'
+        class:
+          anyOf:
+          - $ref: '#/components/schemas/ClassRef'
+          - type: 'null'
+      type: object
+      required:
+      - id
+      - asset_id
+      - class_id
+      - type
+      - parent_id
+      - instance_id
+      - geometry
+      - data
+      - source
+      - created_by
+      - created_at
+      - updated_at
+      title: AnnotationListItem
+      description: 'List-endpoint item: AnnotationResponse plus optional embedded asset + the class
+
+        the annotation is an instance of (ADR-0090; wire key `class`).'
+    ProjectAnnotationBatchCreate:
+      properties:
+        annotations:
+          items:
+            $ref: '#/components/schemas/MappedAnnotationCreate'
+          type: array
+          maxItems: 1000
+          minItems: 1
+          title: Annotations
+        source:
+          $ref: '#/components/schemas/AnnotationSource'
+          default: manual
+        replace:
+          type: boolean
+          title: Replace
+          default: false
+      type: object
+      required:
+      - annotations
+      title: ProjectAnnotationBatchCreate
+      description: 'Body for `POST /{pid}/annotations/batch-create` — sync, flat mapped list,
+
+        all-or-nothing (an invalid row → 422 with its index). Cap
+
+        `MAX_SYNC_BATCH_SIZE`. `source` defaults to `manual`.'
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    AssetDownloadUrl:
+      properties:
+        url:
+          type: string
+          title: Url
+        expires_at:
+          type: string
+          format: date-time
+          title: Expires At
+      type: object
+      required:
+      - url
+      - expires_at
+      title: AssetDownloadUrl
+      description: Presigned GET URL for asset content (canvas rendering).
+    AssetProperties:
+      properties:
+        width:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Width
+        height:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Height
+        format:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Format
+      additionalProperties: true
+      type: object
+      title: AssetProperties
+      description: 'Extracted image facts persisted on `ImageAsset.properties` (JSONB) and
+
+        echoed on the wire. Written once by `extract.extract_image` (typed →
+
+        `model_dump`); read leniently everywhere else (job_worker freeze, exports,
+
+        asset responses). `{}` when extraction soft-failed, so every field is
+
+        Optional-with-default — a legacy row that predates a later-added key, or a
+
+        failed extraction, must still parse. `extra="allow"` keeps unknown future
+
+        keys through a round-trip rather than dropping them.'
+    ProjectAnnotationBatchCreateResponse:
+      properties:
+        total:
+          type: integer
+          title: Total
+        created:
+          type: integer
+          title: Created
+        replaced:
+          type: integer
+          title: Replaced
+      type: object
+      required:
+      - total
+      - created
+      - replaced
+      title: ProjectAnnotationBatchCreateResponse
+    MappedAnnotationCreate:
+      properties:
+        asset_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Asset Id
+        filename:
+          anyOf:
+          - type: string
+            maxLength: 255
+            minLength: 1
+          - type: 'null'
+          title: Filename
+        id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Id
+        class_id:
+          type: string
+          format: uuid
+          title: Class Id
+        type:
+          $ref: '#/components/schemas/AnnotationType'
+        geometry:
+          anyOf:
+          - oneOf:
+            - $ref: '#/components/schemas/BboxGeometry'
+            - $ref: '#/components/schemas/PolygonGeometry'
+            - $ref: '#/components/schemas/KeypointGeometry'
+            discriminator:
+              propertyName: type
+              mapping:
+                bbox: '#/components/schemas/BboxGeometry'
+                keypoint: '#/components/schemas/KeypointGeometry'
+                polygon: '#/components/schemas/PolygonGeometry'
+          - type: 'null'
+          title: Geometry
+        data:
+          additionalProperties: true
+          type: object
+          title: Data
+        instance_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Instance Id
+        locked:
+          type: boolean
+          title: Locked
+          default: false
+      type: object
+      required:
+      - class_id
+      - type
+      title: MappedAnnotationCreate
+      description: 'One row of a project-scoped flat create. References its target asset by
+
+        `asset_id` (UUID) or `filename` (resolved within the project''s dataset via
+
+        the unique (dataset, filename) index); `asset_id` wins if both are given.
+
+        Geometry rules match `AnnotationCreate`. No `parent_id` — cross-row parent
+
+        links aren''t expressible in a flat mapped list.'
+    AssetSummary:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        filename:
+          type: string
+          title: Filename
+        content_type:
+          type: string
+          title: Content Type
+        status:
+          $ref: '#/components/schemas/AssetStatus'
+        properties:
+          $ref: '#/components/schemas/AssetProperties'
+        thumbnail_url:
+          anyOf:
+          - $ref: '#/components/schemas/AssetDownloadUrl'
+          - type: 'null'
+      type: object
+      required:
+      - id
+      - filename
+      - content_type
+      - status
+      - properties
+      title: AssetSummary
+      description: 'Compact asset reference for embedding in project asset-state rows so the
+
+        FE can render filename + dimensions without N+1 lookups. Does NOT include a
+
+        download URL — generating presigned URLs per row would be expensive on lists;
+
+        the FE calls /download-url per asset when actually rendering the canvas.'
+    ProjectAnnotationBulkCreate:
+      properties:
+        annotations:
+          anyOf:
+          - items:
+              $ref: '#/components/schemas/MappedAnnotationCreate'
+            type: array
+            minItems: 1
+          - type: 'null'
+          title: Annotations
+        import_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Import Id
+        source:
+          $ref: '#/components/schemas/AnnotationSource'
+          default: imported
+        replace:
+          type: boolean
+          title: Replace
+          default: false
+      type: object
+      title: ProjectAnnotationBulkCreate
+      description: 'Body for `POST /{pid}/annotations/bulk-create` — async. Provide EITHER
+
+        `annotations` inline (bounded by the ~6 MB Lambda request payload) OR an
+
+        `import_id` from `import-init` (S3-staged NDJSON, for large imports).
+
+        Exactly one. `source` defaults to `imported` (the import path).'
+    AnnotationBatchEditCreate:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        asset_id:
+          type: string
+          format: uuid
+          title: Asset Id
+        class_id:
+          type: string
+          format: uuid
+          title: Class Id
+        type:
+          $ref: '#/components/schemas/AnnotationType'
+        geometry:
+          anyOf:
+          - oneOf:
+            - $ref: '#/components/schemas/BboxGeometry'
+            - $ref: '#/components/schemas/PolygonGeometry'
+            - $ref: '#/components/schemas/KeypointGeometry'
+            discriminator:
+              propertyName: type
+              mapping:
+                bbox: '#/components/schemas/BboxGeometry'
+                keypoint: '#/components/schemas/KeypointGeometry'
+                polygon: '#/components/schemas/PolygonGeometry'
+          - type: 'null'
+          title: Geometry
+        data:
+          additionalProperties: true
+          type: object
+          title: Data
+        instance_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Instance Id
+        parent_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Parent Id
+        locked:
+          type: boolean
+          title: Locked
+          default: false
+      type: object
+      required:
+      - id
+      - asset_id
+      - class_id
+      - type
+      title: AnnotationBatchEditCreate
+      description: 'A new annotation in a batch edit (ADR-0092). `id` is the caller''s
+
+        client-minted UUID — it IS the shape''s primary key and must be unique within
+
+        this request. The create upserts on the PK (`id`), so a retry is idempotent.
+
+        `parent_id` names this shape''s parent by the parent''s `id` — either another
+
+        create in the same batch or an existing shape (the self-FK is satisfied at
+
+        statement end). `source` is always `manual` (the editor path).'
+    PolygonGeometry:
+      properties:
+        type:
+          type: string
+          const: polygon
+          title: Type
+          default: polygon
+        polygons:
+          items:
+            $ref: '#/components/schemas/PolygonPart'
+          type: array
+          minItems: 1
+          title: Polygons
+      type: object
+      required:
+      - polygons
+      title: PolygonGeometry
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    AnnotationBlamePage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/AnnotationBlameEntry'
+          type: array
+          title: Items
+          description: This page of blame entries.
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+          description: Opaque cursor for the next page, or null when this is the last page.
+      type: object
+      required:
+      - items
+      title: AnnotationBlamePage
+      description: A page of one annotation's blame timeline (ADR-0012 cursor pagination).
+    PolygonPart:
+      properties:
+        exterior:
+          items:
+            prefixItems:
+            - type: number
+            - type: number
+            type: array
+            maxItems: 2
+            minItems: 2
+          type: array
+          minItems: 3
+          title: Exterior
+        holes:
+          items:
+            items:
+              prefixItems:
+              - type: number
+              - type: number
+              type: array
+              maxItems: 2
+              minItems: 2
+            type: array
+          type: array
+          title: Holes
+      type: object
+      required:
+      - exterior
+      title: PolygonPart
+      description: 'One part of a (possibly multi-part) polygon: an exterior ring + optional hole rings.'
+    KeypointNodeGeom:
+      properties:
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        visibility:
+          type: integer
+          maximum: 2.0
+          minimum: 0.0
+          title: Visibility
+          default: 2
+      type: object
+      required:
+      - x
+      - y
+      title: KeypointNodeGeom
+    ClassificationOption:
+      properties:
+        value:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Value
+        display:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Display
+      type: object
+      required:
+      - value
+      - display
+      title: ClassificationOption
+    BboxGeometry:
+      properties:
+        type:
+          type: string
+          const: bbox
+          title: Type
+          default: bbox
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        w:
+          type: number
+          exclusiveMinimum: 0.0
+          title: W
+        h:
+          type: number
+          exclusiveMinimum: 0.0
+          title: H
+      type: object
+      required:
+      - x
+      - y
+      - w
+      - h
+      title: BboxGeometry
+    VisibilityModel:
+      type: string
+      enum:
+      - binary
+      - coco_ternary
+      title: VisibilityModel
+    ClassificationConfig:
+      properties:
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+          default: 1
+        input_type:
+          $ref: '#/components/schemas/ClassificationInputType'
+        options:
+          items:
+            $ref: '#/components/schemas/ClassificationOption'
+          type: array
+          title: Options
+        default:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Default
+        required:
+          type: boolean
+          title: Required
+          default: false
+      type: object
+      required:
+      - input_type
+      title: ClassificationConfig
+      description: 'Per-label config for `type=classification` annotations. Stored on
+
+        `ProjectClass.classification_config` as JSONB. ADR-0031.
+
+
+        `options` is required for `radio` / `checkbox`, ignored for `text`.
+
+        `default` (optional) names the pre-selected value (radio/text) or single
+
+        pre-selected option (checkbox). `required: true` makes the workflow
+
+        `submit` transition refuse if no annotation for this label exists on
+
+        the asset.'
+    AnnotationBlameEntry:
+      properties:
+        submit_seq:
+          type: integer
+          title: Submit Seq
+          description: Monotonic sequence number of this commit within the asset's history.
+        reason:
+          $ref: '#/components/schemas/RevisionReason'
+          description: Why this revision was created (e.g. submitted, approved, rejected).
+        actor_user_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Actor User Id
+          description: ID of the user who made this commit, or null if not attributable to a user.
+        actor_role:
+          anyOf:
+          - $ref: '#/components/schemas/ProjectRole'
+          - type: 'null'
+          description: The committing user's effective project role at commit time, or null.
+        committed_at:
+          type: string
+          format: date-time
+          title: Committed At
+          description: Timestamp when this revision was committed.
+        class_id:
+          type: string
+          format: uuid
+          title: Class Id
+          description: ID of the annotation class this shape belongs to.
+        type:
+          $ref: '#/components/schemas/AnnotationType'
+          description: Kind of annotation (bbox, polygon, keypoint, classification).
+        geometry:
+          anyOf:
+          - oneOf:
+            - $ref: '#/components/schemas/BboxGeometryRead'
+            - $ref: '#/components/schemas/PolygonGeometryRead'
+            - $ref: '#/components/schemas/KeypointGeometryRead'
+            discriminator:
+              propertyName: type
+              mapping:
+                bbox: '#/components/schemas/BboxGeometryRead'
+                keypoint: '#/components/schemas/KeypointGeometryRead'
+                polygon: '#/components/schemas/PolygonGeometryRead'
+          - type: 'null'
+          title: Geometry
+          description: Typed geometry snapshot (read union, ADR-0104); null for classification annotations.
+        data:
+          additionalProperties: true
+          type: object
+          title: Data
+          description: Class-attribute values and other annotation metadata.
+      type: object
+      required:
+      - submit_seq
+      - reason
+      - actor_user_id
+      - actor_role
+      - committed_at
+      - class_id
+      - type
+      - geometry
+      - data
+      title: AnnotationBlameEntry
+      description: One shape's state at one commit — the per-annotation blame timeline.
+    JobResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Server-assigned job identifier.
+        kind:
+          $ref: '#/components/schemas/JobKind'
+          description: The kind of work this job performs.
+        target:
+          additionalProperties: true
+          type: object
+          title: Target
+          description: Kind-specific parameters describing what the job operates on (shape varies per `kind`; internal orchestration fields are omitted).
+        status:
+          $ref: '#/components/schemas/JobStatus'
+          description: Current lifecycle state of the job.
+        total:
+          type: integer
+          title: Total
+          description: Total number of work items the job will process.
+        processed:
+          type: integer
+          title: Processed
+          description: Number of work items processed so far.
+        succeeded:
+          type: integer
+          title: Succeeded
+          description: Number of processed items that succeeded.
+        failed:
+          type: integer
+          title: Failed
+          description: Number of processed items that failed.
+        skipped:
+          type: integer
+          title: Skipped
+          description: Number of items skipped (ineligible / already in target state).
+          default: 0
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+          description: Failure message when the job errored, else null.
+        result_summary:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Result Summary
+          description: Kind-specific summary of the outcome, populated as the job runs and finishes. Stays a plain object here because the key set varies per `kind` (the union isn't a useful client type); the per-kind keys are registry-validated on the write side (`app/job_results.py`), so a given `kind` always carries the same shape.
+        created_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Created By
+          description: User who created the job, or null if system-initiated.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: When the job was created.
+        completed_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Completed At
+          description: When the job reached a terminal state, or null if still in flight.
+        pct:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Pct
+          description: 'Derived progress percent. A COMPLETED job is always 100 — even a no-op
+
+            with total==0 finished all of its (zero) work; showing 0/null on a done job
+
+            was misleading. Otherwise processed/total, or None when total is unknown
+
+            (freshly-queued, denominator not yet resolved).'
+          readOnly: true
+      type: object
+      required:
+      - id
+      - kind
+      - target
+      - status
+      - total
+      - processed
+      - succeeded
+      - failed
+      - error
+      - created_by
+      - created_at
+      - completed_at
+      - pct
+      title: JobResponse
+    AnnotationBatchEditRequest:
+      properties:
+        creates:
+          items:
+            $ref: '#/components/schemas/AnnotationBatchEditCreate'
+          type: array
+          title: Creates
+        updates:
+          items:
+            $ref: '#/components/schemas/AnnotationBatchEditUpdate'
+          type: array
+          title: Updates
+        deletes:
+          items:
+            type: string
+            format: uuid
+          type: array
+          title: Deletes
+      type: object
+      title: AnnotationBatchEditRequest
+      description: 'Body for `POST /{pid}/annotations/batch`. At least one bucket non-empty;
+
+        the combined op count is capped at `MAX_SYNC_BATCH_SIZE` and the raw body at
+
+        `MAX_SYNC_BATCH_BYTES` (enforced on the route before parse). `deletes` is a
+
+        list of annotation ids and is idempotent — ids already gone are no-ops, not
+
+        errors.'
+    JobStatus:
+      type: string
+      enum:
+      - pending
+      - queued
+      - running
+      - completed
+      - failed
+      - canceled
+      title: JobStatus
+    BboxGeometryRead:
+      properties:
+        type:
+          type: string
+          const: bbox
+          title: Type
+          default: bbox
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        w:
+          type: number
+          title: W
+        h:
+          type: number
+          title: H
+      additionalProperties: true
+      type: object
+      required:
+      - x
+      - y
+      - w
+      - h
+      title: BboxGeometryRead
+    AnnotationBatchDeleteRequest:
+      properties:
+        ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          maxItems: 500
+          minItems: 1
+          title: Ids
+      type: object
+      required:
+      - ids
+      title: AnnotationBatchDeleteRequest
+      description: POST `batch-delete` body. Hard-cap 500 ids per call (ADR-0029 perf budget).
+    RevisionSummaryPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/RevisionSummary'
+          type: array
+          title: Items
+          description: This page of revision summaries.
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+          description: Opaque cursor for the next page, or null when this is the last page.
+      type: object
+      required:
+      - items
+      title: RevisionSummaryPage
+      description: A page of an asset's commit history (ADR-0012 cursor pagination).
+    RevisionSummary:
+      properties:
+        submit_seq:
+          type: integer
+          title: Submit Seq
+          description: Monotonic sequence number of this commit within the asset's history.
+        reason:
+          $ref: '#/components/schemas/RevisionReason'
+          description: Why this revision was created (e.g. submitted, approved, rejected).
+        actor_user_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Actor User Id
+          description: ID of the user who made this commit, or null if not attributable to a user.
+        actor_role:
+          anyOf:
+          - $ref: '#/components/schemas/ProjectRole'
+          - type: 'null'
+          description: The committing user's effective project role at commit time, or null.
+        committed_at:
+          type: string
+          format: date-time
+          title: Committed At
+          description: Timestamp when this revision was committed.
+        annotation_count:
+          type: integer
+          title: Annotation Count
+          description: Number of annotations captured in this commit's snapshot.
+      type: object
+      required:
+      - submit_seq
+      - reason
+      - actor_user_id
+      - actor_role
+      - committed_at
+      - annotation_count
+      title: RevisionSummary
+      description: One commit in an asset's history (the editor's revision list).
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    PolygonGeometryRead:
+      properties:
+        type:
+          type: string
+          const: polygon
+          title: Type
+          default: polygon
+        polygons:
+          items:
+            $ref: '#/components/schemas/PolygonPartRead'
+          type: array
+          title: Polygons
+      additionalProperties: true
+      type: object
+      required:
+      - polygons
+      title: PolygonGeometryRead
+    KeypointGeometry:
+      properties:
+        type:
+          type: string
+          const: keypoint
+          title: Type
+          default: keypoint
+        points:
+          items:
+            $ref: '#/components/schemas/KeypointNodeGeom'
+          type: array
+          minItems: 1
+          title: Points
+      type: object
+      required:
+      - points
+      title: KeypointGeometry
+    KeypointPosition:
+      properties:
+        x:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: X
+        y:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Y
+      type: object
+      required:
+      - x
+      - y
+      title: KeypointPosition
+      description: 'Normalized (0-1) (x, y) inside a unit bbox. Origin is top-left; y grows
+
+        down. The FE multiplies by the drawn bbox dimensions to seed each joint
+
+        when the user creates a new keypoint annotation by dragging a rect.'
+    ClassKind:
+      type: string
+      enum:
+      - object
+      - classification
+      title: ClassKind
+    RevisionAnnotation:
+      properties:
+        annotation_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Annotation Id
+          description: Client-owned ID of the annotation, or null if the annotation was hard-deleted.
+        class_id:
+          type: string
+          format: uuid
+          title: Class Id
+          description: ID of the annotation class this shape belongs to.
+        type:
+          $ref: '#/components/schemas/AnnotationType'
+          description: Kind of annotation (bbox, polygon, keypoint, classification).
+        geometry:
+          anyOf:
+          - oneOf:
+            - $ref: '#/components/schemas/BboxGeometryRead'
+            - $ref: '#/components/schemas/PolygonGeometryRead'
+            - $ref: '#/components/schemas/KeypointGeometryRead'
+            discriminator:
+              propertyName: type
+              mapping:
+                bbox: '#/components/schemas/BboxGeometryRead'
+                keypoint: '#/components/schemas/KeypointGeometryRead'
+                polygon: '#/components/schemas/PolygonGeometryRead'
+          - type: 'null'
+          title: Geometry
+          description: Typed geometry snapshot (read union, ADR-0104); null for classification annotations.
+        data:
+          additionalProperties: true
+          type: object
+          title: Data
+          description: Class-attribute values and other annotation metadata.
+        instance_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Instance Id
+          description: ID linking this annotation to a tracked instance, or null if unlinked.
+      type: object
+      required:
+      - annotation_id
+      - class_id
+      - type
+      - geometry
+      - data
+      - instance_id
+      title: RevisionAnnotation
+      description: One annotation's state as captured in a commit.
+    RevisionDetail:
+      properties:
+        submit_seq:
+          type: integer
+          title: Submit Seq
+          description: Monotonic sequence number of this commit within the asset's history.
+        reason:
+          $ref: '#/components/schemas/RevisionReason'
+          description: Why this revision was created (e.g. submitted, approved, rejected).
+        actor_user_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Actor User Id
+          description: ID of the user who made this commit, or null if not attributable to a user.
+        actor_role:
+          anyOf:
+          - $ref: '#/components/schemas/ProjectRole'
+          - type: 'null'
+          description: The committing user's effective project role at commit time, or null.
+        committed_at:
+          type: string
+          format: date-time
+          title: Committed At
+          description: Timestamp when this revision was committed.
+        annotations:
+          items:
+            $ref: '#/components/schemas/RevisionAnnotation'
+          type: array
+          title: Annotations
+          description: Full annotation snapshot as it existed at this commit.
+      type: object
+      required:
+      - submit_seq
+      - reason
+      - actor_user_id
+      - actor_role
+      - committed_at
+      - annotations
+      title: RevisionDetail
+      description: 'A single commit + the full annotation snapshot at that point — what the
+
+        editor renders to view or diff a past state.'
+    PolygonPartRead:
+      properties:
+        exterior:
+          items:
+            prefixItems:
+            - type: number
+            - type: number
+            type: array
+            maxItems: 2
+            minItems: 2
+          type: array
+          title: Exterior
+        holes:
+          items:
+            items:
+              prefixItems:
+              - type: number
+              - type: number
+              type: array
+              maxItems: 2
+              minItems: 2
+            type: array
+          type: array
+          title: Holes
+      additionalProperties: true
+      type: object
+      required:
+      - exterior
+      title: PolygonPartRead
+    ClassRef:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        kind:
+          $ref: '#/components/schemas/ClassKind'
+        name:
+          type: string
+          title: Name
+        color:
+          type: string
+          title: Color
+        owner_class_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Owner Class Id
+        allowed_types:
+          items:
+            type: string
+          type: array
+          title: Allowed Types
+        archived:
+          type: boolean
+          title: Archived
+        keypoint_topology:
+          anyOf:
+          - $ref: '#/components/schemas/KeypointTopology'
+          - type: 'null'
+        classification_config:
+          anyOf:
+          - $ref: '#/components/schemas/ClassificationConfig'
+          - type: 'null'
+      type: object
+      required:
+      - id
+      - kind
+      - name
+      - color
+      - allowed_types
+      - archived
+      title: ClassRef
+      description: 'Flat serialization of a single class row (any kind) — used to embed the class an
+
+        annotation is an instance of (annotation list). Distinct from the nested ClassResponse,
+
+        which carries an object class''s attributes for the editor.'
+    KeypointTopology:
+      properties:
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+          default: 1
+        dim:
+          type: integer
+          enum:
+          - 2
+          - 3
+          title: Dim
+          default: 2
+        nodes:
+          items:
+            $ref: '#/components/schemas/KeypointNode'
+          type: array
+          maxItems: 512
+          minItems: 1
+          title: Nodes
+        edges:
+          items:
+            items:
+              type: integer
+            type: array
+          type: array
+          title: Edges
+        visibility_model:
+          $ref: '#/components/schemas/VisibilityModel'
+          default: coco_ternary
+      type: object
+      required:
+      - nodes
+      title: KeypointTopology
+      description: 'Per-label keypoint topology — names the nodes, defines skeleton edges.
+
+        ADR-0030. Stored on `ProjectClass.keypoint_topology` as JSONB.
+
+
+        `nodes` are 0-indexed by their position in the array; the `id` field is
+
+        the explicit canonical index and MUST equal the array index. `edges` are
+
+        0-indexed pairs into `nodes`. Empty `edges` = single-keypoint label
+
+        (no skeleton render).'
+    ClassificationInputType:
+      type: string
+      enum:
+      - radio
+      - checkbox
+      - text
+      title: ClassificationInputType
+    AssetStatus:
+      type: string
+      enum:
+      - pending
+      - processing
+      - ready
+      - failed
+      - deleted
+      title: AssetStatus
+    AnnotationBatchDeleteResponse:
+      properties:
+        total:
+          type: integer
+          title: Total
+          description: Number of ids requested.
+        deleted:
+          type: integer
+          title: Deleted
+          description: Number of ids that matched a row in this project and were deleted.
+        skipped:
+          type: integer
+          title: Skipped
+          description: Number of requested ids that matched no row (already deleted, wrong project, or never existed).
+          default: 0
+        results:
+          items:
+            $ref: '#/components/schemas/AnnotationBatchDeleteResultItem'
+          type: array
+          title: Results
+          description: Per-id outcome, one entry per requested id.
+      type: object
+      required:
+      - total
+      - deleted
+      - results
+      title: AnnotationBatchDeleteResponse
+      description: 'Canonical sync batch-op envelope (ADR-0041): buckets sum to total
+
+        (`total == deleted + skipped`) and `len(results) == total`. Shape mirrors
+
+        the asset `batch-delete` response so the FE has one bucket model.'
+    AnnotationBatchEditUpdate:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        class_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Class Id
+        geometry:
+          anyOf:
+          - oneOf:
+            - $ref: '#/components/schemas/BboxGeometry'
+            - $ref: '#/components/schemas/PolygonGeometry'
+            - $ref: '#/components/schemas/KeypointGeometry'
+            discriminator:
+              propertyName: type
+              mapping:
+                bbox: '#/components/schemas/BboxGeometry'
+                keypoint: '#/components/schemas/KeypointGeometry'
+                polygon: '#/components/schemas/PolygonGeometry'
+          - type: 'null'
+          title: Geometry
+        data:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Data
+        instance_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Instance Id
+        locked:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Locked
+      type: object
+      required:
+      - id
+      title: AnnotationBatchEditUpdate
+      description: 'A partial update of an existing annotation by `id`. Only the supplied
+
+        fields change; omitted fields are left as-is. `type` is immutable (changing
+
+        geometry kind = delete + create), so geometry is validated against the
+
+        annotation''s stored type server-side.'
+    ProjectRole:
+      type: string
+      enum:
+      - manager
+      - reviewer
+      - labeler
+      title: ProjectRole
+    AnnotationImportInitRequest:
+      properties:
+        size_bytes:
+          type: integer
+          maximum: 268435456.0
+          exclusiveMinimum: 0.0
+          title: Size Bytes
+          description: NDJSON file size in bytes. Hard cap 256 MB; over → 422 here, 413 on the route. The presign pins this exact size at S3.
+      type: object
+      required:
+      - size_bytes
+      title: AnnotationImportInitRequest
+    AnnotationType:
+      type: string
+      enum:
+      - bbox
+      - polygon
+      - keypoint
+      - classification
+      title: AnnotationType
+    AnnotationBatchDeleteResultItem:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        status:
+          type: string
+          enum:
+          - deleted
+          - skipped
+          title: Status
+      type: object
+      required:
+      - id
+      - status
+      title: AnnotationBatchDeleteResultItem
+    AnnotationSource:
+      type: string
+      enum:
+      - manual
+      - imported
+      - model
+      title: AnnotationSource
+    AnnotationImportInitResponse:
+      properties:
+        import_id:
+          type: string
+          format: uuid
+          title: Import Id
+        upload_url:
+          type: string
+          title: Upload Url
+        expires_at:
+          type: string
+          format: date-time
+          title: Expires At
+      type: object
+      required:
+      - import_id
+      - upload_url
+      - expires_at
+      title: AnnotationImportInitResponse
+      description: '`import_id` is what you pass to `bulk-create`. PUT the raw NDJSON bytes to
+
+        `upload_url` (exactly `size_bytes` long) before kicking the job.'
+    RevisionReason:
+      type: string
+      enum:
+      - submitted
+      - approved
+      - rejected
+      title: RevisionReason
+    KeypointNode:
+      properties:
+        id:
+          type: integer
+          minimum: 0.0
+          title: Id
+        name:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Name
+        default_position:
+          anyOf:
+          - $ref: '#/components/schemas/KeypointPosition'
+          - type: 'null'
+      type: object
+      required:
+      - id
+      - name
+      title: KeypointNode
+    KeypointGeometryRead:
+      properties:
+        type:
+          type: string
+          const: keypoint
+          title: Type
+          default: keypoint
+        points:
+          items:
+            $ref: '#/components/schemas/KeypointNodeGeomRead'
+          type: array
+          title: Points
+      additionalProperties: true
+      type: object
+      required:
+      - points
+      title: KeypointGeometryRead
+  securitySchemes:
+    HTTPBearer:
+      type: http
+      description: Cognito access token
+      scheme: bearer
