@@ -30,8 +30,8 @@ created: '2026-08-29'
 modified: '2026-08-29'
 tags:
 - Artificial Intelligence
-- Machine-Learning
-- Computer-Vision
+- Machine Learning
+- Computer Vision
 - Data Labeling
 - Annotation
 - MLOps
@@ -50,6 +50,8 @@ tags_raw:
 - Model Training
 - Inference
 - Datasets
+- Machine-Learning
+- Computer-Vision
 apis:
 - aid: superb-ai:superb-ai-activity-api
   name: Superb AI Activity API

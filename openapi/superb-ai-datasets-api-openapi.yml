@@ -130,27 +130,52 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    UnifiedDatasetPage:
+    UnifiedDatasetResponse:
       properties:
-        items:
-          items:
-            $ref: '#/components/schemas/UnifiedDatasetResponse'
-          type: array
-          title: Items
-        next_cursor:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Server-generated unique identifier of the dataset.
+        name:
+          type: string
+          title: Name
+          description: Human-readable display name of the dataset.
+        description:
           anyOf:
           - type: string
           - type: 'null'
-          title: Next Cursor
-        total:
+          title: Description
+          description: Optional free-text description of the dataset; null if unset.
+        created_by:
           anyOf:
-          - type: integer
+          - type: string
+            format: uuid
           - type: 'null'
-          title: Total
+          title: Created By
+          description: Identifier of the user who created the dataset; null if unknown or system-created.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: UTC timestamp when the dataset was created.
+        kind:
+          type: string
+          const: image
+          title: Kind
+          description: Discriminator for the dataset kind; lets the FE route to the correct kind-specific endpoint.
       type: object
       required:
-      - items
-      title: UnifiedDatasetPage
+      - id
+      - name
+      - description
+      - created_by
+      - created_at
+      - kind
+      title: UnifiedDatasetResponse
+      description: 'Returned by the cross-kind list endpoint. `kind` discriminator lets the FE
+
+        route to the correct kind-specific endpoint for follow-up calls.'
     ErrorResponse:
       type: object
       required:
@@ -179,32 +204,6 @@ components:
               type: string
               nullable: true
               description: Correlation id for support / log lookups.
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
     ErrorCode:
       type: string
       enum:
@@ -270,52 +269,27 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    UnifiedDatasetResponse:
+    UnifiedDatasetPage:
       properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-          description: Server-generated unique identifier of the dataset.
-        name:
-          type: string
-          title: Name
-          description: Human-readable display name of the dataset.
-        description:
+        items:
+          items:
+            $ref: '#/components/schemas/UnifiedDatasetResponse'
+          type: array
+          title: Items
+        next_cursor:
           anyOf:
           - type: string
           - type: 'null'
-          title: Description
-          description: Optional free-text description of the dataset; null if unset.
-        created_by:
+          title: Next Cursor
+        total:
           anyOf:
-          - type: string
-            format: uuid
+          - type: integer
           - type: 'null'
-          title: Created By
-          description: Identifier of the user who created the dataset; null if unknown or system-created.
-        created_at:
-          type: string
-          format: date-time
-          title: Created At
-          description: UTC timestamp when the dataset was created.
-        kind:
-          type: string
-          const: image
-          title: Kind
-          description: Discriminator for the dataset kind; lets the FE route to the correct kind-specific endpoint.
+          title: Total
       type: object
       required:
-      - id
-      - name
-      - description
-      - created_by
-      - created_at
-      - kind
-      title: UnifiedDatasetResponse
-      description: 'Returned by the cross-kind list endpoint. `kind` discriminator lets the FE
-
-        route to the correct kind-specific endpoint for follow-up calls.'
+      - items
+      title: UnifiedDatasetPage
     HTTPValidationError:
       properties:
         detail:
@@ -325,6 +299,32 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
   securitySchemes:
     HTTPBearer:
       type: http

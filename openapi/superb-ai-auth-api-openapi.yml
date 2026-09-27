@@ -187,6 +187,40 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
+    CallbackRequest:
+      properties:
+        code:
+          type: string
+          minLength: 1
+          title: Code
+          description: One-time authorization code from the AuthKit redirect.
+      type: object
+      required:
+      - code
+      title: CallbackRequest
+      description: Body for POST /auth/callback — the `code` WorkOS appended to the redirect.
+    AuthTokens:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+          description: 'JWT access token; send as `Authorization: Bearer <token>`.'
+        refresh_token:
+          type: string
+          title: Refresh Token
+          description: Long-lived token; exchange via /auth/refresh.
+      type: object
+      required:
+      - access_token
+      - refresh_token
+      title: AuthTokens
+      description: 'Tokens issued by WorkOS. The access token is a short-lived (~5 min) JWT sent
+
+        as `Authorization: Bearer <token>`; the refresh token trades for a new pair via
+
+        /auth/refresh. (WorkOS issues no separate id_token — identity claims live in the
+
+        access token.)'
     AuthorizeResponse:
       properties:
         authorization_url:
@@ -230,28 +264,6 @@ components:
               type: string
               nullable: true
               description: Correlation id for support / log lookups.
-    AuthTokens:
-      properties:
-        access_token:
-          type: string
-          title: Access Token
-          description: 'JWT access token; send as `Authorization: Bearer <token>`.'
-        refresh_token:
-          type: string
-          title: Refresh Token
-          description: Long-lived token; exchange via /auth/refresh.
-      type: object
-      required:
-      - access_token
-      - refresh_token
-      title: AuthTokens
-      description: 'Tokens issued by WorkOS. The access token is a short-lived (~5 min) JWT sent
-
-        as `Authorization: Bearer <token>`; the refresh token trades for a new pair via
-
-        /auth/refresh. (WorkOS issues no separate id_token — identity claims live in the
-
-        access token.)'
     RefreshRequest:
       properties:
         refresh_token:
@@ -263,44 +275,6 @@ components:
       required:
       - refresh_token
       title: RefreshRequest
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    CallbackRequest:
-      properties:
-        code:
-          type: string
-          minLength: 1
-          title: Code
-          description: One-time authorization code from the AuthKit redirect.
-      type: object
-      required:
-      - code
-      title: CallbackRequest
-      description: Body for POST /auth/callback — the `code` WorkOS appended to the redirect.
     ErrorCode:
       type: string
       enum:
@@ -375,6 +349,32 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
   securitySchemes:
     HTTPBearer:
       type: http

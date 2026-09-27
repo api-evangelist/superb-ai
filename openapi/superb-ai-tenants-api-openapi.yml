@@ -82,88 +82,32 @@ components:
               type: string
               nullable: true
               description: Correlation id for support / log lookups.
-    OwnerCreate:
+    OwnerResponse:
       properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Unique identifier of the owner user.
         email:
           type: string
-          maxLength: 254
-          format: email
           title: Email
-          description: Email address of the tenant owner; used as their login identity.
+          description: Email address of the owner user.
         first_name:
           type: string
-          maxLength: 100
-          minLength: 1
           title: First Name
-          description: Given name of the tenant owner.
+          description: Given name of the owner user.
         last_name:
           type: string
-          maxLength: 100
-          minLength: 1
           title: Last Name
-          description: Family name of the tenant owner.
-        password:
-          type: string
-          maxLength: 128
-          minLength: 10
-          title: Password
-          description: Initial password for the tenant owner account.
+          description: Family name of the owner user.
       type: object
       required:
+      - id
       - email
       - first_name
       - last_name
-      - password
-      title: OwnerCreate
-    TenantCreate:
-      properties:
-        slug:
-          type: string
-          maxLength: 30
-          minLength: 3
-          title: Slug
-          description: URL-safe unique identifier for the tenant (lowercase alphanumeric with single hyphens).
-        name:
-          type: string
-          maxLength: 255
-          minLength: 1
-          title: Name
-          description: Human-readable display name of the tenant.
-        owner:
-          $ref: '#/components/schemas/OwnerCreate'
-          description: Details of the initial owner account created alongside the tenant.
-      type: object
-      required:
-      - slug
-      - name
-      - owner
-      title: TenantCreate
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
+      title: OwnerResponse
     TenantResponse:
       properties:
         id:
@@ -260,32 +204,62 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    OwnerResponse:
+    TenantCreate:
       properties:
-        id:
+        slug:
           type: string
-          format: uuid
-          title: Id
-          description: Unique identifier of the owner user.
-        email:
+          maxLength: 30
+          minLength: 3
+          title: Slug
+          description: URL-safe unique identifier for the tenant (lowercase alphanumeric with single hyphens).
+        name:
           type: string
-          title: Email
-          description: Email address of the owner user.
-        first_name:
-          type: string
-          title: First Name
-          description: Given name of the owner user.
-        last_name:
-          type: string
-          title: Last Name
-          description: Family name of the owner user.
+          maxLength: 255
+          minLength: 1
+          title: Name
+          description: Human-readable display name of the tenant.
+        owner:
+          $ref: '#/components/schemas/OwnerCreate'
+          description: Details of the initial owner account created alongside the tenant.
       type: object
       required:
-      - id
+      - slug
+      - name
+      - owner
+      title: TenantCreate
+    OwnerCreate:
+      properties:
+        email:
+          type: string
+          maxLength: 254
+          format: email
+          title: Email
+          description: Email address of the tenant owner; used as their login identity.
+        first_name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: First Name
+          description: Given name of the tenant owner.
+        last_name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Last Name
+          description: Family name of the tenant owner.
+        password:
+          type: string
+          maxLength: 128
+          minLength: 10
+          title: Password
+          description: Initial password for the tenant owner account.
+      type: object
+      required:
       - email
       - first_name
       - last_name
-      title: OwnerResponse
+      - password
+      title: OwnerCreate
     HTTPValidationError:
       properties:
         detail:
@@ -295,6 +269,32 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
   securitySchemes:
     HTTPBearer:
       type: http

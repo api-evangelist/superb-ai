@@ -143,104 +143,20 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    HTTPValidationError:
+    FrozenClassSet:
       properties:
-        detail:
+        classes:
           items:
-            $ref: '#/components/schemas/ValidationError'
+            $ref: '#/components/schemas/FrozenClass'
           type: array
-          title: Detail
+          title: Classes
       type: object
-      title: HTTPValidationError
-    VisibilityModel:
-      type: string
-      enum:
-      - binary
-      - coco_ternary
-      title: VisibilityModel
-    ErrorResponse:
-      type: object
-      required:
-      - error
-      properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
-    VersionStatus:
-      type: string
-      enum:
-      - pending
-      - building
-      - ready
-      - failed
-      title: VersionStatus
-    KeypointTopology:
-      properties:
-        version:
-          type: integer
-          minimum: 1.0
-          title: Version
-          default: 1
-        dim:
-          type: integer
-          enum:
-          - 2
-          - 3
-          title: Dim
-          default: 2
-        nodes:
-          items:
-            $ref: '#/components/schemas/KeypointNode'
-          type: array
-          maxItems: 512
-          minItems: 1
-          title: Nodes
-        edges:
-          items:
-            items:
-              type: integer
-            type: array
-          type: array
-          title: Edges
-        visibility_model:
-          $ref: '#/components/schemas/VisibilityModel'
-          default: coco_ternary
-      type: object
-      required:
-      - nodes
-      title: KeypointTopology
-      description: 'Per-label keypoint topology — names the nodes, defines skeleton edges.
+      title: FrozenClassSet
+      description: 'The `ProjectVersion.frozen_classes` blob: `{"classes": [FrozenClass, ...]}`.
 
-        ADR-0030. Stored on `ProjectClass.keypoint_topology` as JSONB.
+        Typed on the wire (`VersionResponse.frozen_classes`) — rows are uniform
 
-
-        `nodes` are 0-indexed by their position in the array; the `id` field is
-
-        the explicit canonical index and MUST equal the array index. `edges` are
-
-        0-indexed pairs into `nodes`. Empty `edges` = single-keypoint label
-
-        (no skeleton render).'
+        post-0075. Storage stays JSON (`.model_dump(mode="json")` into JSONB).'
     VersionPage:
       properties:
         items:
@@ -262,6 +178,28 @@ components:
       required:
       - items
       title: VersionPage
+    KeypointPosition:
+      properties:
+        x:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: X
+        y:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Y
+      type: object
+      required:
+      - x
+      - y
+      title: KeypointPosition
+      description: 'Normalized (0-1) (x, y) inside a unit bbox. Origin is top-left; y grows
+
+        down. The FE multiplies by the drawn bbox dimensions to seed each joint
+
+        when the user creates a new keypoint annotation by dragging a rect.'
     FrozenClass:
       properties:
         id:
@@ -310,32 +248,95 @@ components:
         frozen. Post-migration-0075 the inner key is `classes` (renamed from the
 
         legacy `labels`, ADR-0097), so all live rows are uniform.'
-    ValidationError:
+    KeypointTopology:
       properties:
-        loc:
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+          default: 1
+        dim:
+          type: integer
+          enum:
+          - 2
+          - 3
+          title: Dim
+          default: 2
+        nodes:
           items:
-            anyOf:
-            - type: string
-            - type: integer
+            $ref: '#/components/schemas/KeypointNode'
           type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
+          maxItems: 512
+          minItems: 1
+          title: Nodes
+        edges:
+          items:
+            items:
+              type: integer
+            type: array
+          type: array
+          title: Edges
+        visibility_model:
+          $ref: '#/components/schemas/VisibilityModel'
+          default: coco_ternary
       type: object
       required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
+      - nodes
+      title: KeypointTopology
+      description: 'Per-label keypoint topology — names the nodes, defines skeleton edges.
+
+        ADR-0030. Stored on `ProjectClass.keypoint_topology` as JSONB.
+
+
+        `nodes` are 0-indexed by their position in the array; the `id` field is
+
+        the explicit canonical index and MUST equal the array index. `edges` are
+
+        0-indexed pairs into `nodes`. Empty `edges` = single-keypoint label
+
+        (no skeleton render).'
+    VersionStatus:
+      type: string
+      enum:
+      - pending
+      - building
+      - ready
+      - failed
+      title: VersionStatus
+    VisibilityModel:
+      type: string
+      enum:
+      - binary
+      - coco_ternary
+      title: VisibilityModel
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
     VersionResponse:
       properties:
         id:
@@ -416,6 +417,26 @@ components:
       - updated_at
       - completed_at
       title: VersionResponse
+    KeypointNode:
+      properties:
+        id:
+          type: integer
+          minimum: 0.0
+          title: Id
+        name:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Name
+        default_position:
+          anyOf:
+          - $ref: '#/components/schemas/KeypointPosition'
+          - type: 'null'
+      type: object
+      required:
+      - id
+      - name
+      title: KeypointNode
     ErrorCode:
       type: string
       enum:
@@ -481,62 +502,41 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    KeypointPosition:
+    HTTPValidationError:
       properties:
-        x:
-          type: number
-          maximum: 1.0
-          minimum: 0.0
-          title: X
-        y:
-          type: number
-          maximum: 1.0
-          minimum: 0.0
-          title: Y
-      type: object
-      required:
-      - x
-      - y
-      title: KeypointPosition
-      description: 'Normalized (0-1) (x, y) inside a unit bbox. Origin is top-left; y grows
-
-        down. The FE multiplies by the drawn bbox dimensions to seed each joint
-
-        when the user creates a new keypoint annotation by dragging a rect.'
-    KeypointNode:
-      properties:
-        id:
-          type: integer
-          minimum: 0.0
-          title: Id
-        name:
-          type: string
-          maxLength: 64
-          minLength: 1
-          title: Name
-        default_position:
-          anyOf:
-          - $ref: '#/components/schemas/KeypointPosition'
-          - type: 'null'
-      type: object
-      required:
-      - id
-      - name
-      title: KeypointNode
-    FrozenClassSet:
-      properties:
-        classes:
+        detail:
           items:
-            $ref: '#/components/schemas/FrozenClass'
+            $ref: '#/components/schemas/ValidationError'
           type: array
-          title: Classes
+          title: Detail
       type: object
-      title: FrozenClassSet
-      description: 'The `ProjectVersion.frozen_classes` blob: `{"classes": [FrozenClass, ...]}`.
-
-        Typed on the wire (`VersionResponse.frozen_classes`) — rows are uniform
-
-        post-0075. Storage stays JSON (`.model_dump(mode="json")` into JSONB).'
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
   securitySchemes:
     HTTPBearer:
       type: http

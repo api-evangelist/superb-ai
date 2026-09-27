@@ -212,6 +212,37 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
+    InvitationPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/InvitationResponse'
+          type: array
+          title: Items
+          description: This workspace's invitations, newest first. Unpaginated — bounded by the per-tenant user quota.
+      type: object
+      required:
+      - items
+      title: InvitationPage
+    InvitationCreate:
+      properties:
+        email:
+          type: string
+          maxLength: 254
+          format: email
+          title: Email
+          description: Email address to invite.
+        role:
+          $ref: '#/components/schemas/WorkspaceRole'
+          description: Workspace role granted when the invitation is accepted.
+          default: member
+      type: object
+      required:
+      - email
+      title: InvitationCreate
+      description: 'An invitation is email + role, nothing else (ADR-0112 principle carried
+
+        forward): the invitee names themselves at sign-up.'
     ErrorResponse:
       type: object
       required:
@@ -240,6 +271,55 @@ components:
               type: string
               nullable: true
               description: Correlation id for support / log lookups.
+    WorkspaceRole:
+      type: string
+      enum:
+      - admin
+      - member
+      title: WorkspaceRole
+    InvitationResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Invitation id.
+        email:
+          type: string
+          maxLength: 254
+          format: email
+          title: Email
+          description: Invited email — acceptance requires an account holding exactly this address.
+        role:
+          $ref: '#/components/schemas/WorkspaceRole'
+          description: Role granted on acceptance.
+        status:
+          $ref: '#/components/schemas/InvitationStatus'
+          description: pending | accepted | declined | revoked | expired.
+        accept_url:
+          type: string
+          title: Accept Url
+          description: 'Hosted accept link (from the invitation email). Copyable — hand it over Slack/chat as an alternative to the email. Possession alone grants nothing: acceptance still requires signing in with the invited email.'
+        expires_at:
+          type: string
+          format: date-time
+          title: Expires At
+          description: After this the invitation can no longer be accepted.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: When the invitation was sent.
+      type: object
+      required:
+      - id
+      - email
+      - role
+      - status
+      - accept_url
+      - expires_at
+      - created_at
+      title: InvitationResponse
     InvitationStatus:
       type: string
       enum:
@@ -252,69 +332,6 @@ components:
       description: 'Lifecycle of a workspace invitation (ADR-0113). Terminal states are
 
         kept as history; only `pending` rows are actionable/unique per email.'
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    InvitationPage:
-      properties:
-        items:
-          items:
-            $ref: '#/components/schemas/InvitationResponse'
-          type: array
-          title: Items
-          description: This workspace's invitations, newest first. Unpaginated — bounded by the per-tenant user quota.
-      type: object
-      required:
-      - items
-      title: InvitationPage
-    WorkspaceRole:
-      type: string
-      enum:
-      - admin
-      - member
-      title: WorkspaceRole
-    InvitationCreate:
-      properties:
-        email:
-          type: string
-          maxLength: 254
-          format: email
-          title: Email
-          description: Email address to invite.
-        role:
-          $ref: '#/components/schemas/WorkspaceRole'
-          description: Workspace role granted when the invitation is accepted.
-          default: member
-      type: object
-      required:
-      - email
-      title: InvitationCreate
-      description: 'An invitation is email + role, nothing else (ADR-0112 principle carried
-
-        forward): the invitee names themselves at sign-up.'
     ErrorCode:
       type: string
       enum:
@@ -380,49 +397,6 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    InvitationResponse:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-          description: Invitation id.
-        email:
-          type: string
-          maxLength: 254
-          format: email
-          title: Email
-          description: Invited email — acceptance requires an account holding exactly this address.
-        role:
-          $ref: '#/components/schemas/WorkspaceRole'
-          description: Role granted on acceptance.
-        status:
-          $ref: '#/components/schemas/InvitationStatus'
-          description: pending | accepted | declined | revoked | expired.
-        accept_url:
-          type: string
-          title: Accept Url
-          description: 'Hosted accept link (from the invitation email). Copyable — hand it over Slack/chat as an alternative to the email. Possession alone grants nothing: acceptance still requires signing in with the invited email.'
-        expires_at:
-          type: string
-          format: date-time
-          title: Expires At
-          description: After this the invitation can no longer be accepted.
-        created_at:
-          type: string
-          format: date-time
-          title: Created At
-          description: When the invitation was sent.
-      type: object
-      required:
-      - id
-      - email
-      - role
-      - status
-      - accept_url
-      - expires_at
-      - created_at
-      title: InvitationResponse
     HTTPValidationError:
       properties:
         detail:
@@ -432,6 +406,32 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
   securitySchemes:
     HTTPBearer:
       type: http

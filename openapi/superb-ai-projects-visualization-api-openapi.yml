@@ -96,63 +96,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    PolygonPartRead:
-      properties:
-        exterior:
-          items:
-            prefixItems:
-            - type: number
-            - type: number
-            type: array
-            maxItems: 2
-            minItems: 2
-          type: array
-          title: Exterior
-        holes:
-          items:
-            items:
-              prefixItems:
-              - type: number
-              - type: number
-              type: array
-              maxItems: 2
-              minItems: 2
-            type: array
-          type: array
-          title: Holes
-      additionalProperties: true
-      type: object
-      required:
-      - exterior
-      title: PolygonPartRead
-    ErrorResponse:
-      type: object
-      required:
-      - error
-      properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
     AnnotationResponse:
       properties:
         id:
@@ -247,6 +190,112 @@ components:
       - created_at
       - updated_at
       title: AnnotationResponse
+    PolygonGeometryRead:
+      properties:
+        type:
+          type: string
+          const: polygon
+          title: Type
+          default: polygon
+        polygons:
+          items:
+            $ref: '#/components/schemas/PolygonPartRead'
+          type: array
+          title: Polygons
+      additionalProperties: true
+      type: object
+      required:
+      - polygons
+      title: PolygonGeometryRead
+    PolygonPartRead:
+      properties:
+        exterior:
+          items:
+            prefixItems:
+            - type: number
+            - type: number
+            type: array
+            maxItems: 2
+            minItems: 2
+          type: array
+          title: Exterior
+        holes:
+          items:
+            items:
+              prefixItems:
+              - type: number
+              - type: number
+              type: array
+              maxItems: 2
+              minItems: 2
+            type: array
+          type: array
+          title: Holes
+      additionalProperties: true
+      type: object
+      required:
+      - exterior
+      title: PolygonPartRead
+    AnnotationSource:
+      type: string
+      enum:
+      - manual
+      - imported
+      - model
+      title: AnnotationSource
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    KeypointGeometryRead:
+      properties:
+        type:
+          type: string
+          const: keypoint
+          title: Type
+          default: keypoint
+        points:
+          items:
+            $ref: '#/components/schemas/KeypointNodeGeomRead'
+          type: array
+          title: Points
+      additionalProperties: true
+      type: object
+      required:
+      - points
+      title: KeypointGeometryRead
+    AnnotationType:
+      type: string
+      enum:
+      - bbox
+      - polygon
+      - keypoint
+      - classification
+      title: AnnotationType
     AnnotationsBySource:
       properties:
         project_id:
@@ -278,90 +327,24 @@ components:
 
 
         `annotations` is a legacy alias of `shapes`; deprecated.'
-    BboxGeometryRead:
+    KeypointNodeGeomRead:
       properties:
-        type:
-          type: string
-          const: bbox
-          title: Type
-          default: bbox
         x:
           type: number
           title: X
         y:
           type: number
           title: Y
-        w:
-          type: number
-          title: W
-        h:
-          type: number
-          title: H
+        visibility:
+          type: integer
+          title: Visibility
+          default: 2
       additionalProperties: true
       type: object
       required:
       - x
       - y
-      - w
-      - h
-      title: BboxGeometryRead
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    MultiSourceAnnotations:
-      properties:
-        asset_id:
-          type: string
-          format: uuid
-          title: Asset Id
-        sources:
-          items:
-            $ref: '#/components/schemas/AnnotationsBySource'
-          type: array
-          title: Sources
-      type: object
-      required:
-      - asset_id
-      - sources
-      title: MultiSourceAnnotations
-    AnnotationType:
-      type: string
-      enum:
-      - bbox
-      - polygon
-      - keypoint
-      - classification
-      title: AnnotationType
-    AnnotationSource:
-      type: string
-      enum:
-      - manual
-      - imported
-      - model
-      title: AnnotationSource
+      title: KeypointNodeGeomRead
     ErrorCode:
       type: string
       enum:
@@ -427,58 +410,49 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    PolygonGeometryRead:
+    BboxGeometryRead:
       properties:
         type:
           type: string
-          const: polygon
+          const: bbox
           title: Type
-          default: polygon
-        polygons:
-          items:
-            $ref: '#/components/schemas/PolygonPartRead'
-          type: array
-          title: Polygons
-      additionalProperties: true
-      type: object
-      required:
-      - polygons
-      title: PolygonGeometryRead
-    KeypointNodeGeomRead:
-      properties:
+          default: bbox
         x:
           type: number
           title: X
         y:
           type: number
           title: Y
-        visibility:
-          type: integer
-          title: Visibility
-          default: 2
+        w:
+          type: number
+          title: W
+        h:
+          type: number
+          title: H
       additionalProperties: true
       type: object
       required:
       - x
       - y
-      title: KeypointNodeGeomRead
-    KeypointGeometryRead:
+      - w
+      - h
+      title: BboxGeometryRead
+    MultiSourceAnnotations:
       properties:
-        type:
+        asset_id:
           type: string
-          const: keypoint
-          title: Type
-          default: keypoint
-        points:
+          format: uuid
+          title: Asset Id
+        sources:
           items:
-            $ref: '#/components/schemas/KeypointNodeGeomRead'
+            $ref: '#/components/schemas/AnnotationsBySource'
           type: array
-          title: Points
-      additionalProperties: true
+          title: Sources
       type: object
       required:
-      - points
-      title: KeypointGeometryRead
+      - asset_id
+      - sources
+      title: MultiSourceAnnotations
     HTTPValidationError:
       properties:
         detail:
@@ -488,6 +462,32 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
   securitySchemes:
     HTTPBearer:
       type: http

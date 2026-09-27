@@ -306,34 +306,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    ErrorResponse:
-      type: object
-      required:
-      - error
-      properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
     PerClassMetrics:
       properties:
         class:
@@ -361,86 +333,6 @@ components:
       - support
       title: PerClassMetrics
       description: One class's P/R/F1 + GT support at the chosen threshold.
-    OverallMetrics:
-      properties:
-        precision:
-          type: number
-          title: Precision
-          default: 0.0
-        recall:
-          type: number
-          title: Recall
-          default: 0.0
-        f1:
-          type: number
-          title: F1
-          default: 0.0
-        map:
-          type: number
-          title: Map
-          default: 0.0
-        map_50:
-          type: number
-          title: Map 50
-          default: 0.0
-      additionalProperties: false
-      type: object
-      title: OverallMetrics
-      description: 'Overall detection/segmentation metrics at the F1-optimal confidence.
-
-        `map`/`map_50` are injected post-hoc by `trainer._score_split` (torchmetrics),
-
-        so `evaluate()` returns them unset — hence Optional-with-default.'
-    ConfusionMatrix:
-      properties:
-        labels:
-          items:
-            type: string
-          type: array
-          title: Labels
-        matrix:
-          items:
-            items:
-              type: integer
-            type: array
-          type: array
-          title: Matrix
-      additionalProperties: false
-      type: object
-      required:
-      - labels
-      - matrix
-      title: ConfusionMatrix
-      description: K classes + a trailing 'background' bucket for FP/missed.
-    TrainedModelUpdate:
-      properties:
-        name:
-          anyOf:
-          - type: string
-            maxLength: 255
-          - type: 'null'
-          title: Name
-          description: New display name (unique per tenant, case-insensitive); omit to leave unchanged.
-        description:
-          anyOf:
-          - type: string
-            maxLength: 1000
-          - type: 'null'
-          title: Description
-          description: New description; send null to clear it, omit to leave unchanged.
-      type: object
-      title: TrainedModelUpdate
-      description: 'Edit a trained model (ADR-0072) — name and/or description (partial; send only
-
-        what changes). Name is unique per tenant (case-insensitive); `description` may be
-
-        set to null to clear it.'
-    TrainingTask:
-      type: string
-      enum:
-      - detection
-      - segmentation
-      title: TrainingTask
     TrainingMetricsSummary:
       properties:
         optimal_confidence:
@@ -472,6 +364,50 @@ components:
         so a future added key never 500s a model read; `num_test` is set only on the
 
         final (full) scorecard, so it is Optional.'
+    TrainedModelUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 255
+          - type: 'null'
+          title: Name
+          description: New display name (unique per tenant, case-insensitive); omit to leave unchanged.
+        description:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Description
+          description: New description; send null to clear it, omit to leave unchanged.
+      type: object
+      title: TrainedModelUpdate
+      description: 'Edit a trained model (ADR-0072) — name and/or description (partial; send only
+
+        what changes). Name is unique per tenant (case-insensitive); `description` may be
+
+        set to null to clear it.'
+    ConfusionMatrix:
+      properties:
+        labels:
+          items:
+            type: string
+          type: array
+          title: Labels
+        matrix:
+          items:
+            items:
+              type: integer
+            type: array
+          type: array
+          title: Matrix
+      additionalProperties: false
+      type: object
+      required:
+      - labels
+      - matrix
+      title: ConfusionMatrix
+      description: K classes + a trailing 'background' bucket for FP/missed.
     TrainedModelListPage:
       properties:
         items:
@@ -488,32 +424,135 @@ components:
       required:
       - items
       title: TrainedModelListPage
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
+    ErrorResponse:
       type: object
       required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    OverallMetrics:
+      properties:
+        precision:
+          type: number
+          title: Precision
+          default: 0.0
+        recall:
+          type: number
+          title: Recall
+          default: 0.0
+        f1:
+          type: number
+          title: F1
+          default: 0.0
+        map:
+          type: number
+          title: Map
+          default: 0.0
+        map_50:
+          type: number
+          title: Map 50
+          default: 0.0
+      additionalProperties: false
+      type: object
+      title: OverallMetrics
+      description: 'Overall detection/segmentation metrics at the F1-optimal confidence.
+
+        `map`/`map_50` are injected post-hoc by `trainer._score_split` (torchmetrics),
+
+        so `evaluate()` returns them unset — hence Optional-with-default.'
+    TrainingTask:
+      type: string
+      enum:
+      - detection
+      - segmentation
+      title: TrainingTask
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
     TrainedModelResponse:
       properties:
         id:
@@ -587,71 +626,6 @@ components:
       - created_at
       - updated_at
       title: TrainedModelResponse
-    ErrorCode:
-      type: string
-      enum:
-      - UNCATEGORIZED
-      - AUTH_MISSING
-      - AUTH_INVALID_CREDENTIAL
-      - AUTH_TOKEN_EXPIRED
-      - AUTH_FORBIDDEN
-      - AUTH_TENANT_MISMATCH
-      - VALIDATION_ERROR
-      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
-      - BAD_REQUEST
-      - INVALID_CURSOR
-      - INVALID_FILTER
-      - UNSUPPORTED_OPERATION
-      - PAYLOAD_TOO_LARGE
-      - TENANT_NOT_FOUND
-      - TENANT_SLUG_TAKEN
-      - USER_NOT_FOUND
-      - USER_EMAIL_TAKEN
-      - INVITATION_NOT_FOUND
-      - INVITATION_PENDING
-      - INVITATION_NOT_PENDING
-      - INVITATION_EXPIRED
-      - LAST_ADMIN
-      - DATASET_NOT_FOUND
-      - DATASET_NAME_TAKEN
-      - DATASET_DELETED
-      - DATASET_ASSET_CAP_EXCEEDED
-      - ASSET_NOT_FOUND
-      - ASSET_DELETED
-      - ASSET_NOT_EMBEDDED
-      - ASSET_FORMAT_UNSUPPORTED
-      - ASSET_TOO_LARGE
-      - PROJECT_NOT_FOUND
-      - PROJECT_ARCHIVED
-      - PROJECT_MEMBER_NOT_FOUND
-      - PROJECT_CLASS_NOT_FOUND
-      - VERSION_NOT_FOUND
-      - MODEL_NOT_FOUND
-      - RESOURCE_NOT_READY
-      - PROJECT_STATE_FORBIDDEN
-      - CLASS_LOCKED
-      - CLASS_IN_USE
-      - DEPLOYMENT_NOT_FOUND
-      - DEPLOYMENT_STATE_FORBIDDEN
-      - EXPORT_EXPIRED
-      - EXPORT_FAILED
-      - ANNOTATION_NOT_FOUND
-      - JOB_NOT_FOUND
-      - JOB_ALREADY_RUNNING
-      - JOB_PER_TENANT_CAP
-      - JOB_TERMINAL
-      - EMBEDDER_UNAVAILABLE
-      - EMBEDDER_INVOCATION_FAILED
-      - NAME_TAKEN
-      - IDEMPOTENCY_REPLAY
-      - CONCURRENT_MODIFICATION
-      - RATE_LIMITED
-      - RESOURCE_LIMIT_EXCEEDED
-      - INTERNAL_ERROR
-      - DEPENDENCY_UNAVAILABLE
-      - MODEL_LOADING
-      - MODEL_STARTING
-      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
     HTTPValidationError:
       properties:
         detail:
@@ -661,6 +635,32 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
   securitySchemes:
     HTTPBearer:
       type: http

@@ -3979,538 +3979,28 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    ProjectTagUpdateResponse:
+    ClassesResponse:
       properties:
-        value:
-          type: string
-          title: Value
-        color:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Color
-        display:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Display
-        assets_renamed:
-          type: integer
-          title: Assets Renamed
-          description: Asset rows whose tag array was rewritten (rename only).
-      type: object
-      required:
-      - value
-      - assets_renamed
-      title: ProjectTagUpdateResponse
-      description: 'Result of a tag update: the final palette entry + how many assets were
-
-        rewritten (rename only; 0 for a pure recolor).'
-    ProjectBulkRemoveAssetsRequest:
-      properties:
-        asset_ids:
-          anyOf:
-          - items:
-              type: string
-              format: uuid
-            type: array
-          - type: 'null'
-          title: Asset Ids
-        filter:
-          anyOf:
-          - $ref: '#/components/schemas/ProjectFilter'
-          - type: 'null'
-        exclude_asset_ids:
-          anyOf:
-          - items:
-              type: string
-              format: uuid
-            type: array
-          - type: 'null'
-          title: Exclude Asset Ids
-      type: object
-      title: ProjectBulkRemoveAssetsRequest
-      description: 'Async `bulk-remove` body. Selection is project-scoped — uses
-
-        `ProjectFilter` since you''re choosing currently-in-project assets to
-
-        drop (workflow + tag fields are meaningful). `exclude_asset_ids`
-
-        (filter-mode only) deselects rows from the matched set — critical
-
-        because this endpoint cascade-wipes per-(project, asset) state.'
-    MemberUpdate:
-      properties:
-        role:
-          $ref: '#/components/schemas/ProjectRole'
-      type: object
-      required:
-      - role
-      title: MemberUpdate
-    ProjectDuplicateRequest:
-      properties:
-        name:
-          anyOf:
-          - type: string
-            maxLength: 255
-          - type: 'null'
-          title: Name
-      type: object
-      title: ProjectDuplicateRequest
-    ProjectAssetsBatchAddResultItem:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-        status:
-          type: string
-          enum:
-          - added
-          - skipped
-          title: Status
-      type: object
-      required:
-      - id
-      - status
-      title: ProjectAssetsBatchAddResultItem
-    ProjectAssetsBatchUnassignResultItem:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-        status:
-          type: string
-          enum:
-          - unassigned
-          - skipped
-          title: Status
-      type: object
-      required:
-      - id
-      - status
-      title: ProjectAssetsBatchUnassignResultItem
-    ProjectAssetsBatchAddResponse:
-      properties:
-        total:
-          type: integer
-          title: Total
-        added:
-          type: integer
-          title: Added
-        skipped:
-          type: integer
-          title: Skipped
-        results:
+        classes:
           items:
-            $ref: '#/components/schemas/ProjectAssetsBatchAddResultItem'
+            $ref: '#/components/schemas/ClassResponse'
           type: array
-          title: Results
-      type: object
-      required:
-      - total
-      - added
-      - skipped
-      - results
-      title: ProjectAssetsBatchAddResponse
-      description: 'Canonical sync batch-op envelope (ADR-0041): `total == added + skipped`,
-
-        `len(results) == total`. `skipped` = already-in-scope (idempotent re-add).'
-    VersionCreate:
-      properties:
-        name:
-          type: string
-          maxLength: 255
-          minLength: 1
-          title: Name
-        description:
-          anyOf:
-          - type: string
-            maxLength: 1000
-          - type: 'null'
-          title: Description
-        selection:
-          anyOf:
-          - $ref: '#/components/schemas/VersionSelection'
-          - type: 'null'
-      type: object
-      required:
-      - name
-      title: VersionCreate
-    WorkflowStatus:
-      type: string
-      enum:
-      - to_label
-      - in_progress
-      - in_review
-      - done
-      - skipped
-      title: WorkflowStatus
-    VersionPage:
-      properties:
-        items:
+          title: Classes
+        image_classifications:
           items:
-            $ref: '#/components/schemas/VersionResponse'
+            $ref: '#/components/schemas/ImageClassificationResponse'
           type: array
-          title: Items
-        next_cursor:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Next Cursor
-        total:
-          anyOf:
-          - type: integer
-          - type: 'null'
-          title: Total
+          title: Image Classifications
       type: object
       required:
-      - items
-      title: VersionPage
-    VersionAssetPage:
-      properties:
-        items:
-          items:
-            $ref: '#/components/schemas/VersionAssetView'
-          type: array
-          title: Items
-        next_cursor:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Next Cursor
-        total:
-          type: integer
-          title: Total
-      type: object
-      required:
-      - items
-      - total
-      title: VersionAssetPage
-      description: 'Page of a version''s frozen assets (`GET …/versions/{vid}/assets`). Mirrors
+      - classes
+      - image_classifications
+      title: ClassesResponse
+      description: 'Composed classes read (ADR-0090 §3, Option A). Deliberately NOT cursor-paginated
 
-        `AssetPage` — cursor-paginated, `total` is the count matching the q/tags
+        (ADR-0012 exception): a project''s class set is bounded + small (ADR-0078 caps 1000)
 
-        filter (the whole frozen set when unfiltered).'
-    ProjectAssetsBatchRemoveRequest:
-      properties:
-        asset_ids:
-          items:
-            type: string
-            format: uuid
-          type: array
-          minItems: 1
-          title: Asset Ids
-      type: object
-      required:
-      - asset_ids
-      title: ProjectAssetsBatchRemoveRequest
-      description: Sync `batch-remove` body — explicit asset_ids only, ≤MAX_SYNC_BATCH_SIZE.
-    ProjectTagsResponse:
-      properties:
-        tags:
-          items:
-            $ref: '#/components/schemas/ProjectTagListItem'
-          type: array
-          title: Tags
-      type: object
-      required:
-      - tags
-      title: ProjectTagsResponse
-      description: 'The project''s authoritative tag palette (ADR-0058), each entry with its
-
-        color/display and usage count. (Was a bare `list[str]` before v2.)'
-    DatasetKind:
-      type: string
-      enum:
-      - image
-      - video
-      title: DatasetKind
-    ClassificationConfig:
-      properties:
-        version:
-          type: integer
-          minimum: 1.0
-          title: Version
-          default: 1
-        input_type:
-          $ref: '#/components/schemas/ClassificationInputType'
-        options:
-          items:
-            $ref: '#/components/schemas/ClassificationOption'
-          type: array
-          title: Options
-        default:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Default
-        required:
-          type: boolean
-          title: Required
-          default: false
-      type: object
-      required:
-      - input_type
-      title: ClassificationConfig
-      description: 'Per-label config for `type=classification` annotations. Stored on
-
-        `ProjectClass.classification_config` as JSONB. ADR-0031.
-
-
-        `options` is required for `radio` / `checkbox`, ignored for `text`.
-
-        `default` (optional) names the pre-selected value (radio/text) or single
-
-        pre-selected option (checkbox). `required: true` makes the workflow
-
-        `submit` transition refuse if no annotation for this label exists on
-
-        the asset.'
-    AssetFilter:
-      properties:
-        created_at_from:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
-          title: Created At From
-        created_at_to:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
-          title: Created At To
-        uploaded_by:
-          anyOf:
-          - type: string
-            format: uuid
-          - type: 'null'
-          title: Uploaded By
-        q:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Q
-        status:
-          anyOf:
-          - $ref: '#/components/schemas/AssetStatus'
-          - type: 'null'
-        content_type:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Content Type
-      additionalProperties: false
-      type: object
-      title: AssetFilter
-    BboxGeometryRead:
-      properties:
-        type:
-          type: string
-          const: bbox
-          title: Type
-          default: bbox
-        x:
-          type: number
-          title: X
-        y:
-          type: number
-          title: Y
-        w:
-          type: number
-          title: W
-        h:
-          type: number
-          title: H
-      additionalProperties: true
-      type: object
-      required:
-      - x
-      - y
-      - w
-      - h
-      title: BboxGeometryRead
-    ProjectProgress:
-      properties:
-        total:
-          type: integer
-          title: Total
-        to_label:
-          type: integer
-          title: To Label
-        in_progress:
-          type: integer
-          title: In Progress
-        in_review:
-          type: integer
-          title: In Review
-        done:
-          type: integer
-          title: Done
-        skipped:
-          type: integer
-          title: Skipped
-          default: 0
-      type: object
-      required:
-      - total
-      - to_label
-      - in_progress
-      - in_review
-      - done
-      title: ProjectProgress
-      description: Counters from project_asset_state for a project's dashboard.
-    ProjectBulkAssignAssetsRequest:
-      properties:
-        asset_ids:
-          anyOf:
-          - items:
-              type: string
-              format: uuid
-            type: array
-          - type: 'null'
-          title: Asset Ids
-        filter:
-          anyOf:
-          - $ref: '#/components/schemas/ProjectFilter'
-          - type: 'null'
-        exclude_asset_ids:
-          anyOf:
-          - items:
-              type: string
-              format: uuid
-            type: array
-          - type: 'null'
-          title: Exclude Asset Ids
-        user_id:
-          type: string
-          format: uuid
-          title: User Id
-      type: object
-      required:
-      - user_id
-      title: ProjectBulkAssignAssetsRequest
-      description: 'Async bulk-assign. `user_id` must be a tenant member (project-member
-
-        or tenant admin); route validates at job-create time so the job never
-
-        enqueues with a bad assignee.'
-    ErrorCode:
-      type: string
-      enum:
-      - UNCATEGORIZED
-      - AUTH_MISSING
-      - AUTH_INVALID_CREDENTIAL
-      - AUTH_TOKEN_EXPIRED
-      - AUTH_FORBIDDEN
-      - AUTH_TENANT_MISMATCH
-      - VALIDATION_ERROR
-      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
-      - BAD_REQUEST
-      - INVALID_CURSOR
-      - INVALID_FILTER
-      - UNSUPPORTED_OPERATION
-      - PAYLOAD_TOO_LARGE
-      - TENANT_NOT_FOUND
-      - TENANT_SLUG_TAKEN
-      - USER_NOT_FOUND
-      - USER_EMAIL_TAKEN
-      - INVITATION_NOT_FOUND
-      - INVITATION_PENDING
-      - INVITATION_NOT_PENDING
-      - INVITATION_EXPIRED
-      - LAST_ADMIN
-      - DATASET_NOT_FOUND
-      - DATASET_NAME_TAKEN
-      - DATASET_DELETED
-      - DATASET_ASSET_CAP_EXCEEDED
-      - ASSET_NOT_FOUND
-      - ASSET_DELETED
-      - ASSET_NOT_EMBEDDED
-      - ASSET_FORMAT_UNSUPPORTED
-      - ASSET_TOO_LARGE
-      - PROJECT_NOT_FOUND
-      - PROJECT_ARCHIVED
-      - PROJECT_MEMBER_NOT_FOUND
-      - PROJECT_CLASS_NOT_FOUND
-      - VERSION_NOT_FOUND
-      - MODEL_NOT_FOUND
-      - RESOURCE_NOT_READY
-      - PROJECT_STATE_FORBIDDEN
-      - CLASS_LOCKED
-      - CLASS_IN_USE
-      - DEPLOYMENT_NOT_FOUND
-      - DEPLOYMENT_STATE_FORBIDDEN
-      - EXPORT_EXPIRED
-      - EXPORT_FAILED
-      - ANNOTATION_NOT_FOUND
-      - JOB_NOT_FOUND
-      - JOB_ALREADY_RUNNING
-      - JOB_PER_TENANT_CAP
-      - JOB_TERMINAL
-      - EMBEDDER_UNAVAILABLE
-      - EMBEDDER_INVOCATION_FAILED
-      - NAME_TAKEN
-      - IDEMPOTENCY_REPLAY
-      - CONCURRENT_MODIFICATION
-      - RATE_LIMITED
-      - RESOURCE_LIMIT_EXCEEDED
-      - INTERNAL_ERROR
-      - DEPENDENCY_UNAVAILABLE
-      - MODEL_LOADING
-      - MODEL_STARTING
-      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    PolygonGeometryRead:
-      properties:
-        type:
-          type: string
-          const: polygon
-          title: Type
-          default: polygon
-        polygons:
-          items:
-            $ref: '#/components/schemas/PolygonPartRead'
-          type: array
-          title: Polygons
-      additionalProperties: true
-      type: object
-      required:
-      - polygons
-      title: PolygonGeometryRead
-    AssignmentMode:
-      type: string
-      enum:
-      - self_claim
-      - manual
-      title: AssignmentMode
-    ProjectAssetsBatchRemoveResponse:
-      properties:
-        total:
-          type: integer
-          title: Total
-        removed:
-          type: integer
-          title: Removed
-        skipped:
-          type: integer
-          title: Skipped
-        results:
-          items:
-            $ref: '#/components/schemas/ProjectAssetsBatchRemoveResultItem'
-          type: array
-          title: Results
-      type: object
-      required:
-      - total
-      - removed
-      - skipped
-      - results
-      title: ProjectAssetsBatchRemoveResponse
-      description: 'Canonical sync batch-op envelope (ADR-0041): `total == removed + skipped`,
-
-        `len(results) == total`. `skipped` = not-in-project, nothing to drop.'
+        and the nested tree must be assembled whole for the FE editor.'
     ProjectAssetsBatchUpdateResponse:
       properties:
         total:
@@ -4539,29 +4029,275 @@ components:
         `len(results) == total`. `skipped` = asset wasn''t in the project, was already
 
         in the desired tag state, or was otherwise filtered out by the WHERE clause.'
-    ProjectAssetsBatchApproveResponse:
+    ProjectBatchDeleteAnnotationsResultItem:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Requested asset id.
+        status:
+          type: string
+          enum:
+          - cleared
+          - skipped
+          title: Status
+          description: '`cleared` = ≥1 annotation deleted; `skipped` = nothing matched (no annotations, predicate matched none, or all matches were locked).'
+        deleted:
+          type: integer
+          title: Deleted
+          description: Annotations deleted on this asset.
+      type: object
+      required:
+      - id
+      - status
+      - deleted
+      title: ProjectBatchDeleteAnnotationsResultItem
+    ProjectResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Project id.
+        dataset_id:
+          type: string
+          format: uuid
+          title: Dataset Id
+          description: Id of the dataset this project labels.
+        dataset_name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Dataset Name
+          description: Dataset name; populated only when the caller JOINed the dataset.
+        dataset_kind:
+          $ref: '#/components/schemas/DatasetKind'
+          description: Kind of the backing dataset (image or video).
+        name:
+          type: string
+          title: Name
+          description: Project name.
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+          description: Optional project description.
+        assignment_mode:
+          $ref: '#/components/schemas/AssignmentMode'
+          description: How assets are assigned to labelers (self_claim or manual).
+        status:
+          $ref: '#/components/schemas/ProjectStatus'
+          description: Project lifecycle status. User-facing reads only ever see `active` — a deleted project is tombstoned `deleting` and immediately excluded from all reads while its cascade runs in the background (ADR-0120).
+        tag_config:
+          $ref: '#/components/schemas/TagConfig'
+          description: Per-project tag vocabulary (ADR-0050).
+        progress:
+          anyOf:
+          - $ref: '#/components/schemas/ProjectProgress'
+          - type: 'null'
+          description: Workflow counters for dashboard cards; opt-in (expensive on hot writes).
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: Creation timestamp.
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+          description: Last-update timestamp.
+      type: object
+      required:
+      - id
+      - dataset_id
+      - dataset_kind
+      - name
+      - description
+      - assignment_mode
+      - status
+      - tag_config
+      - created_at
+      - updated_at
+      title: ProjectResponse
+    AttributeUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 255
+            minLength: 1
+          - type: 'null'
+          title: Name
+        color:
+          anyOf:
+          - type: string
+            pattern: ^#[0-9A-Fa-f]{6}$
+          - type: 'null'
+          title: Color
+        archived:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Archived
+        classification_config:
+          anyOf:
+          - $ref: '#/components/schemas/ClassificationConfig'
+          - type: 'null'
+      type: object
+      title: AttributeUpdate
+    ProjectBatchDeleteAnnotationsResponse:
       properties:
         total:
           type: integer
           title: Total
-        approved:
+          description: Number of asset ids requested.
+        cleared:
           type: integer
-          title: Approved
+          title: Cleared
+          description: Assets that had ≥1 matching annotation deleted.
+        skipped:
+          type: integer
+          title: Skipped
+          description: Assets where nothing was deleted.
+        deleted_annotations:
+          type: integer
+          title: Deleted Annotations
+          description: Total annotations deleted across all assets.
+        skipped_locked:
+          type: integer
+          title: Skipped Locked
+          description: Matched annotations left in place because they are locked (ADR-0084).
+        results:
+          items:
+            $ref: '#/components/schemas/ProjectBatchDeleteAnnotationsResultItem'
+          type: array
+          title: Results
+          description: Per-asset outcome, one entry per requested id.
+      type: object
+      required:
+      - total
+      - cleared
+      - skipped
+      - deleted_annotations
+      - skipped_locked
+      - results
+      title: ProjectBatchDeleteAnnotationsResponse
+      description: 'Canonical sync batch-op envelope (ADR-0041): `total == cleared + skipped`
+
+        over ASSETS, `len(results) == total`; `deleted_annotations`/`skipped_locked`
+
+        carry the annotation-level accounting.'
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    ProjectTagDeleteResponse:
+      properties:
+        value:
+          type: string
+          title: Value
+          description: The deleted tag value.
+        assets_untagged:
+          type: integer
+          title: Assets Untagged
+          description: Number of assets the tag was removed from (0 if it was unused).
+        removed_from_vocab:
+          type: boolean
+          title: Removed From Vocab
+          description: True if the tag was also removed from tag_config.allowed_tags (the palette).
+      type: object
+      required:
+      - value
+      - assets_untagged
+      - removed_from_vocab
+      title: ProjectTagDeleteResponse
+      description: Result of deleting a tag from a project (untag-all + palette cleanup).
+    ClassKind:
+      type: string
+      enum:
+      - object
+      - classification
+      title: ClassKind
+    ProjectAssetsBatchSetStatusResponse:
+      properties:
+        total:
+          type: integer
+          title: Total
+        updated:
+          type: integer
+          title: Updated
         skipped:
           type: integer
           title: Skipped
         results:
           items:
-            $ref: '#/components/schemas/ProjectAssetsBatchApproveResultItem'
+            $ref: '#/components/schemas/ProjectAssetsBatchSetStatusResultItem'
           type: array
           title: Results
       type: object
       required:
       - total
-      - approved
+      - updated
       - skipped
       - results
-      title: ProjectAssetsBatchApproveResponse
+      title: ProjectAssetsBatchSetStatusResponse
+    ProjectAssetsBatchAddRequest:
+      properties:
+        asset_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          minItems: 1
+          title: Asset Ids
+      type: object
+      required:
+      - asset_ids
+      title: ProjectAssetsBatchAddRequest
+      description: Sync `batch-add` body — explicit asset_ids only, ≤MAX_SYNC_BATCH_SIZE.
+    ProjectAssetsBatchUnassignResultItem:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        status:
+          type: string
+          enum:
+          - unassigned
+          - skipped
+          title: Status
+      type: object
+      required:
+      - id
+      - status
+      title: ProjectAssetsBatchUnassignResultItem
     FrozenShape:
       properties:
         id:
@@ -4651,79 +4387,6 @@ components:
         `ManifestShape` in `app/schemas/manifest.py` and re-exposed on the wire via
 
         `VersionAssetDetail.shapes`.'
-    ClassCreate:
-      properties:
-        kind:
-          type: string
-          const: object
-          title: Kind
-          default: object
-        name:
-          type: string
-          maxLength: 255
-          minLength: 1
-          title: Name
-        color:
-          type: string
-          pattern: ^#[0-9A-Fa-f]{6}$
-          title: Color
-          default: '#888888'
-        allowed_types:
-          items:
-            type: string
-          type: array
-          minItems: 1
-          title: Allowed Types
-        keypoint_topology:
-          anyOf:
-          - $ref: '#/components/schemas/KeypointTopology'
-          - type: 'null'
-        attributes:
-          items:
-            $ref: '#/components/schemas/AttributeCreate'
-          type: array
-          title: Attributes
-      type: object
-      required:
-      - name
-      - allowed_types
-      title: ClassCreate
-      description: 'Create an object class (`kind=''object''`) with optional inline attributes
-
-        (fanned out to owned classification rows in one transaction).'
-    AssetStatus:
-      type: string
-      enum:
-      - pending
-      - processing
-      - ready
-      - failed
-      - deleted
-      title: AssetStatus
-    ProjectAssetsBatchApproveResultItem:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-        status:
-          type: string
-          enum:
-          - approved
-          - skipped
-          title: Status
-      type: object
-      required:
-      - id
-      - status
-      title: ProjectAssetsBatchApproveResultItem
-    ProjectRole:
-      type: string
-      enum:
-      - manager
-      - reviewer
-      - labeler
-      title: ProjectRole
     AnnotationType:
       type: string
       enum:
@@ -4732,86 +4395,13 @@ components:
       - keypoint
       - classification
       title: AnnotationType
-    ProjectTagSummaryResponse:
-      properties:
-        total:
-          type: integer
-          title: Total
-        tags:
-          items:
-            $ref: '#/components/schemas/ProjectTagSummaryItem'
-          type: array
-          title: Tags
-      type: object
-      required:
-      - total
-      - tags
-      title: ProjectTagSummaryResponse
-      description: 'Aggregate tag application across a target set. Powers the unified
-
-        bulk-tag editor (one checkbox grid replacing the dual-arm add/remove
-
-        pickers). Reuses the same `target` shape as `bulk-update-tags` so the
-
-        dialog can pass the same payload it''s about to act on.
-
-
-        Tags applied to **zero** assets in the target set are simply absent from
-
-        the response. Color / display metadata is **not** denormalized here —
-
-        the FE reads those from `project.tag_config.allowed_tags` by `value`.
-
-        Free-form tag values (not in `allowed_tags`) show up with no color.'
-    ProjectAssetsBatchSetStatusRequest:
-      properties:
-        asset_ids:
-          items:
-            type: string
-            format: uuid
-          type: array
-          minItems: 1
-          title: Asset Ids
-        target_status:
-          $ref: '#/components/schemas/WorkflowStatus'
-      type: object
-      required:
-      - asset_ids
-      - target_status
-      title: ProjectAssetsBatchSetStatusRequest
-      description: Sync batch set-status. Explicit asset_ids only.
-    KeypointGeometryRead:
-      properties:
-        type:
-          type: string
-          const: keypoint
-          title: Type
-          default: keypoint
-        points:
-          items:
-            $ref: '#/components/schemas/KeypointNodeGeomRead'
-          type: array
-          title: Points
-      additionalProperties: true
-      type: object
-      required:
-      - points
-      title: KeypointGeometryRead
-    ProjectAssetsBatchApproveRequest:
-      properties:
-        asset_ids:
-          items:
-            type: string
-            format: uuid
-          type: array
-          minItems: 1
-          title: Asset Ids
-      type: object
-      required:
-      - asset_ids
-      title: ProjectAssetsBatchApproveRequest
-      description: Sync batch-approve. Explicit asset_ids only.
-    ProjectBulkRejectAssetsRequest:
+    VisibilityModel:
+      type: string
+      enum:
+      - binary
+      - coco_ternary
+      title: VisibilityModel
+    ProjectBulkUnassignAssetsRequest:
       properties:
         asset_ids:
           anyOf:
@@ -4833,15 +4423,437 @@ components:
             type: array
           - type: 'null'
           title: Exclude Asset Ids
-        reason:
+      type: object
+      title: ProjectBulkUnassignAssetsRequest
+      description: Async bulk-unassign. No payload.
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    ProjectAssetsBatchUpdateResultItem:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        status:
+          type: string
+          enum:
+          - updated
+          - skipped
+          title: Status
+      type: object
+      required:
+      - id
+      - status
+      title: ProjectAssetsBatchUpdateResultItem
+    ProjectBulkSetStatusAssetsRequest:
+      properties:
+        asset_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Asset Ids
+        filter:
+          anyOf:
+          - $ref: '#/components/schemas/ProjectFilter'
+          - type: 'null'
+        exclude_asset_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Exclude Asset Ids
+        target_status:
+          $ref: '#/components/schemas/WorkflowStatus'
+      type: object
+      required:
+      - target_status
+      title: ProjectBulkSetStatusAssetsRequest
+      description: 'Async bulk set-status. Force-moves the selection to `target_status`
+
+        regardless of current status (manager override — not a guarded transition).
+
+        Rows already at the target are silently skipped.'
+    JobKind:
+      type: string
+      enum:
+      - build_project_version_manifest
+      - bulk_delete_image_assets
+      - bulk_update_tags_project
+      - bulk_add_assets_project
+      - bulk_remove_assets_project
+      - bulk_assign_assets_project
+      - bulk_unassign_assets_project
+      - bulk_approve_assets_project
+      - bulk_reject_assets_project
+      - bulk_create_annotations
+      - bulk_delete_annotations
+      - embed_dataset
+      - export_dataset
+      - auto_label_project
+      - cleanup_s3_objects
+      - delete_project_cascade
+      - delete_dataset_cascade
+      - duplicate_project_scope
+      - bulk_set_status_assets_project
+      title: JobKind
+    ProjectBulkAssignAssetsRequest:
+      properties:
+        asset_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Asset Ids
+        filter:
+          anyOf:
+          - $ref: '#/components/schemas/ProjectFilter'
+          - type: 'null'
+        exclude_asset_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Exclude Asset Ids
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+      type: object
+      required:
+      - user_id
+      title: ProjectBulkAssignAssetsRequest
+      description: 'Async bulk-assign. `user_id` must be a tenant member (project-member
+
+        or tenant admin); route validates at job-create time so the job never
+
+        enqueues with a bad assignee.'
+    AssignmentMode:
+      type: string
+      enum:
+      - self_claim
+      - manual
+      title: AssignmentMode
+    ProjectAssetsBatchAssignResponse:
+      properties:
+        total:
+          type: integer
+          title: Total
+        assigned:
+          type: integer
+          title: Assigned
+        skipped:
+          type: integer
+          title: Skipped
+        results:
+          items:
+            $ref: '#/components/schemas/ProjectAssetsBatchAssignResultItem'
+          type: array
+          title: Results
+      type: object
+      required:
+      - total
+      - assigned
+      - skipped
+      - results
+      title: ProjectAssetsBatchAssignResponse
+    ProjectAssetsBatchSetStatusRequest:
+      properties:
+        asset_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          minItems: 1
+          title: Asset Ids
+        target_status:
+          $ref: '#/components/schemas/WorkflowStatus'
+      type: object
+      required:
+      - asset_ids
+      - target_status
+      title: ProjectAssetsBatchSetStatusRequest
+      description: Sync batch set-status. Explicit asset_ids only.
+    ProjectCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Name
+        description:
           anyOf:
           - type: string
             maxLength: 1000
           - type: 'null'
-          title: Reason
+          title: Description
+        dataset_id:
+          type: string
+          format: uuid
+          title: Dataset Id
+        dataset_kind:
+          $ref: '#/components/schemas/DatasetKind'
+        scope:
+          $ref: '#/components/schemas/ProjectScope'
+        classes:
+          items:
+            $ref: '#/components/schemas/ClassCreate'
+          type: array
+          title: Classes
+        image_classifications:
+          items:
+            $ref: '#/components/schemas/ImageClassificationCreate'
+          type: array
+          title: Image Classifications
+        assignment_mode:
+          $ref: '#/components/schemas/AssignmentMode'
+          default: self_claim
+        tag_config:
+          anyOf:
+          - $ref: '#/components/schemas/TagConfig'
+          - type: 'null'
       type: object
-      title: ProjectBulkRejectAssetsRequest
-      description: "Async bulk-reject. Optional `reason` flows into:\n- `project_asset_state.last_reject_reason`\n- a new Comment row (anchor=asset, origin=workflow_reject) so the\n  labeler sees the same reason they'd see for a single-asset reject."
+      required:
+      - name
+      - dataset_id
+      - dataset_kind
+      - scope
+      title: ProjectCreate
+    ProjectAssetsBatchApproveResponse:
+      properties:
+        total:
+          type: integer
+          title: Total
+        approved:
+          type: integer
+          title: Approved
+        skipped:
+          type: integer
+          title: Skipped
+        results:
+          items:
+            $ref: '#/components/schemas/ProjectAssetsBatchApproveResultItem'
+          type: array
+          title: Results
+      type: object
+      required:
+      - total
+      - approved
+      - skipped
+      - results
+      title: ProjectAssetsBatchApproveResponse
+    PolygonPartRead:
+      properties:
+        exterior:
+          items:
+            prefixItems:
+            - type: number
+            - type: number
+            type: array
+            maxItems: 2
+            minItems: 2
+          type: array
+          title: Exterior
+        holes:
+          items:
+            items:
+              prefixItems:
+              - type: number
+              - type: number
+              type: array
+              maxItems: 2
+              minItems: 2
+            type: array
+          type: array
+          title: Holes
+      additionalProperties: true
+      type: object
+      required:
+      - exterior
+      title: PolygonPartRead
+    UserSummary:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        email:
+          type: string
+          title: Email
+        first_name:
+          type: string
+          title: First Name
+        last_name:
+          type: string
+          title: Last Name
+      type: object
+      required:
+      - id
+      - email
+      - first_name
+      - last_name
+      title: UserSummary
+      description: 'Compact user reference for embedding in other responses (members,
+
+        asset_state, etc.) so the FE doesn''t have to do N+1 lookups for names.'
+    ProjectRole:
+      type: string
+      enum:
+      - manager
+      - reviewer
+      - labeler
+      title: ProjectRole
+    TagConfig:
+      properties:
+        free_form:
+          type: boolean
+          title: Free Form
+          default: true
+        allowed_tags:
+          items:
+            $ref: '#/components/schemas/TagConfigEntry'
+          type: array
+          maxItems: 1000
+          title: Allowed Tags
+      type: object
+      title: TagConfig
+      description: 'Per-project tag vocabulary (ADR-0050). `free_form=true` (default) means
+
+        the server doesn''t enforce; `allowed_tags` is a cosmetic palette.
+
+        `free_form=false` rejects unknown tags at bulk-add-tags time.'
+    KeypointTopology:
+      properties:
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+          default: 1
+        dim:
+          type: integer
+          enum:
+          - 2
+          - 3
+          title: Dim
+          default: 2
+        nodes:
+          items:
+            $ref: '#/components/schemas/KeypointNode'
+          type: array
+          maxItems: 512
+          minItems: 1
+          title: Nodes
+        edges:
+          items:
+            items:
+              type: integer
+            type: array
+          type: array
+          title: Edges
+        visibility_model:
+          $ref: '#/components/schemas/VisibilityModel'
+          default: coco_ternary
+      type: object
+      required:
+      - nodes
+      title: KeypointTopology
+      description: 'Per-label keypoint topology — names the nodes, defines skeleton edges.
+
+        ADR-0030. Stored on `ProjectClass.keypoint_topology` as JSONB.
+
+
+        `nodes` are 0-indexed by their position in the array; the `id` field is
+
+        the explicit canonical index and MUST equal the array index. `edges` are
+
+        0-indexed pairs into `nodes`. Empty `edges` = single-keypoint label
+
+        (no skeleton render).'
+    ProjectTagSummaryItem:
+      properties:
+        value:
+          type: string
+          title: Value
+        count:
+          type: integer
+          title: Count
+      type: object
+      required:
+      - value
+      - count
+      title: ProjectTagSummaryItem
+      description: "One tag value + the count of assets in the target set that carry it.\nFE renders tri-state checkboxes from this:\n  - count == total          → checked\n  - 0 < count < total       → indeterminate\n  - tag absent from list    → unchecked"
     ClassResponse:
       properties:
         id:
@@ -4893,156 +4905,31 @@ components:
       - updated_at
       title: ClassResponse
       description: An object class with its owned attributes inline (ADR-0090 §3, Option A).
-    ProjectAssetsBatchUpdateResultItem:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-        status:
-          type: string
-          enum:
-          - updated
-          - skipped
-          title: Status
-      type: object
-      required:
-      - id
-      - status
-      title: ProjectAssetsBatchUpdateResultItem
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    ProjectAssetsBatchSetStatusResultItem:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-        status:
-          type: string
-          enum:
-          - updated
-          - skipped
-          title: Status
-      type: object
-      required:
-      - id
-      - status
-      title: ProjectAssetsBatchSetStatusResultItem
-    MemberAdd:
-      properties:
-        user_id:
-          type: string
-          format: uuid
-          title: User Id
-        role:
-          $ref: '#/components/schemas/ProjectRole'
-      type: object
-      required:
-      - user_id
-      - role
-      title: MemberAdd
-    ClassificationOption:
+    ProjectTagCreateRequest:
       properties:
         value:
           type: string
-          maxLength: 128
+          maxLength: 64
           minLength: 1
           title: Value
+        color:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Color
         display:
-          type: string
-          maxLength: 255
-          minLength: 1
+          anyOf:
+          - type: string
+            maxLength: 128
+            minLength: 1
+          - type: 'null'
           title: Display
       type: object
       required:
       - value
-      - display
-      title: ClassificationOption
-    ProjectBulkOpRequest:
-      properties:
-        asset_ids:
-          anyOf:
-          - items:
-              type: string
-              format: uuid
-            type: array
-          - type: 'null'
-          title: Asset Ids
-        filter:
-          anyOf:
-          - $ref: '#/components/schemas/ProjectFilter'
-          - type: 'null'
-        exclude_asset_ids:
-          anyOf:
-          - items:
-              type: string
-              format: uuid
-            type: array
-          - type: 'null'
-          title: Exclude Asset Ids
-      type: object
-      title: ProjectBulkOpRequest
-      description: 'Shared shape for project-scoped async bulk ops. Exactly one of
-
-        `asset_ids` (explicit list) or `filter` (ProjectFilter — workflow + tags
-
-        + asset metadata) must be present.
-
-
-        `exclude_asset_ids` (filter-mode only): per-row deselects on top of
-
-        `filter`. Worker applies as `NOT IN` against the matched set so the
-
-        "select all matching except these few" UX is safe — critical for
-
-        destructive ops like bulk-remove which cascade-wipe per-pair
-
-        state. Ids not in the matched set are silently ignored.'
-    JobStatus:
-      type: string
-      enum:
-      - pending
-      - queued
-      - running
-      - completed
-      - failed
-      - canceled
-      title: JobStatus
-    ProjectAssetsBatchRejectResultItem:
+      title: ProjectTagCreateRequest
+      description: Define a new palette tag. 409 if the value already exists.
+    ProjectAssetsBatchAssignResultItem:
       properties:
         id:
           type: string
@@ -5051,14 +4938,110 @@ components:
         status:
           type: string
           enum:
-          - rejected
+          - assigned
           - skipped
           title: Status
       type: object
       required:
       - id
       - status
-      title: ProjectAssetsBatchRejectResultItem
+      title: ProjectAssetsBatchAssignResultItem
+    VersionPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/VersionResponse'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+        total:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Total
+      type: object
+      required:
+      - items
+      title: VersionPage
+    AttributeResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        owner_class_id:
+          type: string
+          format: uuid
+          title: Owner Class Id
+        color:
+          type: string
+          title: Color
+        archived:
+          type: boolean
+          title: Archived
+        classification_config:
+          anyOf:
+          - $ref: '#/components/schemas/ClassificationConfig'
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      type: object
+      required:
+      - id
+      - name
+      - owner_class_id
+      - color
+      - archived
+      - created_at
+      - updated_at
+      title: AttributeResponse
+    ProjectAssetsBatchUpdateRequest:
+      properties:
+        asset_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          minItems: 1
+          title: Asset Ids
+        tags_add:
+          anyOf:
+          - items:
+              type: string
+            type: array
+            minItems: 1
+          - type: 'null'
+          title: Tags Add
+        tags_remove:
+          anyOf:
+          - items:
+              type: string
+            type: array
+            minItems: 1
+          - type: 'null'
+          title: Tags Remove
+      type: object
+      required:
+      - asset_ids
+      title: ProjectAssetsBatchUpdateRequest
+      description: 'Sync `batch-update-tags` body — explicit asset_ids only, ≤MAX_SYNC_BATCH_SIZE.
+
+        Same dual-arm shape as the async path; FE picks sync when N≤1000 for
+
+        instant feedback, async for larger / filter-driven.'
     VersionSelection:
       properties:
         asset_ids:
@@ -5087,6 +5070,905 @@ components:
         `all: true`) to freeze every in-scope asset (the default). `asset_ids` and
 
         `filter` are intersected with the project''s in-scope, non-deleted assets.'
+    ProjectBulkUpdateTagsRequest:
+      properties:
+        asset_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Asset Ids
+        filter:
+          anyOf:
+          - $ref: '#/components/schemas/ProjectFilter'
+          - type: 'null'
+        exclude_asset_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Exclude Asset Ids
+        tags_add:
+          anyOf:
+          - items:
+              type: string
+            type: array
+            minItems: 1
+          - type: 'null'
+          title: Tags Add
+        tags_remove:
+          anyOf:
+          - items:
+              type: string
+            type: array
+            minItems: 1
+          - type: 'null'
+          title: Tags Remove
+      type: object
+      title: ProjectBulkUpdateTagsRequest
+      description: 'Async `bulk-update-tags` body. Atomic — both arms apply in one
+
+        transactional batch update. At least one of `tags_add` / `tags_remove`
+
+        must be non-empty. Tags are validated against the project''s `tag_config`
+
+        when `free_form=false` (additions only).'
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ProjectTagSummaryResponse:
+      properties:
+        total:
+          type: integer
+          title: Total
+        tags:
+          items:
+            $ref: '#/components/schemas/ProjectTagSummaryItem'
+          type: array
+          title: Tags
+      type: object
+      required:
+      - total
+      - tags
+      title: ProjectTagSummaryResponse
+      description: 'Aggregate tag application across a target set. Powers the unified
+
+        bulk-tag editor (one checkbox grid replacing the dual-arm add/remove
+
+        pickers). Reuses the same `target` shape as `bulk-update-tags` so the
+
+        dialog can pass the same payload it''s about to act on.
+
+
+        Tags applied to **zero** assets in the target set are simply absent from
+
+        the response. Color / display metadata is **not** denormalized here —
+
+        the FE reads those from `project.tag_config.allowed_tags` by `value`.
+
+        Free-form tag values (not in `allowed_tags`) show up with no color.'
+    ProjectBatchDeleteAnnotationsRequest:
+      properties:
+        class_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+            minItems: 1
+          - type: 'null'
+          title: Class Ids
+          description: Delete only annotations whose class_id is in this list (ANY-of / IN). Annotation FIELD filter — distinct from the ProjectFilter `classes` asset content-filter. Unknown ids match nothing (entity-ref contract).
+        source:
+          anyOf:
+          - $ref: '#/components/schemas/AnnotationSource'
+          - type: 'null'
+          description: Delete only annotations with this source (`manual` | `imported` | `model`) — e.g. `model` to undo an auto-label run, `imported` to undo a bad import, without touching human work.
+        asset_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          minItems: 1
+          title: Asset Ids
+          description: Assets whose matching annotations are deleted. Explicit ids only.
+      additionalProperties: false
+      type: object
+      required:
+      - asset_ids
+      title: ProjectBatchDeleteAnnotationsRequest
+      description: 'Sync `batch-delete-annotations` body — explicit asset_ids only,
+
+        ≤MAX_SYNC_BATCH_SIZE (ADR-0041). Additionally 413s when the selection
+
+        matches more than MAX_SYNC_BATCH_SIZE annotations (the sync perf budget
+
+        bounds deleted rows, not selected assets) — use bulk-delete-annotations.'
+    VersionAssetView:
+      properties:
+        asset_id:
+          type: string
+          format: uuid
+          title: Asset Id
+        filename:
+          type: string
+          title: Filename
+        width:
+          type: integer
+          title: Width
+        height:
+          type: integer
+          title: Height
+        tags:
+          items:
+            type: string
+          type: array
+          title: Tags
+        annotation_count:
+          type: integer
+          title: Annotation Count
+        status:
+          type: string
+          enum:
+          - present
+          - version_only
+          - purged
+          title: Status
+        thumbnail_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Thumbnail Url
+        image_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Image Url
+      type: object
+      required:
+      - asset_id
+      - filename
+      - width
+      - height
+      - tags
+      - annotation_count
+      - status
+      - thumbnail_url
+      - image_url
+      title: VersionAssetView
+      description: 'One asset as it was *frozen* in a version (ADR-0065 browser) — served from
+
+        the manifest, not the live row, so it survives the asset being deleted.'
+    ProjectAssetsBatchRemoveResponse:
+      properties:
+        total:
+          type: integer
+          title: Total
+        removed:
+          type: integer
+          title: Removed
+        skipped:
+          type: integer
+          title: Skipped
+        results:
+          items:
+            $ref: '#/components/schemas/ProjectAssetsBatchRemoveResultItem'
+          type: array
+          title: Results
+      type: object
+      required:
+      - total
+      - removed
+      - skipped
+      - results
+      title: ProjectAssetsBatchRemoveResponse
+      description: 'Canonical sync batch-op envelope (ADR-0041): `total == removed + skipped`,
+
+        `len(results) == total`. `skipped` = not-in-project, nothing to drop.'
+    ProjectAssetsBatchUnassignResponse:
+      properties:
+        total:
+          type: integer
+          title: Total
+        unassigned:
+          type: integer
+          title: Unassigned
+        skipped:
+          type: integer
+          title: Skipped
+        results:
+          items:
+            $ref: '#/components/schemas/ProjectAssetsBatchUnassignResultItem'
+          type: array
+          title: Results
+      type: object
+      required:
+      - total
+      - unassigned
+      - skipped
+      - results
+      title: ProjectAssetsBatchUnassignResponse
+    AssetFilter:
+      properties:
+        created_at_from:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At From
+        created_at_to:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Created At To
+        uploaded_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Uploaded By
+        q:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Q
+        status:
+          anyOf:
+          - $ref: '#/components/schemas/AssetStatus'
+          - type: 'null'
+        content_type:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Content Type
+      additionalProperties: false
+      type: object
+      title: AssetFilter
+    ProjectBulkDeleteAnnotationsRequest:
+      properties:
+        class_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+            minItems: 1
+          - type: 'null'
+          title: Class Ids
+          description: Delete only annotations whose class_id is in this list (ANY-of / IN). Annotation FIELD filter — distinct from the ProjectFilter `classes` asset content-filter. Unknown ids match nothing (entity-ref contract).
+        source:
+          anyOf:
+          - $ref: '#/components/schemas/AnnotationSource'
+          - type: 'null'
+          description: Delete only annotations with this source (`manual` | `imported` | `model`) — e.g. `model` to undo an auto-label run, `imported` to undo a bad import, without touching human work.
+        asset_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Asset Ids
+        filter:
+          anyOf:
+          - $ref: '#/components/schemas/ProjectFilter'
+          - type: 'null'
+        exclude_asset_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Exclude Asset Ids
+      additionalProperties: false
+      type: object
+      title: ProjectBulkDeleteAnnotationsRequest
+      description: 'Async `bulk-delete-annotations` body: ProjectBulkOpRequest selection
+
+        (exactly-one-of `asset_ids` | `filter`, filter-mode `exclude_asset_ids`)
+
+        plus the annotation predicate. Locked shapes are never deleted (reported
+
+        as `skipped_locked` on the job''s result_summary).'
+    ProjectAssetsBatchAddResultItem:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        status:
+          type: string
+          enum:
+          - added
+          - skipped
+          title: Status
+      type: object
+      required:
+      - id
+      - status
+      title: ProjectAssetsBatchAddResultItem
+    VersionResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Version id.
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+          description: Id of the project this version snapshots.
+        name:
+          type: string
+          title: Name
+          description: Version name.
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+          description: Optional version description.
+        status:
+          $ref: '#/components/schemas/VersionStatus'
+          description: Build status of the version (pending, building, ready, or failed).
+        frozen_asset_count:
+          type: integer
+          title: Frozen Asset Count
+          description: Number of assets frozen into this version.
+        frozen_class_count:
+          type: integer
+          title: Frozen Class Count
+          description: Number of classes frozen into this version.
+        frozen_classes:
+          $ref: '#/components/schemas/FrozenClassSet'
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+          description: Failure message when status is failed.
+        created_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Created By
+          description: User who created the version, if known.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: Creation timestamp.
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+          description: Last-update timestamp.
+        completed_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Completed At
+          description: When the version build completed, if done.
+      type: object
+      required:
+      - id
+      - project_id
+      - name
+      - description
+      - status
+      - frozen_asset_count
+      - frozen_class_count
+      - error
+      - created_by
+      - created_at
+      - updated_at
+      - completed_at
+      title: VersionResponse
+    ProjectUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 255
+            minLength: 1
+          - type: 'null'
+          title: Name
+        description:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Description
+        assignment_mode:
+          anyOf:
+          - $ref: '#/components/schemas/AssignmentMode'
+          - type: 'null'
+        tag_config:
+          anyOf:
+          - $ref: '#/components/schemas/TagConfig'
+          - type: 'null'
+      type: object
+      title: ProjectUpdate
+    TagConfigEntry:
+      properties:
+        value:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Value
+        color:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Color
+        display:
+          anyOf:
+          - type: string
+            maxLength: 128
+            minLength: 1
+          - type: 'null'
+          title: Display
+      type: object
+      required:
+      - value
+      title: TagConfigEntry
+      description: 'One entry in `tag_config.allowed_tags` on a Project. `value` is the
+
+        canonical wire form; `display`/`color` are FE rendering hints.'
+    ClassificationConfig:
+      properties:
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+          default: 1
+        input_type:
+          $ref: '#/components/schemas/ClassificationInputType'
+        options:
+          items:
+            $ref: '#/components/schemas/ClassificationOption'
+          type: array
+          title: Options
+        default:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Default
+        required:
+          type: boolean
+          title: Required
+          default: false
+      type: object
+      required:
+      - input_type
+      title: ClassificationConfig
+      description: 'Per-label config for `type=classification` annotations. Stored on
+
+        `ProjectClass.classification_config` as JSONB. ADR-0031.
+
+
+        `options` is required for `radio` / `checkbox`, ignored for `text`.
+
+        `default` (optional) names the pre-selected value (radio/text) or single
+
+        pre-selected option (checkbox). `required: true` makes the workflow
+
+        `submit` transition refuse if no annotation for this label exists on
+
+        the asset.'
+    ImageClassificationCreate:
+      properties:
+        kind:
+          type: string
+          const: classification
+          title: Kind
+          default: classification
+        name:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Name
+        color:
+          type: string
+          pattern: ^#[0-9A-Fa-f]{6}$
+          title: Color
+          default: '#888888'
+        classification_config:
+          $ref: '#/components/schemas/ClassificationConfig'
+      type: object
+      required:
+      - name
+      - classification_config
+      title: ImageClassificationCreate
+      description: Create an image-level classification (`kind='classification'`, no owner).
+    MemberUpdate:
+      properties:
+        role:
+          $ref: '#/components/schemas/ProjectRole'
+      type: object
+      required:
+      - role
+      title: MemberUpdate
+    ClassUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 255
+            minLength: 1
+          - type: 'null'
+          title: Name
+        color:
+          anyOf:
+          - type: string
+            pattern: ^#[0-9A-Fa-f]{6}$
+          - type: 'null'
+          title: Color
+        allowed_types:
+          anyOf:
+          - items:
+              type: string
+            type: array
+          - type: 'null'
+          title: Allowed Types
+        archived:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Archived
+        classification_config:
+          anyOf:
+          - $ref: '#/components/schemas/ClassificationConfig'
+          - type: 'null'
+      type: object
+      title: ClassUpdate
+      description: 'Edit a class''s OWN fields (attribute edits go through the attribute endpoints).
+
+        Works for object classes (name/color/allowed_types/archived) and image-level
+
+        classifications (name/color/archived + the `classification_config` policy fields,
+
+        ADR-0085). `keypoint_topology` stays immutable. The handler enforces kind-appropriate
+
+        fields.'
+    DatasetKind:
+      type: string
+      enum:
+      - image
+      - video
+      title: DatasetKind
+    WorkflowStatus:
+      type: string
+      enum:
+      - to_label
+      - in_progress
+      - in_review
+      - done
+      - skipped
+      title: WorkflowStatus
+    ProjectBulkApproveAssetsRequest:
+      properties:
+        asset_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Asset Ids
+        filter:
+          anyOf:
+          - $ref: '#/components/schemas/ProjectFilter'
+          - type: 'null'
+        exclude_asset_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Exclude Asset Ids
+      type: object
+      title: ProjectBulkApproveAssetsRequest
+      description: 'Async bulk-approve. No payload. Worker silently skips rows not in
+
+        `in_review`.'
+    ProjectStatus:
+      type: string
+      enum:
+      - active
+      - deleting
+      title: ProjectStatus
+    ProjectAssetsBatchAddResponse:
+      properties:
+        total:
+          type: integer
+          title: Total
+        added:
+          type: integer
+          title: Added
+        skipped:
+          type: integer
+          title: Skipped
+        results:
+          items:
+            $ref: '#/components/schemas/ProjectAssetsBatchAddResultItem'
+          type: array
+          title: Results
+      type: object
+      required:
+      - total
+      - added
+      - skipped
+      - results
+      title: ProjectAssetsBatchAddResponse
+      description: 'Canonical sync batch-op envelope (ADR-0041): `total == added + skipped`,
+
+        `len(results) == total`. `skipped` = already-in-scope (idempotent re-add).'
+    MemberPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/MemberResponse'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+      type: object
+      required:
+      - items
+      title: MemberPage
+      description: 'ADR-0012 pagination envelope for the member listing. The member set is
+
+        bounded (ADR-0078 caps `MAX_MEMBERS_PER_PROJECT` at <=50) and returned whole,
+
+        so `next_cursor` is always None — the shape exists for contract uniformity.'
+    ClassificationOption:
+      properties:
+        value:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Value
+        display:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Display
+      type: object
+      required:
+      - value
+      - display
+      title: ClassificationOption
+    AssetStatus:
+      type: string
+      enum:
+      - pending
+      - processing
+      - ready
+      - failed
+      - deleted
+      title: AssetStatus
+    ClassCreate:
+      properties:
+        kind:
+          type: string
+          const: object
+          title: Kind
+          default: object
+        name:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Name
+        color:
+          type: string
+          pattern: ^#[0-9A-Fa-f]{6}$
+          title: Color
+          default: '#888888'
+        allowed_types:
+          items:
+            type: string
+          type: array
+          minItems: 1
+          title: Allowed Types
+        keypoint_topology:
+          anyOf:
+          - $ref: '#/components/schemas/KeypointTopology'
+          - type: 'null'
+        attributes:
+          items:
+            $ref: '#/components/schemas/AttributeCreate'
+          type: array
+          title: Attributes
+      type: object
+      required:
+      - name
+      - allowed_types
+      title: ClassCreate
+      description: 'Create an object class (`kind=''object''`) with optional inline attributes
+
+        (fanned out to owned classification rows in one transaction).'
+    ProjectAssetsBatchSetStatusResultItem:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        status:
+          type: string
+          enum:
+          - updated
+          - skipped
+          title: Status
+      type: object
+      required:
+      - id
+      - status
+      title: ProjectAssetsBatchSetStatusResultItem
+    VersionStatus:
+      type: string
+      enum:
+      - pending
+      - building
+      - ready
+      - failed
+      title: VersionStatus
+    ProjectTagUpdateResponse:
+      properties:
+        value:
+          type: string
+          title: Value
+        color:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Color
+        display:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Display
+        assets_renamed:
+          type: integer
+          title: Assets Renamed
+          description: Asset rows whose tag array was rewritten (rename only).
+      type: object
+      required:
+      - value
+      - assets_renamed
+      title: ProjectTagUpdateResponse
+      description: 'Result of a tag update: the final palette entry + how many assets were
+
+        rewritten (rename only; 0 for a pure recolor).'
+    KeypointNodeGeomRead:
+      properties:
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        visibility:
+          type: integer
+          title: Visibility
+          default: 2
+      additionalProperties: true
+      type: object
+      required:
+      - x
+      - y
+      title: KeypointNodeGeomRead
+    ProjectScope:
+      properties:
+        asset_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Asset Ids
+        filter:
+          anyOf:
+          - $ref: '#/components/schemas/AssetFilter'
+          - type: 'null'
+        all:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: All
+      type: object
+      title: ProjectScope
+      description: Initial asset selection for a project. Exactly one of the three fields.
+    ProjectAssetsBatchRejectResultItem:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        status:
+          type: string
+          enum:
+          - rejected
+          - skipped
+          title: Status
+      type: object
+      required:
+      - id
+      - status
+      title: ProjectAssetsBatchRejectResultItem
+    ProjectAssetsBatchRejectRequest:
+      properties:
+        asset_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          minItems: 1
+          title: Asset Ids
+        reason:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Reason
+      type: object
+      required:
+      - asset_ids
+      title: ProjectAssetsBatchRejectRequest
+      description: Sync batch-reject. Explicit asset_ids only.
+    ProjectBulkRemoveAssetsRequest:
+      properties:
+        asset_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Asset Ids
+        filter:
+          anyOf:
+          - $ref: '#/components/schemas/ProjectFilter'
+          - type: 'null'
+        exclude_asset_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Exclude Asset Ids
+      type: object
+      title: ProjectBulkRemoveAssetsRequest
+      description: 'Async `bulk-remove` body. Selection is project-scoped — uses
+
+        `ProjectFilter` since you''re choosing currently-in-project assets to
+
+        drop (workflow + tag fields are meaningful). `exclude_asset_ids`
+
+        (filter-mode only) deselects rows from the matched set — critical
+
+        because this endpoint cascade-wipes per-(project, asset) state.'
     ProjectBulkAddAssetsRequest:
       properties:
         asset_ids:
@@ -5118,13 +6000,134 @@ components:
         them by metadata. Exactly one mode. `exclude_asset_ids` (filter-mode
 
         only) deselects rows from the matched set.'
-    ImageClassificationCreate:
+    ProjectAssetsBatchApproveResultItem:
       properties:
-        kind:
+        id:
           type: string
-          const: classification
-          title: Kind
-          default: classification
+          format: uuid
+          title: Id
+        status:
+          type: string
+          enum:
+          - approved
+          - skipped
+          title: Status
+      type: object
+      required:
+      - id
+      - status
+      title: ProjectAssetsBatchApproveResultItem
+    ProjectAssetsBatchAssignRequest:
+      properties:
+        asset_ids:
+          items:
+            type: string
+            format: uuid
+          type: array
+          minItems: 1
+          title: Asset Ids
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+      type: object
+      required:
+      - asset_ids
+      - user_id
+      title: ProjectAssetsBatchAssignRequest
+      description: Sync batch-assign. Explicit asset_ids only (≤MAX_SYNC_BATCH_SIZE).
+    VersionAssetDetail:
+      properties:
+        asset_id:
+          type: string
+          format: uuid
+          title: Asset Id
+        filename:
+          type: string
+          title: Filename
+        width:
+          type: integer
+          title: Width
+        height:
+          type: integer
+          title: Height
+        tags:
+          items:
+            type: string
+          type: array
+          title: Tags
+        annotation_count:
+          type: integer
+          title: Annotation Count
+        status:
+          type: string
+          enum:
+          - present
+          - version_only
+          - purged
+          title: Status
+        thumbnail_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Thumbnail Url
+        image_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Image Url
+        shapes:
+          items:
+            $ref: '#/components/schemas/FrozenShape'
+          type: array
+          title: Shapes
+      type: object
+      required:
+      - asset_id
+      - filename
+      - width
+      - height
+      - tags
+      - annotation_count
+      - status
+      - thumbnail_url
+      - image_url
+      - shapes
+      title: VersionAssetDetail
+      description: 'Single frozen asset (`GET …/versions/{vid}/assets/{aid}`) — the browse view
+
+        plus the frozen annotation shapes, read straight from the manifest so it
+
+        resolves even for a `version_only` (deleted) asset.'
+    ProjectTagListItem:
+      properties:
+        value:
+          type: string
+          title: Value
+        color:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Color
+        display:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Display
+        count:
+          type: integer
+          title: Count
+          description: Assets in the project carrying this tag (0 = defined but unused).
+      type: object
+      required:
+      - value
+      - count
+      title: ProjectTagListItem
+      description: 'One tag in the project''s authoritative palette (ADR-0058): its definition
+
+        (value + color/display) plus current usage count.'
+    AttributeCreate:
+      properties:
         name:
           type: string
           maxLength: 255
@@ -5141,37 +6144,386 @@ components:
       required:
       - name
       - classification_config
-      title: ImageClassificationCreate
-      description: Create an image-level classification (`kind='classification'`, no owner).
-    PolygonPartRead:
+      title: AttributeCreate
+      description: 'An attribute = a classification owned by an object class. Always a question, so
+
+        `classification_config` is required.'
+    ProjectBulkRejectAssetsRequest:
       properties:
-        exterior:
-          items:
-            prefixItems:
-            - type: number
-            - type: number
+        asset_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
             type: array
-            maxItems: 2
-            minItems: 2
-          type: array
-          title: Exterior
-        holes:
-          items:
-            items:
-              prefixItems:
-              - type: number
-              - type: number
-              type: array
-              maxItems: 2
-              minItems: 2
+          - type: 'null'
+          title: Asset Ids
+        filter:
+          anyOf:
+          - $ref: '#/components/schemas/ProjectFilter'
+          - type: 'null'
+        exclude_asset_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
             type: array
+          - type: 'null'
+          title: Exclude Asset Ids
+        reason:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Reason
+      type: object
+      title: ProjectBulkRejectAssetsRequest
+      description: "Async bulk-reject. Optional `reason` flows into:\n- `project_asset_state.last_reject_reason`\n- a new Comment row (anchor=asset, origin=workflow_reject) so the\n  labeler sees the same reason they'd see for a single-asset reject."
+    JobResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Server-assigned job identifier.
+        kind:
+          $ref: '#/components/schemas/JobKind'
+          description: The kind of work this job performs.
+        target:
+          additionalProperties: true
+          type: object
+          title: Target
+          description: Kind-specific parameters describing what the job operates on (shape varies per `kind`; internal orchestration fields are omitted).
+        status:
+          $ref: '#/components/schemas/JobStatus'
+          description: Current lifecycle state of the job.
+        total:
+          type: integer
+          title: Total
+          description: Total number of work items the job will process.
+        processed:
+          type: integer
+          title: Processed
+          description: Number of work items processed so far.
+        succeeded:
+          type: integer
+          title: Succeeded
+          description: Number of processed items that succeeded.
+        failed:
+          type: integer
+          title: Failed
+          description: Number of processed items that failed.
+        skipped:
+          type: integer
+          title: Skipped
+          description: Number of items skipped (ineligible / already in target state).
+          default: 0
+        error:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Error
+          description: Failure message when the job errored, else null.
+        result_summary:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Result Summary
+          description: Kind-specific summary of the outcome, populated as the job runs and finishes. Stays a plain object here because the key set varies per `kind` (the union isn't a useful client type); the per-kind keys are registry-validated on the write side (`app/job_results.py`), so a given `kind` always carries the same shape.
+        created_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Created By
+          description: User who created the job, or null if system-initiated.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: When the job was created.
+        completed_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Completed At
+          description: When the job reached a terminal state, or null if still in flight.
+        pct:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Pct
+          description: 'Derived progress percent. A COMPLETED job is always 100 — even a no-op
+
+            with total==0 finished all of its (zero) work; showing 0/null on a done job
+
+            was misleading. Otherwise processed/total, or None when total is unknown
+
+            (freshly-queued, denominator not yet resolved).'
+          readOnly: true
+      type: object
+      required:
+      - id
+      - kind
+      - target
+      - status
+      - total
+      - processed
+      - succeeded
+      - failed
+      - error
+      - created_by
+      - created_at
+      - completed_at
+      - pct
+      title: JobResponse
+    ProjectTagsResponse:
+      properties:
+        tags:
+          items:
+            $ref: '#/components/schemas/ProjectTagListItem'
           type: array
-          title: Holes
+          title: Tags
+      type: object
+      required:
+      - tags
+      title: ProjectTagsResponse
+      description: 'The project''s authoritative tag palette (ADR-0058), each entry with its
+
+        color/display and usage count. (Was a bare `list[str]` before v2.)'
+    VersionCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Name
+        description:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Description
+        selection:
+          anyOf:
+          - $ref: '#/components/schemas/VersionSelection'
+          - type: 'null'
+      type: object
+      required:
+      - name
+      title: VersionCreate
+    KeypointNode:
+      properties:
+        id:
+          type: integer
+          minimum: 0.0
+          title: Id
+        name:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Name
+        default_position:
+          anyOf:
+          - $ref: '#/components/schemas/KeypointPosition'
+          - type: 'null'
+      type: object
+      required:
+      - id
+      - name
+      title: KeypointNode
+    VersionUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 255
+          - type: 'null'
+          title: Name
+        description:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Description
+      type: object
+      title: VersionUpdate
+      description: 'Edit a version (ADR-0072) — name and/or description (partial; send only what
+
+        changes). Name is unique per project (case-insensitive); `description` may be set
+
+        to null to clear it. Does not touch the frozen snapshot.'
+    ProjectProgress:
+      properties:
+        total:
+          type: integer
+          title: Total
+        to_label:
+          type: integer
+          title: To Label
+        in_progress:
+          type: integer
+          title: In Progress
+        in_review:
+          type: integer
+          title: In Review
+        done:
+          type: integer
+          title: Done
+        skipped:
+          type: integer
+          title: Skipped
+          default: 0
+      type: object
+      required:
+      - total
+      - to_label
+      - in_progress
+      - in_review
+      - done
+      title: ProjectProgress
+      description: Counters from project_asset_state for a project's dashboard.
+    ProjectTagUpdateRequest:
+      properties:
+        value:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Value
+          description: Existing tag to update.
+        new_value:
+          anyOf:
+          - type: string
+            maxLength: 64
+            minLength: 1
+          - type: 'null'
+          title: New Value
+          description: Rename target.
+        color:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Color
+        display:
+          anyOf:
+          - type: string
+            maxLength: 128
+          - type: 'null'
+          title: Display
+      type: object
+      required:
+      - value
+      title: ProjectTagUpdateRequest
+      description: 'Rename and/or recolor/redisplay a palette tag. `value` identifies the
+
+        existing tag; supply at least one of `new_value` / `color` / `display`.
+
+        Renaming rewrites every asset''s tag array (merges if `new_value` already
+
+        exists).'
+    PolygonGeometryRead:
+      properties:
+        type:
+          type: string
+          const: polygon
+          title: Type
+          default: polygon
+        polygons:
+          items:
+            $ref: '#/components/schemas/PolygonPartRead'
+          type: array
+          title: Polygons
       additionalProperties: true
       type: object
       required:
-      - exterior
-      title: PolygonPartRead
+      - polygons
+      title: PolygonGeometryRead
+    KeypointPosition:
+      properties:
+        x:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: X
+        y:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Y
+      type: object
+      required:
+      - x
+      - y
+      title: KeypointPosition
+      description: 'Normalized (0-1) (x, y) inside a unit bbox. Origin is top-left; y grows
+
+        down. The FE multiplies by the drawn bbox dimensions to seed each joint
+
+        when the user creates a new keypoint annotation by dragging a rect.'
+    ClassificationInputType:
+      type: string
+      enum:
+      - radio
+      - checkbox
+      - text
+      title: ClassificationInputType
+    KeypointGeometryRead:
+      properties:
+        type:
+          type: string
+          const: keypoint
+          title: Type
+          default: keypoint
+        points:
+          items:
+            $ref: '#/components/schemas/KeypointNodeGeomRead'
+          type: array
+          title: Points
+      additionalProperties: true
+      type: object
+      required:
+      - points
+      title: KeypointGeometryRead
+    ProjectDuplicateRequest:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 255
+          - type: 'null'
+          title: Name
+      type: object
+      title: ProjectDuplicateRequest
+    ProjectPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ProjectResponse'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+        total:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Total
+      type: object
+      required:
+      - items
+      title: ProjectPage
+    AnnotationSource:
+      type: string
+      enum:
+      - manual
+      - imported
+      - model
+      title: AnnotationSource
     ProjectFilter:
       properties:
         status:
@@ -5290,90 +6642,33 @@ components:
       description: 'Superset of AssetFilter for project-scoped ops. Workflow + tag fields
 
         live on `project_asset_state` rather than the asset row itself.'
-    ProjectTagCreateRequest:
+    ValidationError:
       properties:
-        value:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
           type: string
-          maxLength: 64
-          minLength: 1
-          title: Value
-        color:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Color
-        display:
-          anyOf:
-          - type: string
-            maxLength: 128
-            minLength: 1
-          - type: 'null'
-          title: Display
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
       required:
-      - value
-      title: ProjectTagCreateRequest
-      description: Define a new palette tag. 409 if the value already exists.
-    VersionUpdate:
-      properties:
-        name:
-          anyOf:
-          - type: string
-            maxLength: 255
-          - type: 'null'
-          title: Name
-        description:
-          anyOf:
-          - type: string
-            maxLength: 1000
-          - type: 'null'
-          title: Description
-      type: object
-      title: VersionUpdate
-      description: 'Edit a version (ADR-0072) — name and/or description (partial; send only what
-
-        changes). Name is unique per project (case-insensitive); `description` may be set
-
-        to null to clear it. Does not touch the frozen snapshot.'
-    ProjectTagUpdateRequest:
-      properties:
-        value:
-          type: string
-          maxLength: 64
-          minLength: 1
-          title: Value
-          description: Existing tag to update.
-        new_value:
-          anyOf:
-          - type: string
-            maxLength: 64
-            minLength: 1
-          - type: 'null'
-          title: New Value
-          description: Rename target.
-        color:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Color
-        display:
-          anyOf:
-          - type: string
-            maxLength: 128
-          - type: 'null'
-          title: Display
-      type: object
-      required:
-      - value
-      title: ProjectTagUpdateRequest
-      description: 'Rename and/or recolor/redisplay a palette tag. `value` identifies the
-
-        existing tag; supply at least one of `new_value` / `color` / `display`.
-
-        Renaming rewrites every asset''s tag array (merges if `new_value` already
-
-        exists).'
-    ProjectAssetsBatchUnassignRequest:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    ProjectAssetsBatchApproveRequest:
       properties:
         asset_ids:
           items:
@@ -5385,106 +6680,72 @@ components:
       type: object
       required:
       - asset_ids
-      title: ProjectAssetsBatchUnassignRequest
-      description: Sync batch-unassign. Explicit asset_ids only.
-    AnnotationSource:
-      type: string
-      enum:
-      - manual
-      - imported
-      - model
-      title: AnnotationSource
-    VersionAssetDetail:
+      title: ProjectAssetsBatchApproveRequest
+      description: Sync batch-approve. Explicit asset_ids only.
+    ProjectAssetsBatchRemoveRequest:
       properties:
-        asset_id:
-          type: string
-          format: uuid
-          title: Asset Id
-        filename:
-          type: string
-          title: Filename
-        width:
-          type: integer
-          title: Width
-        height:
-          type: integer
-          title: Height
-        tags:
+        asset_ids:
           items:
             type: string
+            format: uuid
           type: array
-          title: Tags
-        annotation_count:
-          type: integer
-          title: Annotation Count
-        status:
-          type: string
-          enum:
-          - present
-          - version_only
-          - purged
-          title: Status
-        thumbnail_url:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Thumbnail Url
-        image_url:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Image Url
-        shapes:
-          items:
-            $ref: '#/components/schemas/FrozenShape'
-          type: array
-          title: Shapes
+          minItems: 1
+          title: Asset Ids
       type: object
       required:
-      - asset_id
-      - filename
-      - width
-      - height
-      - tags
-      - annotation_count
-      - status
-      - thumbnail_url
-      - image_url
-      - shapes
-      title: VersionAssetDetail
-      description: 'Single frozen asset (`GET …/versions/{vid}/assets/{aid}`) — the browse view
-
-        plus the frozen annotation shapes, read straight from the manifest so it
-
-        resolves even for a `version_only` (deleted) asset.'
-    VersionStatus:
+      - asset_ids
+      title: ProjectAssetsBatchRemoveRequest
+      description: Sync `batch-remove` body — explicit asset_ids only, ≤MAX_SYNC_BATCH_SIZE.
+    JobStatus:
       type: string
       enum:
       - pending
-      - building
-      - ready
+      - queued
+      - running
+      - completed
       - failed
-      title: VersionStatus
-    KeypointNode:
+      - canceled
+      title: JobStatus
+    ProjectBulkOpRequest:
       properties:
-        id:
-          type: integer
-          minimum: 0.0
-          title: Id
-        name:
-          type: string
-          maxLength: 64
-          minLength: 1
-          title: Name
-        default_position:
+        asset_ids:
           anyOf:
-          - $ref: '#/components/schemas/KeypointPosition'
+          - items:
+              type: string
+              format: uuid
+            type: array
           - type: 'null'
+          title: Asset Ids
+        filter:
+          anyOf:
+          - $ref: '#/components/schemas/ProjectFilter'
+          - type: 'null'
+        exclude_asset_ids:
+          anyOf:
+          - items:
+              type: string
+              format: uuid
+            type: array
+          - type: 'null'
+          title: Exclude Asset Ids
       type: object
-      required:
-      - id
-      - name
-      title: KeypointNode
+      title: ProjectBulkOpRequest
+      description: 'Shared shape for project-scoped async bulk ops. Exactly one of
+
+        `asset_ids` (explicit list) or `filter` (ProjectFilter — workflow + tags
+
+        + asset metadata) must be present.
+
+
+        `exclude_asset_ids` (filter-mode only): per-row deselects on top of
+
+        `filter`. Worker applies as `NOT IN` against the matched set so the
+
+        "select all matching except these few" UX is safe — critical for
+
+        destructive ops like bulk-remove which cascade-wipe per-pair
+
+        state. Ids not in the matched set are silently ignored.'
     ProjectAssetsBatchRemoveResultItem:
       properties:
         id:
@@ -5502,230 +6763,7 @@ components:
       - id
       - status
       title: ProjectAssetsBatchRemoveResultItem
-    ProjectBulkUpdateTagsRequest:
-      properties:
-        asset_ids:
-          anyOf:
-          - items:
-              type: string
-              format: uuid
-            type: array
-          - type: 'null'
-          title: Asset Ids
-        filter:
-          anyOf:
-          - $ref: '#/components/schemas/ProjectFilter'
-          - type: 'null'
-        exclude_asset_ids:
-          anyOf:
-          - items:
-              type: string
-              format: uuid
-            type: array
-          - type: 'null'
-          title: Exclude Asset Ids
-        tags_add:
-          anyOf:
-          - items:
-              type: string
-            type: array
-            minItems: 1
-          - type: 'null'
-          title: Tags Add
-        tags_remove:
-          anyOf:
-          - items:
-              type: string
-            type: array
-            minItems: 1
-          - type: 'null'
-          title: Tags Remove
-      type: object
-      title: ProjectBulkUpdateTagsRequest
-      description: 'Async `bulk-update-tags` body. Atomic — both arms apply in one
-
-        transactional batch update. At least one of `tags_add` / `tags_remove`
-
-        must be non-empty. Tags are validated against the project''s `tag_config`
-
-        when `free_form=false` (additions only).'
-    ProjectAssetsBatchUnassignResponse:
-      properties:
-        total:
-          type: integer
-          title: Total
-        unassigned:
-          type: integer
-          title: Unassigned
-        skipped:
-          type: integer
-          title: Skipped
-        results:
-          items:
-            $ref: '#/components/schemas/ProjectAssetsBatchUnassignResultItem'
-          type: array
-          title: Results
-      type: object
-      required:
-      - total
-      - unassigned
-      - skipped
-      - results
-      title: ProjectAssetsBatchUnassignResponse
-    ErrorResponse:
-      type: object
-      required:
-      - error
-      properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
-    JobKind:
-      type: string
-      enum:
-      - build_project_version_manifest
-      - bulk_delete_image_assets
-      - bulk_update_tags_project
-      - bulk_add_assets_project
-      - bulk_remove_assets_project
-      - bulk_assign_assets_project
-      - bulk_unassign_assets_project
-      - bulk_approve_assets_project
-      - bulk_reject_assets_project
-      - bulk_create_annotations
-      - bulk_delete_annotations
-      - embed_dataset
-      - export_dataset
-      - auto_label_project
-      - cleanup_s3_objects
-      - delete_project_cascade
-      - delete_dataset_cascade
-      - duplicate_project_scope
-      - bulk_set_status_assets_project
-      title: JobKind
-    AttributeCreate:
-      properties:
-        name:
-          type: string
-          maxLength: 255
-          minLength: 1
-          title: Name
-        color:
-          type: string
-          pattern: ^#[0-9A-Fa-f]{6}$
-          title: Color
-          default: '#888888'
-        classification_config:
-          $ref: '#/components/schemas/ClassificationConfig'
-      type: object
-      required:
-      - name
-      - classification_config
-      title: AttributeCreate
-      description: 'An attribute = a classification owned by an object class. Always a question, so
-
-        `classification_config` is required.'
-    VersionResponse:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-          description: Version id.
-        project_id:
-          type: string
-          format: uuid
-          title: Project Id
-          description: Id of the project this version snapshots.
-        name:
-          type: string
-          title: Name
-          description: Version name.
-        description:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Description
-          description: Optional version description.
-        status:
-          $ref: '#/components/schemas/VersionStatus'
-          description: Build status of the version (pending, building, ready, or failed).
-        frozen_asset_count:
-          type: integer
-          title: Frozen Asset Count
-          description: Number of assets frozen into this version.
-        frozen_class_count:
-          type: integer
-          title: Frozen Class Count
-          description: Number of classes frozen into this version.
-        frozen_classes:
-          $ref: '#/components/schemas/FrozenClassSet'
-        error:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Error
-          description: Failure message when status is failed.
-        created_by:
-          anyOf:
-          - type: string
-            format: uuid
-          - type: 'null'
-          title: Created By
-          description: User who created the version, if known.
-        created_at:
-          type: string
-          format: date-time
-          title: Created At
-          description: Creation timestamp.
-        updated_at:
-          type: string
-          format: date-time
-          title: Updated At
-          description: Last-update timestamp.
-        completed_at:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
-          title: Completed At
-          description: When the version build completed, if done.
-      type: object
-      required:
-      - id
-      - project_id
-      - name
-      - description
-      - status
-      - frozen_asset_count
-      - frozen_class_count
-      - error
-      - created_by
-      - created_at
-      - updated_at
-      - completed_at
-      title: VersionResponse
-    ProjectAssetsBatchUpdateRequest:
+    ProjectAssetsBatchUnassignRequest:
       properties:
         asset_ids:
           items:
@@ -5734,138 +6772,31 @@ components:
           type: array
           minItems: 1
           title: Asset Ids
-        tags_add:
-          anyOf:
-          - items:
-              type: string
-            type: array
-            minItems: 1
-          - type: 'null'
-          title: Tags Add
-        tags_remove:
-          anyOf:
-          - items:
-              type: string
-            type: array
-            minItems: 1
-          - type: 'null'
-          title: Tags Remove
       type: object
       required:
       - asset_ids
-      title: ProjectAssetsBatchUpdateRequest
-      description: 'Sync `batch-update-tags` body — explicit asset_ids only, ≤MAX_SYNC_BATCH_SIZE.
-
-        Same dual-arm shape as the async path; FE picks sync when N≤1000 for
-
-        instant feedback, async for larger / filter-driven.'
-    FrozenClassSet:
-      properties:
-        classes:
-          items:
-            $ref: '#/components/schemas/FrozenClass'
-          type: array
-          title: Classes
-      type: object
-      title: FrozenClassSet
-      description: 'The `ProjectVersion.frozen_classes` blob: `{"classes": [FrozenClass, ...]}`.
-
-        Typed on the wire (`VersionResponse.frozen_classes`) — rows are uniform
-
-        post-0075. Storage stays JSON (`.model_dump(mode="json")` into JSONB).'
-    ProjectTagListItem:
-      properties:
-        value:
-          type: string
-          title: Value
-        color:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Color
-        display:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Display
-        count:
-          type: integer
-          title: Count
-          description: Assets in the project carrying this tag (0 = defined but unused).
-      type: object
-      required:
-      - value
-      - count
-      title: ProjectTagListItem
-      description: 'One tag in the project''s authoritative palette (ADR-0058): its definition
-
-        (value + color/display) plus current usage count.'
-    ProjectUpdate:
-      properties:
-        name:
-          anyOf:
-          - type: string
-            maxLength: 255
-            minLength: 1
-          - type: 'null'
-          title: Name
-        description:
-          anyOf:
-          - type: string
-            maxLength: 1000
-          - type: 'null'
-          title: Description
-        assignment_mode:
-          anyOf:
-          - $ref: '#/components/schemas/AssignmentMode'
-          - type: 'null'
-        tag_config:
-          anyOf:
-          - $ref: '#/components/schemas/TagConfig'
-          - type: 'null'
-      type: object
-      title: ProjectUpdate
-    ProjectBulkUnassignAssetsRequest:
-      properties:
-        asset_ids:
-          anyOf:
-          - items:
-              type: string
-              format: uuid
-            type: array
-          - type: 'null'
-          title: Asset Ids
-        filter:
-          anyOf:
-          - $ref: '#/components/schemas/ProjectFilter'
-          - type: 'null'
-        exclude_asset_ids:
-          anyOf:
-          - items:
-              type: string
-              format: uuid
-            type: array
-          - type: 'null'
-          title: Exclude Asset Ids
-      type: object
-      title: ProjectBulkUnassignAssetsRequest
-      description: Async bulk-unassign. No payload.
-    AttributeResponse:
+      title: ProjectAssetsBatchUnassignRequest
+      description: Sync batch-unassign. Explicit asset_ids only.
+    ImageClassificationResponse:
       properties:
         id:
           type: string
           format: uuid
           title: Id
+        kind:
+          $ref: '#/components/schemas/ClassKind'
         name:
           type: string
           title: Name
-        owner_class_id:
-          type: string
-          format: uuid
-          title: Owner Class Id
         color:
           type: string
           title: Color
+        owner_class_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Owner Class Id
         archived:
           type: boolean
           title: Archived
@@ -5884,13 +6815,70 @@ components:
       type: object
       required:
       - id
+      - kind
       - name
-      - owner_class_id
       - color
       - archived
       - created_at
       - updated_at
-      title: AttributeResponse
+      title: ImageClassificationResponse
+    ProjectAssetsBatchRejectResponse:
+      properties:
+        total:
+          type: integer
+          title: Total
+        rejected:
+          type: integer
+          title: Rejected
+        skipped:
+          type: integer
+          title: Skipped
+        results:
+          items:
+            $ref: '#/components/schemas/ProjectAssetsBatchRejectResultItem'
+          type: array
+          title: Results
+      type: object
+      required:
+      - total
+      - rejected
+      - skipped
+      - results
+      title: ProjectAssetsBatchRejectResponse
+    FrozenClassSet:
+      properties:
+        classes:
+          items:
+            $ref: '#/components/schemas/FrozenClass'
+          type: array
+          title: Classes
+      type: object
+      title: FrozenClassSet
+      description: 'The `ProjectVersion.frozen_classes` blob: `{"classes": [FrozenClass, ...]}`.
+
+        Typed on the wire (`VersionResponse.frozen_classes`) — rows are uniform
+
+        post-0075. Storage stays JSON (`.model_dump(mode="json")` into JSONB).'
+    MemberResponse:
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+          description: Id of the member user.
+        role:
+          $ref: '#/components/schemas/ProjectRole'
+          description: Member's project role (manager, reviewer, or labeler).
+        user:
+          anyOf:
+          - $ref: '#/components/schemas/UserSummary'
+          - type: 'null'
+          description: Member profile; populated by routes that JOIN, else None.
+      type: object
+      required:
+      - user_id
+      - role
+      title: MemberResponse
     FrozenClass:
       properties:
         id:
@@ -5939,996 +6927,11 @@ components:
         frozen. Post-migration-0075 the inner key is `classes` (renamed from the
 
         legacy `labels`, ADR-0097), so all live rows are uniform.'
-    ProjectAssetsBatchRejectRequest:
-      properties:
-        asset_ids:
-          items:
-            type: string
-            format: uuid
-          type: array
-          minItems: 1
-          title: Asset Ids
-        reason:
-          anyOf:
-          - type: string
-            maxLength: 1000
-          - type: 'null'
-          title: Reason
-      type: object
-      required:
-      - asset_ids
-      title: ProjectAssetsBatchRejectRequest
-      description: Sync batch-reject. Explicit asset_ids only.
-    AttributeUpdate:
-      properties:
-        name:
-          anyOf:
-          - type: string
-            maxLength: 255
-            minLength: 1
-          - type: 'null'
-          title: Name
-        color:
-          anyOf:
-          - type: string
-            pattern: ^#[0-9A-Fa-f]{6}$
-          - type: 'null'
-          title: Color
-        archived:
-          anyOf:
-          - type: boolean
-          - type: 'null'
-          title: Archived
-        classification_config:
-          anyOf:
-          - $ref: '#/components/schemas/ClassificationConfig'
-          - type: 'null'
-      type: object
-      title: AttributeUpdate
-    ProjectBulkSetStatusAssetsRequest:
-      properties:
-        asset_ids:
-          anyOf:
-          - items:
-              type: string
-              format: uuid
-            type: array
-          - type: 'null'
-          title: Asset Ids
-        filter:
-          anyOf:
-          - $ref: '#/components/schemas/ProjectFilter'
-          - type: 'null'
-        exclude_asset_ids:
-          anyOf:
-          - items:
-              type: string
-              format: uuid
-            type: array
-          - type: 'null'
-          title: Exclude Asset Ids
-        target_status:
-          $ref: '#/components/schemas/WorkflowStatus'
-      type: object
-      required:
-      - target_status
-      title: ProjectBulkSetStatusAssetsRequest
-      description: 'Async bulk set-status. Force-moves the selection to `target_status`
-
-        regardless of current status (manager override — not a guarded transition).
-
-        Rows already at the target are silently skipped.'
-    VisibilityModel:
-      type: string
-      enum:
-      - binary
-      - coco_ternary
-      title: VisibilityModel
-    JobResponse:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-          description: Server-assigned job identifier.
-        kind:
-          $ref: '#/components/schemas/JobKind'
-          description: The kind of work this job performs.
-        target:
-          additionalProperties: true
-          type: object
-          title: Target
-          description: Kind-specific parameters describing what the job operates on (shape varies per `kind`; internal orchestration fields are omitted).
-        status:
-          $ref: '#/components/schemas/JobStatus'
-          description: Current lifecycle state of the job.
-        total:
-          type: integer
-          title: Total
-          description: Total number of work items the job will process.
-        processed:
-          type: integer
-          title: Processed
-          description: Number of work items processed so far.
-        succeeded:
-          type: integer
-          title: Succeeded
-          description: Number of processed items that succeeded.
-        failed:
-          type: integer
-          title: Failed
-          description: Number of processed items that failed.
-        skipped:
-          type: integer
-          title: Skipped
-          description: Number of items skipped (ineligible / already in target state).
-          default: 0
-        error:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Error
-          description: Failure message when the job errored, else null.
-        result_summary:
-          anyOf:
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          title: Result Summary
-          description: Kind-specific summary of the outcome, populated as the job runs and finishes. Stays a plain object here because the key set varies per `kind` (the union isn't a useful client type); the per-kind keys are registry-validated on the write side (`app/job_results.py`), so a given `kind` always carries the same shape.
-        created_by:
-          anyOf:
-          - type: string
-            format: uuid
-          - type: 'null'
-          title: Created By
-          description: User who created the job, or null if system-initiated.
-        created_at:
-          type: string
-          format: date-time
-          title: Created At
-          description: When the job was created.
-        completed_at:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
-          title: Completed At
-          description: When the job reached a terminal state, or null if still in flight.
-        pct:
-          anyOf:
-          - type: integer
-          - type: 'null'
-          title: Pct
-          description: 'Derived progress percent. A COMPLETED job is always 100 — even a no-op
-
-            with total==0 finished all of its (zero) work; showing 0/null on a done job
-
-            was misleading. Otherwise processed/total, or None when total is unknown
-
-            (freshly-queued, denominator not yet resolved).'
-          readOnly: true
-      type: object
-      required:
-      - id
-      - kind
-      - target
-      - status
-      - total
-      - processed
-      - succeeded
-      - failed
-      - error
-      - created_by
-      - created_at
-      - completed_at
-      - pct
-      title: JobResponse
-    ProjectBatchDeleteAnnotationsResultItem:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-          description: Requested asset id.
-        status:
-          type: string
-          enum:
-          - cleared
-          - skipped
-          title: Status
-          description: '`cleared` = ≥1 annotation deleted; `skipped` = nothing matched (no annotations, predicate matched none, or all matches were locked).'
-        deleted:
-          type: integer
-          title: Deleted
-          description: Annotations deleted on this asset.
-      type: object
-      required:
-      - id
-      - status
-      - deleted
-      title: ProjectBatchDeleteAnnotationsResultItem
-    ProjectBulkDeleteAnnotationsRequest:
-      properties:
-        class_ids:
-          anyOf:
-          - items:
-              type: string
-              format: uuid
-            type: array
-            minItems: 1
-          - type: 'null'
-          title: Class Ids
-          description: Delete only annotations whose class_id is in this list (ANY-of / IN). Annotation FIELD filter — distinct from the ProjectFilter `classes` asset content-filter. Unknown ids match nothing (entity-ref contract).
-        source:
-          anyOf:
-          - $ref: '#/components/schemas/AnnotationSource'
-          - type: 'null'
-          description: Delete only annotations with this source (`manual` | `imported` | `model`) — e.g. `model` to undo an auto-label run, `imported` to undo a bad import, without touching human work.
-        asset_ids:
-          anyOf:
-          - items:
-              type: string
-              format: uuid
-            type: array
-          - type: 'null'
-          title: Asset Ids
-        filter:
-          anyOf:
-          - $ref: '#/components/schemas/ProjectFilter'
-          - type: 'null'
-        exclude_asset_ids:
-          anyOf:
-          - items:
-              type: string
-              format: uuid
-            type: array
-          - type: 'null'
-          title: Exclude Asset Ids
-      additionalProperties: false
-      type: object
-      title: ProjectBulkDeleteAnnotationsRequest
-      description: 'Async `bulk-delete-annotations` body: ProjectBulkOpRequest selection
-
-        (exactly-one-of `asset_ids` | `filter`, filter-mode `exclude_asset_ids`)
-
-        plus the annotation predicate. Locked shapes are never deleted (reported
-
-        as `skipped_locked` on the job''s result_summary).'
-    ProjectScope:
-      properties:
-        asset_ids:
-          anyOf:
-          - items:
-              type: string
-              format: uuid
-            type: array
-          - type: 'null'
-          title: Asset Ids
-        filter:
-          anyOf:
-          - $ref: '#/components/schemas/AssetFilter'
-          - type: 'null'
-        all:
-          anyOf:
-          - type: boolean
-          - type: 'null'
-          title: All
-      type: object
-      title: ProjectScope
-      description: Initial asset selection for a project. Exactly one of the three fields.
-    ProjectResponse:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-          description: Project id.
-        dataset_id:
-          type: string
-          format: uuid
-          title: Dataset Id
-          description: Id of the dataset this project labels.
-        dataset_name:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Dataset Name
-          description: Dataset name; populated only when the caller JOINed the dataset.
-        dataset_kind:
-          $ref: '#/components/schemas/DatasetKind'
-          description: Kind of the backing dataset (image or video).
-        name:
-          type: string
-          title: Name
-          description: Project name.
-        description:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Description
-          description: Optional project description.
-        assignment_mode:
-          $ref: '#/components/schemas/AssignmentMode'
-          description: How assets are assigned to labelers (self_claim or manual).
-        status:
-          $ref: '#/components/schemas/ProjectStatus'
-          description: Project lifecycle status. User-facing reads only ever see `active` — a deleted project is tombstoned `deleting` and immediately excluded from all reads while its cascade runs in the background (ADR-0120).
-        tag_config:
-          $ref: '#/components/schemas/TagConfig'
-          description: Per-project tag vocabulary (ADR-0050).
-        progress:
-          anyOf:
-          - $ref: '#/components/schemas/ProjectProgress'
-          - type: 'null'
-          description: Workflow counters for dashboard cards; opt-in (expensive on hot writes).
-        created_at:
-          type: string
-          format: date-time
-          title: Created At
-          description: Creation timestamp.
-        updated_at:
-          type: string
-          format: date-time
-          title: Updated At
-          description: Last-update timestamp.
-      type: object
-      required:
-      - id
-      - dataset_id
-      - dataset_kind
-      - name
-      - description
-      - assignment_mode
-      - status
-      - tag_config
-      - created_at
-      - updated_at
-      title: ProjectResponse
-    TagConfig:
-      properties:
-        free_form:
-          type: boolean
-          title: Free Form
-          default: true
-        allowed_tags:
-          items:
-            $ref: '#/components/schemas/TagConfigEntry'
-          type: array
-          maxItems: 1000
-          title: Allowed Tags
-      type: object
-      title: TagConfig
-      description: 'Per-project tag vocabulary (ADR-0050). `free_form=true` (default) means
-
-        the server doesn''t enforce; `allowed_tags` is a cosmetic palette.
-
-        `free_form=false` rejects unknown tags at bulk-add-tags time.'
-    KeypointTopology:
-      properties:
-        version:
-          type: integer
-          minimum: 1.0
-          title: Version
-          default: 1
-        dim:
-          type: integer
-          enum:
-          - 2
-          - 3
-          title: Dim
-          default: 2
-        nodes:
-          items:
-            $ref: '#/components/schemas/KeypointNode'
-          type: array
-          maxItems: 512
-          minItems: 1
-          title: Nodes
-        edges:
-          items:
-            items:
-              type: integer
-            type: array
-          type: array
-          title: Edges
-        visibility_model:
-          $ref: '#/components/schemas/VisibilityModel'
-          default: coco_ternary
-      type: object
-      required:
-      - nodes
-      title: KeypointTopology
-      description: 'Per-label keypoint topology — names the nodes, defines skeleton edges.
-
-        ADR-0030. Stored on `ProjectClass.keypoint_topology` as JSONB.
-
-
-        `nodes` are 0-indexed by their position in the array; the `id` field is
-
-        the explicit canonical index and MUST equal the array index. `edges` are
-
-        0-indexed pairs into `nodes`. Empty `edges` = single-keypoint label
-
-        (no skeleton render).'
-    ClassificationInputType:
-      type: string
-      enum:
-      - radio
-      - checkbox
-      - text
-      title: ClassificationInputType
-    ProjectAssetsBatchAssignResultItem:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-        status:
-          type: string
-          enum:
-          - assigned
-          - skipped
-          title: Status
-      type: object
-      required:
-      - id
-      - status
-      title: ProjectAssetsBatchAssignResultItem
-    ProjectBulkApproveAssetsRequest:
-      properties:
-        asset_ids:
-          anyOf:
-          - items:
-              type: string
-              format: uuid
-            type: array
-          - type: 'null'
-          title: Asset Ids
-        filter:
-          anyOf:
-          - $ref: '#/components/schemas/ProjectFilter'
-          - type: 'null'
-        exclude_asset_ids:
-          anyOf:
-          - items:
-              type: string
-              format: uuid
-            type: array
-          - type: 'null'
-          title: Exclude Asset Ids
-      type: object
-      title: ProjectBulkApproveAssetsRequest
-      description: 'Async bulk-approve. No payload. Worker silently skips rows not in
-
-        `in_review`.'
-    ProjectCreate:
-      properties:
-        name:
-          type: string
-          maxLength: 255
-          minLength: 1
-          title: Name
-        description:
-          anyOf:
-          - type: string
-            maxLength: 1000
-          - type: 'null'
-          title: Description
-        dataset_id:
-          type: string
-          format: uuid
-          title: Dataset Id
-        dataset_kind:
-          $ref: '#/components/schemas/DatasetKind'
-        scope:
-          $ref: '#/components/schemas/ProjectScope'
-        classes:
-          items:
-            $ref: '#/components/schemas/ClassCreate'
-          type: array
-          title: Classes
-        image_classifications:
-          items:
-            $ref: '#/components/schemas/ImageClassificationCreate'
-          type: array
-          title: Image Classifications
-        assignment_mode:
-          $ref: '#/components/schemas/AssignmentMode'
-          default: self_claim
-        tag_config:
-          anyOf:
-          - $ref: '#/components/schemas/TagConfig'
-          - type: 'null'
-      type: object
-      required:
-      - name
-      - dataset_id
-      - dataset_kind
-      - scope
-      title: ProjectCreate
-    TagConfigEntry:
-      properties:
-        value:
-          type: string
-          maxLength: 64
-          minLength: 1
-          title: Value
-        color:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Color
-        display:
-          anyOf:
-          - type: string
-            maxLength: 128
-            minLength: 1
-          - type: 'null'
-          title: Display
-      type: object
-      required:
-      - value
-      title: TagConfigEntry
-      description: 'One entry in `tag_config.allowed_tags` on a Project. `value` is the
-
-        canonical wire form; `display`/`color` are FE rendering hints.'
-    ProjectAssetsBatchAssignRequest:
-      properties:
-        asset_ids:
-          items:
-            type: string
-            format: uuid
-          type: array
-          minItems: 1
-          title: Asset Ids
-        user_id:
-          type: string
-          format: uuid
-          title: User Id
-      type: object
-      required:
-      - asset_ids
-      - user_id
-      title: ProjectAssetsBatchAssignRequest
-      description: Sync batch-assign. Explicit asset_ids only (≤MAX_SYNC_BATCH_SIZE).
-    ImageClassificationResponse:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-        kind:
-          $ref: '#/components/schemas/ClassKind'
-        name:
-          type: string
-          title: Name
-        color:
-          type: string
-          title: Color
-        owner_class_id:
-          anyOf:
-          - type: string
-            format: uuid
-          - type: 'null'
-          title: Owner Class Id
-        archived:
-          type: boolean
-          title: Archived
-        classification_config:
-          anyOf:
-          - $ref: '#/components/schemas/ClassificationConfig'
-          - type: 'null'
-        created_at:
-          type: string
-          format: date-time
-          title: Created At
-        updated_at:
-          type: string
-          format: date-time
-          title: Updated At
-      type: object
-      required:
-      - id
-      - kind
-      - name
-      - color
-      - archived
-      - created_at
-      - updated_at
-      title: ImageClassificationResponse
-    VersionAssetView:
-      properties:
-        asset_id:
-          type: string
-          format: uuid
-          title: Asset Id
-        filename:
-          type: string
-          title: Filename
-        width:
-          type: integer
-          title: Width
-        height:
-          type: integer
-          title: Height
-        tags:
-          items:
-            type: string
-          type: array
-          title: Tags
-        annotation_count:
-          type: integer
-          title: Annotation Count
-        status:
-          type: string
-          enum:
-          - present
-          - version_only
-          - purged
-          title: Status
-        thumbnail_url:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Thumbnail Url
-        image_url:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Image Url
-      type: object
-      required:
-      - asset_id
-      - filename
-      - width
-      - height
-      - tags
-      - annotation_count
-      - status
-      - thumbnail_url
-      - image_url
-      title: VersionAssetView
-      description: 'One asset as it was *frozen* in a version (ADR-0065 browser) — served from
-
-        the manifest, not the live row, so it survives the asset being deleted.'
-    ProjectAssetsBatchSetStatusResponse:
-      properties:
-        total:
-          type: integer
-          title: Total
-        updated:
-          type: integer
-          title: Updated
-        skipped:
-          type: integer
-          title: Skipped
-        results:
-          items:
-            $ref: '#/components/schemas/ProjectAssetsBatchSetStatusResultItem'
-          type: array
-          title: Results
-      type: object
-      required:
-      - total
-      - updated
-      - skipped
-      - results
-      title: ProjectAssetsBatchSetStatusResponse
-    UserSummary:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-        email:
-          type: string
-          title: Email
-        first_name:
-          type: string
-          title: First Name
-        last_name:
-          type: string
-          title: Last Name
-      type: object
-      required:
-      - id
-      - email
-      - first_name
-      - last_name
-      title: UserSummary
-      description: 'Compact user reference for embedding in other responses (members,
-
-        asset_state, etc.) so the FE doesn''t have to do N+1 lookups for names.'
-    MemberPage:
+    VersionAssetPage:
       properties:
         items:
           items:
-            $ref: '#/components/schemas/MemberResponse'
-          type: array
-          title: Items
-        next_cursor:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Next Cursor
-      type: object
-      required:
-      - items
-      title: MemberPage
-      description: 'ADR-0012 pagination envelope for the member listing. The member set is
-
-        bounded (ADR-0078 caps `MAX_MEMBERS_PER_PROJECT` at <=50) and returned whole,
-
-        so `next_cursor` is always None — the shape exists for contract uniformity.'
-    ClassUpdate:
-      properties:
-        name:
-          anyOf:
-          - type: string
-            maxLength: 255
-            minLength: 1
-          - type: 'null'
-          title: Name
-        color:
-          anyOf:
-          - type: string
-            pattern: ^#[0-9A-Fa-f]{6}$
-          - type: 'null'
-          title: Color
-        allowed_types:
-          anyOf:
-          - items:
-              type: string
-            type: array
-          - type: 'null'
-          title: Allowed Types
-        archived:
-          anyOf:
-          - type: boolean
-          - type: 'null'
-          title: Archived
-        classification_config:
-          anyOf:
-          - $ref: '#/components/schemas/ClassificationConfig'
-          - type: 'null'
-      type: object
-      title: ClassUpdate
-      description: 'Edit a class''s OWN fields (attribute edits go through the attribute endpoints).
-
-        Works for object classes (name/color/allowed_types/archived) and image-level
-
-        classifications (name/color/archived + the `classification_config` policy fields,
-
-        ADR-0085). `keypoint_topology` stays immutable. The handler enforces kind-appropriate
-
-        fields.'
-    ProjectTagSummaryItem:
-      properties:
-        value:
-          type: string
-          title: Value
-        count:
-          type: integer
-          title: Count
-      type: object
-      required:
-      - value
-      - count
-      title: ProjectTagSummaryItem
-      description: "One tag value + the count of assets in the target set that carry it.\nFE renders tri-state checkboxes from this:\n  - count == total          → checked\n  - 0 < count < total       → indeterminate\n  - tag absent from list    → unchecked"
-    KeypointPosition:
-      properties:
-        x:
-          type: number
-          maximum: 1.0
-          minimum: 0.0
-          title: X
-        y:
-          type: number
-          maximum: 1.0
-          minimum: 0.0
-          title: Y
-      type: object
-      required:
-      - x
-      - y
-      title: KeypointPosition
-      description: 'Normalized (0-1) (x, y) inside a unit bbox. Origin is top-left; y grows
-
-        down. The FE multiplies by the drawn bbox dimensions to seed each joint
-
-        when the user creates a new keypoint annotation by dragging a rect.'
-    ClassKind:
-      type: string
-      enum:
-      - object
-      - classification
-      title: ClassKind
-    ClassesResponse:
-      properties:
-        classes:
-          items:
-            $ref: '#/components/schemas/ClassResponse'
-          type: array
-          title: Classes
-        image_classifications:
-          items:
-            $ref: '#/components/schemas/ImageClassificationResponse'
-          type: array
-          title: Image Classifications
-      type: object
-      required:
-      - classes
-      - image_classifications
-      title: ClassesResponse
-      description: 'Composed classes read (ADR-0090 §3, Option A). Deliberately NOT cursor-paginated
-
-        (ADR-0012 exception): a project''s class set is bounded + small (ADR-0078 caps 1000)
-
-        and the nested tree must be assembled whole for the FE editor.'
-    ProjectAssetsBatchAddRequest:
-      properties:
-        asset_ids:
-          items:
-            type: string
-            format: uuid
-          type: array
-          minItems: 1
-          title: Asset Ids
-      type: object
-      required:
-      - asset_ids
-      title: ProjectAssetsBatchAddRequest
-      description: Sync `batch-add` body — explicit asset_ids only, ≤MAX_SYNC_BATCH_SIZE.
-    ProjectBatchDeleteAnnotationsResponse:
-      properties:
-        total:
-          type: integer
-          title: Total
-          description: Number of asset ids requested.
-        cleared:
-          type: integer
-          title: Cleared
-          description: Assets that had ≥1 matching annotation deleted.
-        skipped:
-          type: integer
-          title: Skipped
-          description: Assets where nothing was deleted.
-        deleted_annotations:
-          type: integer
-          title: Deleted Annotations
-          description: Total annotations deleted across all assets.
-        skipped_locked:
-          type: integer
-          title: Skipped Locked
-          description: Matched annotations left in place because they are locked (ADR-0084).
-        results:
-          items:
-            $ref: '#/components/schemas/ProjectBatchDeleteAnnotationsResultItem'
-          type: array
-          title: Results
-          description: Per-asset outcome, one entry per requested id.
-      type: object
-      required:
-      - total
-      - cleared
-      - skipped
-      - deleted_annotations
-      - skipped_locked
-      - results
-      title: ProjectBatchDeleteAnnotationsResponse
-      description: 'Canonical sync batch-op envelope (ADR-0041): `total == cleared + skipped`
-
-        over ASSETS, `len(results) == total`; `deleted_annotations`/`skipped_locked`
-
-        carry the annotation-level accounting.'
-    ProjectBatchDeleteAnnotationsRequest:
-      properties:
-        class_ids:
-          anyOf:
-          - items:
-              type: string
-              format: uuid
-            type: array
-            minItems: 1
-          - type: 'null'
-          title: Class Ids
-          description: Delete only annotations whose class_id is in this list (ANY-of / IN). Annotation FIELD filter — distinct from the ProjectFilter `classes` asset content-filter. Unknown ids match nothing (entity-ref contract).
-        source:
-          anyOf:
-          - $ref: '#/components/schemas/AnnotationSource'
-          - type: 'null'
-          description: Delete only annotations with this source (`manual` | `imported` | `model`) — e.g. `model` to undo an auto-label run, `imported` to undo a bad import, without touching human work.
-        asset_ids:
-          items:
-            type: string
-            format: uuid
-          type: array
-          minItems: 1
-          title: Asset Ids
-          description: Assets whose matching annotations are deleted. Explicit ids only.
-      additionalProperties: false
-      type: object
-      required:
-      - asset_ids
-      title: ProjectBatchDeleteAnnotationsRequest
-      description: 'Sync `batch-delete-annotations` body — explicit asset_ids only,
-
-        ≤MAX_SYNC_BATCH_SIZE (ADR-0041). Additionally 413s when the selection
-
-        matches more than MAX_SYNC_BATCH_SIZE annotations (the sync perf budget
-
-        bounds deleted rows, not selected assets) — use bulk-delete-annotations.'
-    MemberResponse:
-      properties:
-        user_id:
-          type: string
-          format: uuid
-          title: User Id
-          description: Id of the member user.
-        role:
-          $ref: '#/components/schemas/ProjectRole'
-          description: Member's project role (manager, reviewer, or labeler).
-        user:
-          anyOf:
-          - $ref: '#/components/schemas/UserSummary'
-          - type: 'null'
-          description: Member profile; populated by routes that JOIN, else None.
-      type: object
-      required:
-      - user_id
-      - role
-      title: MemberResponse
-    ProjectTagDeleteResponse:
-      properties:
-        value:
-          type: string
-          title: Value
-          description: The deleted tag value.
-        assets_untagged:
-          type: integer
-          title: Assets Untagged
-          description: Number of assets the tag was removed from (0 if it was unused).
-        removed_from_vocab:
-          type: boolean
-          title: Removed From Vocab
-          description: True if the tag was also removed from tag_config.allowed_tags (the palette).
-      type: object
-      required:
-      - value
-      - assets_untagged
-      - removed_from_vocab
-      title: ProjectTagDeleteResponse
-      description: Result of deleting a tag from a project (untag-all + palette cleanup).
-    ProjectAssetsBatchRejectResponse:
-      properties:
-        total:
-          type: integer
-          title: Total
-        rejected:
-          type: integer
-          title: Rejected
-        skipped:
-          type: integer
-          title: Skipped
-        results:
-          items:
-            $ref: '#/components/schemas/ProjectAssetsBatchRejectResultItem'
-          type: array
-          title: Results
-      type: object
-      required:
-      - total
-      - rejected
-      - skipped
-      - results
-      title: ProjectAssetsBatchRejectResponse
-    ProjectPage:
-      properties:
-        items:
-          items:
-            $ref: '#/components/schemas/ProjectResponse'
+            $ref: '#/components/schemas/VersionAssetView'
           type: array
           title: Items
         next_cursor:
@@ -6937,61 +6940,58 @@ components:
           - type: 'null'
           title: Next Cursor
         total:
-          anyOf:
-          - type: integer
-          - type: 'null'
+          type: integer
           title: Total
       type: object
       required:
       - items
-      title: ProjectPage
-    ProjectStatus:
-      type: string
-      enum:
-      - active
-      - deleting
-      title: ProjectStatus
-    ProjectAssetsBatchAssignResponse:
-      properties:
-        total:
-          type: integer
-          title: Total
-        assigned:
-          type: integer
-          title: Assigned
-        skipped:
-          type: integer
-          title: Skipped
-        results:
-          items:
-            $ref: '#/components/schemas/ProjectAssetsBatchAssignResultItem'
-          type: array
-          title: Results
-      type: object
-      required:
       - total
-      - assigned
-      - skipped
-      - results
-      title: ProjectAssetsBatchAssignResponse
-    KeypointNodeGeomRead:
+      title: VersionAssetPage
+      description: 'Page of a version''s frozen assets (`GET …/versions/{vid}/assets`). Mirrors
+
+        `AssetPage` — cursor-paginated, `total` is the count matching the q/tags
+
+        filter (the whole frozen set when unfiltered).'
+    BboxGeometryRead:
       properties:
+        type:
+          type: string
+          const: bbox
+          title: Type
+          default: bbox
         x:
           type: number
           title: X
         y:
           type: number
           title: Y
-        visibility:
-          type: integer
-          title: Visibility
-          default: 2
+        w:
+          type: number
+          title: W
+        h:
+          type: number
+          title: H
       additionalProperties: true
       type: object
       required:
       - x
       - y
-      title: KeypointNodeGeomRead
+      - w
+      - h
+      title: BboxGeometryRead
+    MemberAdd:
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+        role:
+          $ref: '#/components/schemas/ProjectRole'
+      type: object
+      required:
+      - user_id
+      - role
+      title: MemberAdd
   securitySchemes:
     HTTPBearer:
       type: http

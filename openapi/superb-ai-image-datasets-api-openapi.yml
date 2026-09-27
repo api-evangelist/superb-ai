@@ -432,41 +432,102 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    EmbeddingStatus:
+    DatasetResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        created_by:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Created By
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      type: object
+      required:
+      - id
+      - name
+      - description
+      - created_by
+      - created_at
+      - updated_at
+      title: DatasetResponse
+    JobKind:
+      type: string
+      enum:
+      - build_project_version_manifest
+      - bulk_delete_image_assets
+      - bulk_update_tags_project
+      - bulk_add_assets_project
+      - bulk_remove_assets_project
+      - bulk_assign_assets_project
+      - bulk_unassign_assets_project
+      - bulk_approve_assets_project
+      - bulk_reject_assets_project
+      - bulk_create_annotations
+      - bulk_delete_annotations
+      - embed_dataset
+      - export_dataset
+      - auto_label_project
+      - cleanup_s3_objects
+      - delete_project_cascade
+      - delete_dataset_cascade
+      - duplicate_project_scope
+      - bulk_set_status_assets_project
+      title: JobKind
+    JobStatus:
       type: string
       enum:
       - pending
-      - ready
+      - queued
+      - running
+      - completed
       - failed
-      title: EmbeddingStatus
-    ErrorResponse:
+      - canceled
+      title: JobStatus
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
       required:
-      - error
-      properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
+      - loc
+      - msg
+      - type
+      title: ValidationError
     JobResponse:
       properties:
         id:
@@ -567,6 +628,73 @@ components:
       - completed_at
       - pct
       title: JobResponse
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    DatasetUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 255
+            minLength: 1
+          - type: 'null'
+          title: Name
+        description:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Description
+      type: object
+      title: DatasetUpdate
+      description: 'PATCH semantics: omit a field to leave it unchanged. Explicit `null` is
+
+        treated the same as omit (use `""` to clear `description`). Future revision
+
+        may switch to JSON Merge Patch with explicit-null = clear semantics if FE asks.'
+    DatasetCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Name
+        description:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Description
+      type: object
+      required:
+      - name
+      title: DatasetCreate
     DatasetStatsResponse:
       properties:
         total:
@@ -603,111 +731,6 @@ components:
         "1872 / 2000 embedded" badges and prompt the user to re-embed when there
 
         are pending arrivals.'
-    AssetStatus:
-      type: string
-      enum:
-      - pending
-      - processing
-      - ready
-      - failed
-      - deleted
-      title: AssetStatus
-    JobStatus:
-      type: string
-      enum:
-      - pending
-      - queued
-      - running
-      - completed
-      - failed
-      - canceled
-      title: JobStatus
-    JobKind:
-      type: string
-      enum:
-      - build_project_version_manifest
-      - bulk_delete_image_assets
-      - bulk_update_tags_project
-      - bulk_add_assets_project
-      - bulk_remove_assets_project
-      - bulk_assign_assets_project
-      - bulk_unassign_assets_project
-      - bulk_approve_assets_project
-      - bulk_reject_assets_project
-      - bulk_create_annotations
-      - bulk_delete_annotations
-      - embed_dataset
-      - export_dataset
-      - auto_label_project
-      - cleanup_s3_objects
-      - delete_project_cascade
-      - delete_dataset_cascade
-      - duplicate_project_scope
-      - bulk_set_status_assets_project
-      title: JobKind
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    DatasetResponse:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-        name:
-          type: string
-          title: Name
-        description:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Description
-        created_by:
-          anyOf:
-          - type: string
-            format: uuid
-          - type: 'null'
-          title: Created By
-        created_at:
-          type: string
-          format: date-time
-          title: Created At
-        updated_at:
-          type: string
-          format: date-time
-          title: Updated At
-      type: object
-      required:
-      - id
-      - name
-      - description
-      - created_by
-      - created_at
-      - updated_at
-      title: DatasetResponse
     ErrorCode:
       type: string
       enum:
@@ -773,45 +796,13 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    DatasetUpdate:
-      properties:
-        name:
-          anyOf:
-          - type: string
-            maxLength: 255
-            minLength: 1
-          - type: 'null'
-          title: Name
-        description:
-          anyOf:
-          - type: string
-            maxLength: 1000
-          - type: 'null'
-          title: Description
-      type: object
-      title: DatasetUpdate
-      description: 'PATCH semantics: omit a field to leave it unchanged. Explicit `null` is
-
-        treated the same as omit (use `""` to clear `description`). Future revision
-
-        may switch to JSON Merge Patch with explicit-null = clear semantics if FE asks.'
-    DatasetCreate:
-      properties:
-        name:
-          type: string
-          maxLength: 255
-          minLength: 1
-          title: Name
-        description:
-          anyOf:
-          - type: string
-            maxLength: 1000
-          - type: 'null'
-          title: Description
-      type: object
-      required:
-      - name
-      title: DatasetCreate
+    EmbeddingStatus:
+      type: string
+      enum:
+      - pending
+      - ready
+      - failed
+      title: EmbeddingStatus
     HTTPValidationError:
       properties:
         detail:
@@ -821,6 +812,15 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    AssetStatus:
+      type: string
+      enum:
+      - pending
+      - processing
+      - ready
+      - failed
+      - deleted
+      title: AssetStatus
   securitySchemes:
     HTTPBearer:
       type: http

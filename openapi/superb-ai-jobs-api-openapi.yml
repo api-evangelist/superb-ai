@@ -240,34 +240,39 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    ErrorResponse:
-      type: object
-      required:
-      - error
-      properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
+    JobKind:
+      type: string
+      enum:
+      - build_project_version_manifest
+      - bulk_delete_image_assets
+      - bulk_update_tags_project
+      - bulk_add_assets_project
+      - bulk_remove_assets_project
+      - bulk_assign_assets_project
+      - bulk_unassign_assets_project
+      - bulk_approve_assets_project
+      - bulk_reject_assets_project
+      - bulk_create_annotations
+      - bulk_delete_annotations
+      - embed_dataset
+      - export_dataset
+      - auto_label_project
+      - cleanup_s3_objects
+      - delete_project_cascade
+      - delete_dataset_cascade
+      - duplicate_project_scope
+      - bulk_set_status_assets_project
+      title: JobKind
+    JobStatus:
+      type: string
+      enum:
+      - pending
+      - queued
+      - running
+      - completed
+      - failed
+      - canceled
+      title: JobStatus
     JobResponse:
       properties:
         id:
@@ -368,65 +373,34 @@ components:
       - completed_at
       - pct
       title: JobResponse
-    JobStatus:
-      type: string
-      enum:
-      - pending
-      - queued
-      - running
-      - completed
-      - failed
-      - canceled
-      title: JobStatus
-    JobKind:
-      type: string
-      enum:
-      - build_project_version_manifest
-      - bulk_delete_image_assets
-      - bulk_update_tags_project
-      - bulk_add_assets_project
-      - bulk_remove_assets_project
-      - bulk_assign_assets_project
-      - bulk_unassign_assets_project
-      - bulk_approve_assets_project
-      - bulk_reject_assets_project
-      - bulk_create_annotations
-      - bulk_delete_annotations
-      - embed_dataset
-      - export_dataset
-      - auto_label_project
-      - cleanup_s3_objects
-      - delete_project_cascade
-      - delete_dataset_cascade
-      - duplicate_project_scope
-      - bulk_set_status_assets_project
-      title: JobKind
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
+    ErrorResponse:
       type: object
       required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
     JobPage:
       properties:
         items:
@@ -522,6 +496,32 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
   securitySchemes:
     HTTPBearer:
       type: http

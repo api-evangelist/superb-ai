@@ -247,50 +247,6 @@ components:
               type: string
               nullable: true
               description: Correlation id for support / log lookups.
-    ApiKeySummary:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-          description: Server-assigned unique id of the API key.
-        name:
-          type: string
-          title: Name
-          description: The user-supplied label for the key.
-        prefix:
-          type: string
-          title: Prefix
-          description: Short non-secret prefix of the key (e.g. `sbd_pk_a3f4…`), used to identify which key is which.
-        created_at:
-          type: string
-          format: date-time
-          title: Created At
-          description: When the key was created.
-        last_used_at:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
-          title: Last Used At
-          description: When the key was last used to authenticate; null if never used.
-        expires_at:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
-          title: Expires At
-          description: When the key expires; null means it never expires.
-      type: object
-      required:
-      - id
-      - name
-      - prefix
-      - created_at
-      - last_used_at
-      - expires_at
-      title: ApiKeySummary
-      description: List response item. Never carries the plaintext.
     ApiKeyList:
       properties:
         items:
@@ -307,77 +263,6 @@ components:
       required:
       - items
       title: ApiKeyList
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    ApiKeyCreated:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-          description: Server-assigned unique id of the API key.
-        name:
-          type: string
-          title: Name
-          description: The user-supplied label for the key.
-        prefix:
-          type: string
-          title: Prefix
-          description: Short non-secret prefix of the key (e.g. `sbd_pk_a3f4…`), used to identify which key is which.
-        plaintext:
-          type: string
-          title: Plaintext
-          description: The full secret key value. **Returned exactly once, here** — the server only retains a hash. Store it securely; it cannot be recovered.
-        created_at:
-          type: string
-          format: date-time
-          title: Created At
-          description: When the key was created.
-        expires_at:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
-          title: Expires At
-          description: When the key expires; null means it never expires.
-      type: object
-      required:
-      - id
-      - name
-      - prefix
-      - plaintext
-      - created_at
-      - expires_at
-      title: ApiKeyCreated
-      description: 'Response for `POST /api-keys`. **The `plaintext` field is returned
-
-        exactly once and never again** — store it securely (env var, secret manager).
-
-        Subsequent calls to GET return everything except the plaintext.'
     ErrorCode:
       type: string
       enum:
@@ -443,6 +328,51 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    ApiKeyCreated:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Server-assigned unique id of the API key.
+        name:
+          type: string
+          title: Name
+          description: The user-supplied label for the key.
+        prefix:
+          type: string
+          title: Prefix
+          description: Short non-secret prefix of the key (e.g. `sbd_pk_a3f4…`), used to identify which key is which.
+        plaintext:
+          type: string
+          title: Plaintext
+          description: The full secret key value. **Returned exactly once, here** — the server only retains a hash. Store it securely; it cannot be recovered.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: When the key was created.
+        expires_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Expires At
+          description: When the key expires; null means it never expires.
+      type: object
+      required:
+      - id
+      - name
+      - prefix
+      - plaintext
+      - created_at
+      - expires_at
+      title: ApiKeyCreated
+      description: 'Response for `POST /api-keys`. **The `plaintext` field is returned
+
+        exactly once and never again** — store it securely (env var, secret manager).
+
+        Subsequent calls to GET return everything except the plaintext.'
     HTTPValidationError:
       properties:
         detail:
@@ -452,6 +382,76 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    ApiKeySummary:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Server-assigned unique id of the API key.
+        name:
+          type: string
+          title: Name
+          description: The user-supplied label for the key.
+        prefix:
+          type: string
+          title: Prefix
+          description: Short non-secret prefix of the key (e.g. `sbd_pk_a3f4…`), used to identify which key is which.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: When the key was created.
+        last_used_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Used At
+          description: When the key was last used to authenticate; null if never used.
+        expires_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Expires At
+          description: When the key expires; null means it never expires.
+      type: object
+      required:
+      - id
+      - name
+      - prefix
+      - created_at
+      - last_used_at
+      - expires_at
+      title: ApiKeySummary
+      description: List response item. Never carries the plaintext.
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
   securitySchemes:
     HTTPBearer:
       type: http

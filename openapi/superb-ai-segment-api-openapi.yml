@@ -91,15 +91,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
     OutputGeometry:
       type: string
       enum:
@@ -138,6 +129,40 @@ components:
       required:
       - exterior
       title: PolygonPartRead
+    PolygonGeometryRead:
+      properties:
+        type:
+          type: string
+          const: polygon
+          title: Type
+          default: polygon
+        polygons:
+          items:
+            $ref: '#/components/schemas/PolygonPartRead'
+          type: array
+          title: Polygons
+      additionalProperties: true
+      type: object
+      required:
+      - polygons
+      title: PolygonGeometryRead
+    KeypointGeometryRead:
+      properties:
+        type:
+          type: string
+          const: keypoint
+          title: Type
+          default: keypoint
+        points:
+          items:
+            $ref: '#/components/schemas/KeypointNodeGeomRead'
+          type: array
+          title: Points
+      additionalProperties: true
+      type: object
+      required:
+      - points
+      title: KeypointGeometryRead
     ErrorResponse:
       type: object
       required:
@@ -166,6 +191,41 @@ components:
               type: string
               nullable: true
               description: Correlation id for support / log lookups.
+    SegmentResponse:
+      properties:
+        suggestions:
+          items:
+            $ref: '#/components/schemas/SegmentSuggestion'
+          type: array
+          title: Suggestions
+          description: Zero or one suggestion (SAM returns the best mask for the prompt). Not persisted — the labeler assigns a class and commits via the normal annotation create.
+        inference_ms:
+          type: integer
+          title: Inference Ms
+          description: Server-side SAM inference time in milliseconds.
+      type: object
+      required:
+      - suggestions
+      - inference_ms
+      title: SegmentResponse
+    KeypointNodeGeomRead:
+      properties:
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        visibility:
+          type: integer
+          title: Visibility
+          default: 2
+      additionalProperties: true
+      type: object
+      required:
+      - x
+      - y
+      title: KeypointNodeGeomRead
     SegmentSuggestion:
       properties:
         type:
@@ -194,6 +254,28 @@ components:
       - geometry
       - score
       title: SegmentSuggestion
+    SegmentPoint:
+      properties:
+        x:
+          type: number
+          title: X
+          description: Click x in ORIGINAL image pixels.
+        y:
+          type: number
+          title: Y
+          description: Click y in ORIGINAL image pixels.
+        label:
+          type: integer
+          maximum: 1.0
+          minimum: 0.0
+          title: Label
+          description: 1 = positive (include this region), 0 = negative (exclude). Refine a mask by adding negative clicks on over-segmented areas, positive clicks to grow it.
+          default: 1
+      type: object
+      required:
+      - x
+      - y
+      title: SegmentPoint
     BboxGeometryRead:
       properties:
         type:
@@ -221,72 +303,6 @@ components:
       - w
       - h
       title: BboxGeometryRead
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    SegmentPoint:
-      properties:
-        x:
-          type: number
-          title: X
-          description: Click x in ORIGINAL image pixels.
-        y:
-          type: number
-          title: Y
-          description: Click y in ORIGINAL image pixels.
-        label:
-          type: integer
-          maximum: 1.0
-          minimum: 0.0
-          title: Label
-          description: 1 = positive (include this region), 0 = negative (exclude). Refine a mask by adding negative clicks on over-segmented areas, positive clicks to grow it.
-          default: 1
-      type: object
-      required:
-      - x
-      - y
-      title: SegmentPoint
-    KeypointNodeGeomRead:
-      properties:
-        x:
-          type: number
-          title: X
-        y:
-          type: number
-          title: Y
-        visibility:
-          type: integer
-          title: Visibility
-          default: 2
-      additionalProperties: true
-      type: object
-      required:
-      - x
-      - y
-      title: KeypointNodeGeomRead
     ErrorCode:
       type: string
       enum:
@@ -352,57 +368,6 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    PolygonGeometryRead:
-      properties:
-        type:
-          type: string
-          const: polygon
-          title: Type
-          default: polygon
-        polygons:
-          items:
-            $ref: '#/components/schemas/PolygonPartRead'
-          type: array
-          title: Polygons
-      additionalProperties: true
-      type: object
-      required:
-      - polygons
-      title: PolygonGeometryRead
-    SegmentResponse:
-      properties:
-        suggestions:
-          items:
-            $ref: '#/components/schemas/SegmentSuggestion'
-          type: array
-          title: Suggestions
-          description: Zero or one suggestion (SAM returns the best mask for the prompt). Not persisted — the labeler assigns a class and commits via the normal annotation create.
-        inference_ms:
-          type: integer
-          title: Inference Ms
-          description: Server-side SAM inference time in milliseconds.
-      type: object
-      required:
-      - suggestions
-      - inference_ms
-      title: SegmentResponse
-    KeypointGeometryRead:
-      properties:
-        type:
-          type: string
-          const: keypoint
-          title: Type
-          default: keypoint
-        points:
-          items:
-            $ref: '#/components/schemas/KeypointNodeGeomRead'
-          type: array
-          title: Points
-      additionalProperties: true
-      type: object
-      required:
-      - points
-      title: KeypointGeometryRead
     SegmentRequest:
       properties:
         points:
@@ -422,6 +387,41 @@ components:
           description: Optional bounding-box prompt [x1, y1, x2, y2] in ORIGINAL image pixels.
       type: object
       title: SegmentRequest
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
   securitySchemes:
     HTTPBearer:
       type: http

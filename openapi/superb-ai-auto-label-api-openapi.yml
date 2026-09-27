@@ -477,142 +477,25 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    ErrorResponse:
-      type: object
-      required:
-      - error
+    KeypointNodeGeom:
       properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
-    JobKind:
-      type: string
-      enum:
-      - build_project_version_manifest
-      - bulk_delete_image_assets
-      - bulk_update_tags_project
-      - bulk_add_assets_project
-      - bulk_remove_assets_project
-      - bulk_assign_assets_project
-      - bulk_unassign_assets_project
-      - bulk_approve_assets_project
-      - bulk_reject_assets_project
-      - bulk_create_annotations
-      - bulk_delete_annotations
-      - embed_dataset
-      - export_dataset
-      - auto_label_project
-      - cleanup_s3_objects
-      - delete_project_cascade
-      - delete_dataset_cascade
-      - duplicate_project_scope
-      - bulk_set_status_assets_project
-      title: JobKind
-    AutoLabelConfig:
-      properties:
-        model_ref:
-          $ref: '#/components/schemas/ModelRef'
-        class_map:
-          anyOf:
-          - additionalProperties:
-              type: string
-              format: uuid
-            type: object
-          - type: 'null'
-          title: Class Map
-        confidence_threshold:
+        x:
           type: number
-          maximum: 1.0
+          title: X
+        y:
+          type: number
+          title: Y
+        visibility:
+          type: integer
+          maximum: 2.0
           minimum: 0.0
-          title: Confidence Threshold
-          default: 0.5
-        labeler_assist_enabled:
-          type: boolean
-          title: Labeler Assist Enabled
-          default: false
-        auto_advance_all_high_conf:
-          type: boolean
-          title: Auto Advance All High Conf
-          default: false
+          title: Visibility
+          default: 2
       type: object
       required:
-      - model_ref
-      title: AutoLabelConfig
-      description: 'Per-project auto-label policy (manager-owned). `class_map` maps the model''s
-
-        class id (string key) → a project class id; omit it to auto-derive when the
-
-        model was trained from this project''s version (names match 1:1).'
-    AutoLabelSuggestion:
-      properties:
-        class_id:
-          anyOf:
-          - type: string
-            format: uuid
-          - type: 'null'
-          title: Class Id
-        class_name:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Class Name
-        type:
-          $ref: '#/components/schemas/OutputGeometry'
-        geometry:
-          oneOf:
-          - $ref: '#/components/schemas/BboxGeometry'
-          - $ref: '#/components/schemas/PolygonGeometry'
-          - $ref: '#/components/schemas/KeypointGeometry'
-          title: Geometry
-          discriminator:
-            propertyName: type
-            mapping:
-              bbox: '#/components/schemas/BboxGeometry'
-              keypoint: '#/components/schemas/KeypointGeometry'
-              polygon: '#/components/schemas/PolygonGeometry'
-        confidence:
-          type: number
-          title: Confidence
-      type: object
-      required:
-      - class_id
-      - class_name
-      - type
-      - geometry
-      - confidence
-      title: AutoLabelSuggestion
-      description: 'One predicted object. `class_id` is null when the model class couldn''t be
-
-        mapped to a project class (FE prompts the labeler to assign before commit).'
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
+      - x
+      - y
+      title: KeypointNodeGeom
     AutoLabelRunRequest:
       properties:
         asset_ids:
@@ -656,183 +539,6 @@ components:
       type: object
       title: AutoLabelRunRequest
       description: "Start a batch pre-label run. Exactly one of `asset_ids` / `all` (`all` = every\nasset in the project).\n\nExisting-annotation policy is a single 3-level funnel (ADR-0075 rev 2) — easy to\nreason about, and **human work is always protected**: a bulk run NEVER deletes or\nreplaces a human-made (manual/imported) annotation; only AI-generated (`model`)\nannotations are ever cleared.\n\n  1. `skip_annotated` (default true) — only label assets with zero annotations.\n     The safe \"pre-label the untouched pile\". If false, drill into 2.\n  2. `on_existing` — for assets that already have annotations:\n       • \"overwrite\" → clear the asset's AI labels and write fresh AI (human kept);\n         the \"I retrained, refresh the un-reviewed pile\" case.\n       • \"append\" (default) → keep everything, add new AI, per 3.\n  3. `on_overlap` — when an appended prediction overlaps an existing annotation:\n       • \"respect\" (default) → drop the prediction (fill only the gaps that a\n         human/AI annotation didn't already cover).\n       • \"replace\" → the prediction wins over an overlapping *AI* annotation\n         (deletes it); over a *human* annotation it always yields (human protected).\n\n`on_existing` / `on_overlap` are ignored when `skip_annotated` is true. Overlap is\nIoU-gated on bounding boxes (polygons by their bounds — a v1 approximation)."
-    PolygonGeometry:
-      properties:
-        type:
-          type: string
-          const: polygon
-          title: Type
-          default: polygon
-        polygons:
-          items:
-            $ref: '#/components/schemas/PolygonPart'
-          type: array
-          minItems: 1
-          title: Polygons
-      type: object
-      required:
-      - polygons
-      title: PolygonGeometry
-    AutoLabelConfigResponse:
-      properties:
-        config:
-          anyOf:
-          - $ref: '#/components/schemas/AutoLabelConfig'
-          - type: 'null'
-        ready:
-          type: boolean
-          title: Ready
-        ready_reason:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Ready Reason
-      type: object
-      required:
-      - config
-      - ready
-      title: AutoLabelConfigResponse
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    PolygonPart:
-      properties:
-        exterior:
-          items:
-            prefixItems:
-            - type: number
-            - type: number
-            type: array
-            maxItems: 2
-            minItems: 2
-          type: array
-          minItems: 3
-          title: Exterior
-        holes:
-          items:
-            items:
-              prefixItems:
-              - type: number
-              - type: number
-              type: array
-              maxItems: 2
-              minItems: 2
-            type: array
-          type: array
-          title: Holes
-      type: object
-      required:
-      - exterior
-      title: PolygonPart
-      description: 'One part of a (possibly multi-part) polygon: an exterior ring + optional hole rings.'
-    KeypointNodeGeom:
-      properties:
-        x:
-          type: number
-          title: X
-        y:
-          type: number
-          title: Y
-        visibility:
-          type: integer
-          maximum: 2.0
-          minimum: 0.0
-          title: Visibility
-          default: 2
-      type: object
-      required:
-      - x
-      - y
-      title: KeypointNodeGeom
-    AutoLabelSuggestRequest:
-      properties:
-        confidence:
-          anyOf:
-          - type: number
-            maximum: 1.0
-            minimum: 0.0
-          - type: 'null'
-          title: Confidence
-      type: object
-      title: AutoLabelSuggestRequest
-      description: 'In-editor assist for one image — runs the project''s configured trained-model
-
-        deployment. Body is optional; `confidence` overrides the project threshold for
-
-        this call only.'
-    AutoLabelSuggestResponse:
-      properties:
-        suggestions:
-          items:
-            $ref: '#/components/schemas/AutoLabelSuggestion'
-          type: array
-          title: Suggestions
-        inference_ms:
-          type: integer
-          title: Inference Ms
-      type: object
-      required:
-      - suggestions
-      - inference_ms
-      title: AutoLabelSuggestResponse
-    BboxGeometry:
-      properties:
-        type:
-          type: string
-          const: bbox
-          title: Type
-          default: bbox
-        x:
-          type: number
-          title: X
-        y:
-          type: number
-          title: Y
-        w:
-          type: number
-          exclusiveMinimum: 0.0
-          title: W
-        h:
-          type: number
-          exclusiveMinimum: 0.0
-          title: H
-      type: object
-      required:
-      - x
-      - y
-      - w
-      - h
-      title: BboxGeometry
-    ModelRefKind:
-      type: string
-      enum:
-      - deployment
-      - foundation
-      title: ModelRefKind
-      description: Which model backs an auto-label run (stored in project.auto_label_config JSONB).
     JobResponse:
       properties:
         id:
@@ -933,6 +639,215 @@ components:
       - completed_at
       - pct
       title: JobResponse
+    AutoLabelSuggestRequest:
+      properties:
+        confidence:
+          anyOf:
+          - type: number
+            maximum: 1.0
+            minimum: 0.0
+          - type: 'null'
+          title: Confidence
+      type: object
+      title: AutoLabelSuggestRequest
+      description: 'In-editor assist for one image — runs the project''s configured trained-model
+
+        deployment. Body is optional; `confidence` overrides the project threshold for
+
+        this call only.'
+    AutoLabelSuggestResponse:
+      properties:
+        suggestions:
+          items:
+            $ref: '#/components/schemas/AutoLabelSuggestion'
+          type: array
+          title: Suggestions
+        inference_ms:
+          type: integer
+          title: Inference Ms
+      type: object
+      required:
+      - suggestions
+      - inference_ms
+      title: AutoLabelSuggestResponse
+    BboxGeometry:
+      properties:
+        type:
+          type: string
+          const: bbox
+          title: Type
+          default: bbox
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        w:
+          type: number
+          exclusiveMinimum: 0.0
+          title: W
+        h:
+          type: number
+          exclusiveMinimum: 0.0
+          title: H
+      type: object
+      required:
+      - x
+      - y
+      - w
+      - h
+      title: BboxGeometry
+    ModelRefKind:
+      type: string
+      enum:
+      - deployment
+      - foundation
+      title: ModelRefKind
+      description: Which model backs an auto-label run (stored in project.auto_label_config JSONB).
+    AutoLabelConfig:
+      properties:
+        model_ref:
+          $ref: '#/components/schemas/ModelRef'
+        class_map:
+          anyOf:
+          - additionalProperties:
+              type: string
+              format: uuid
+            type: object
+          - type: 'null'
+          title: Class Map
+        confidence_threshold:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Confidence Threshold
+          default: 0.5
+        labeler_assist_enabled:
+          type: boolean
+          title: Labeler Assist Enabled
+          default: false
+        auto_advance_all_high_conf:
+          type: boolean
+          title: Auto Advance All High Conf
+          default: false
+      type: object
+      required:
+      - model_ref
+      title: AutoLabelConfig
+      description: 'Per-project auto-label policy (manager-owned). `class_map` maps the model''s
+
+        class id (string key) → a project class id; omit it to auto-derive when the
+
+        model was trained from this project''s version (names match 1:1).'
+    PolygonPart:
+      properties:
+        exterior:
+          items:
+            prefixItems:
+            - type: number
+            - type: number
+            type: array
+            maxItems: 2
+            minItems: 2
+          type: array
+          minItems: 3
+          title: Exterior
+        holes:
+          items:
+            items:
+              prefixItems:
+              - type: number
+              - type: number
+              type: array
+              maxItems: 2
+              minItems: 2
+            type: array
+          type: array
+          title: Holes
+      type: object
+      required:
+      - exterior
+      title: PolygonPart
+      description: 'One part of a (possibly multi-part) polygon: an exterior ring + optional hole rings.'
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    ModelRef:
+      properties:
+        kind:
+          $ref: '#/components/schemas/ModelRefKind'
+        deployment_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Deployment Id
+        foundation_key:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Foundation Key
+      type: object
+      required:
+      - kind
+      title: ModelRef
+      description: 'Which model auto-label uses. `deployment` = a trained-model SageMaker
+
+        endpoint (batch + assist); `foundation` = an open-vocab model like ZERO
+
+        (assist only — see ADR-0075).'
     JobStatus:
       type: string
       enum:
@@ -943,27 +858,23 @@ components:
       - failed
       - canceled
       title: JobStatus
-    JobPage:
+    PolygonGeometry:
       properties:
-        items:
+        type:
+          type: string
+          const: polygon
+          title: Type
+          default: polygon
+        polygons:
           items:
-            $ref: '#/components/schemas/JobResponse'
+            $ref: '#/components/schemas/PolygonPart'
           type: array
-          title: Items
-        next_cursor:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Next Cursor
-        total:
-          anyOf:
-          - type: integer
-          - type: 'null'
-          title: Total
+          minItems: 1
+          title: Polygons
       type: object
       required:
-      - items
-      title: JobPage
+      - polygons
+      title: PolygonGeometry
     ErrorCode:
       type: string
       enum:
@@ -1029,6 +940,15 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     KeypointGeometry:
       properties:
         type:
@@ -1046,30 +966,110 @@ components:
       required:
       - points
       title: KeypointGeometry
-    ModelRef:
+    JobKind:
+      type: string
+      enum:
+      - build_project_version_manifest
+      - bulk_delete_image_assets
+      - bulk_update_tags_project
+      - bulk_add_assets_project
+      - bulk_remove_assets_project
+      - bulk_assign_assets_project
+      - bulk_unassign_assets_project
+      - bulk_approve_assets_project
+      - bulk_reject_assets_project
+      - bulk_create_annotations
+      - bulk_delete_annotations
+      - embed_dataset
+      - export_dataset
+      - auto_label_project
+      - cleanup_s3_objects
+      - delete_project_cascade
+      - delete_dataset_cascade
+      - duplicate_project_scope
+      - bulk_set_status_assets_project
+      title: JobKind
+    AutoLabelSuggestion:
       properties:
-        kind:
-          $ref: '#/components/schemas/ModelRefKind'
-        deployment_id:
+        class_id:
           anyOf:
           - type: string
             format: uuid
           - type: 'null'
-          title: Deployment Id
-        foundation_key:
+          title: Class Id
+        class_name:
           anyOf:
           - type: string
           - type: 'null'
-          title: Foundation Key
+          title: Class Name
+        type:
+          $ref: '#/components/schemas/OutputGeometry'
+        geometry:
+          oneOf:
+          - $ref: '#/components/schemas/BboxGeometry'
+          - $ref: '#/components/schemas/PolygonGeometry'
+          - $ref: '#/components/schemas/KeypointGeometry'
+          title: Geometry
+          discriminator:
+            propertyName: type
+            mapping:
+              bbox: '#/components/schemas/BboxGeometry'
+              keypoint: '#/components/schemas/KeypointGeometry'
+              polygon: '#/components/schemas/PolygonGeometry'
+        confidence:
+          type: number
+          title: Confidence
       type: object
       required:
-      - kind
-      title: ModelRef
-      description: 'Which model auto-label uses. `deployment` = a trained-model SageMaker
+      - class_id
+      - class_name
+      - type
+      - geometry
+      - confidence
+      title: AutoLabelSuggestion
+      description: 'One predicted object. `class_id` is null when the model class couldn''t be
 
-        endpoint (batch + assist); `foundation` = an open-vocab model like ZERO
-
-        (assist only — see ADR-0075).'
+        mapped to a project class (FE prompts the labeler to assign before commit).'
+    AutoLabelConfigResponse:
+      properties:
+        config:
+          anyOf:
+          - $ref: '#/components/schemas/AutoLabelConfig'
+          - type: 'null'
+        ready:
+          type: boolean
+          title: Ready
+        ready_reason:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Ready Reason
+      type: object
+      required:
+      - config
+      - ready
+      title: AutoLabelConfigResponse
+    JobPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/JobResponse'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+        total:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Total
+      type: object
+      required:
+      - items
+      title: JobPage
     OutputGeometry:
       type: string
       enum:

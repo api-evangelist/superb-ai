@@ -575,96 +575,29 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    ErrorResponse:
-      type: object
-      required:
-      - error
+    UserSelfUpdate:
       properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
-    UserResponse:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-        email:
-          type: string
-          title: Email
         first_name:
-          type: string
-          title: First Name
-        last_name:
-          type: string
-          title: Last Name
-        role:
-          $ref: '#/components/schemas/WorkspaceRole'
-        created_at:
-          type: string
-          format: date-time
-          title: Created At
-        updated_at:
-          type: string
-          format: date-time
-          title: Updated At
-      type: object
-      required:
-      - id
-      - email
-      - first_name
-      - last_name
-      - role
-      - created_at
-      - updated_at
-      title: UserResponse
-    UserRoleUpdate:
-      properties:
-        role:
-          $ref: '#/components/schemas/WorkspaceRole'
-      type: object
-      required:
-      - role
-      title: UserRoleUpdate
-      description: 'Body for PATCH /users/{user_id}. Admin-only — changes the target
-
-        user''s workspace role. Blocked by last-admin guard when demoting.'
-    UserPage:
-      properties:
-        items:
-          items:
-            $ref: '#/components/schemas/UserResponse'
-          type: array
-          title: Items
-        next_cursor:
           anyOf:
           - type: string
+            maxLength: 100
+            minLength: 1
           - type: 'null'
-          title: Next Cursor
+          title: First Name
+          description: Updated given name. Omit to leave unchanged.
+        last_name:
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
+          title: Last Name
+          description: Updated family name. Omit to leave unchanged.
       type: object
-      required:
-      - items
-      title: UserPage
+      title: UserSelfUpdate
+      description: 'Edit your own profile (first/last name only). Email + password have their
+
+        own dedicated endpoints.'
     UserSeedCreate:
       properties:
         email:
@@ -707,32 +640,34 @@ components:
         ready-to-login member directly (WorkOS account with password + membership,
 
         no email). Humans join via `/tenants/{slug}/invitations` + in-app accept.'
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
+    ErrorResponse:
       type: object
       required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
     WorkspaceRole:
       type: string
       enum:
@@ -762,29 +697,33 @@ components:
         identity provider before the new one is set; `new_password` must satisfy the
 
         provider''s strength policy (10+ chars, not a common password).'
-    UserSelfUpdate:
+    UserRoleUpdate:
       properties:
-        first_name:
-          anyOf:
-          - type: string
-            maxLength: 100
-            minLength: 1
-          - type: 'null'
-          title: First Name
-          description: Updated given name. Omit to leave unchanged.
-        last_name:
-          anyOf:
-          - type: string
-            maxLength: 100
-            minLength: 1
-          - type: 'null'
-          title: Last Name
-          description: Updated family name. Omit to leave unchanged.
+        role:
+          $ref: '#/components/schemas/WorkspaceRole'
       type: object
-      title: UserSelfUpdate
-      description: 'Edit your own profile (first/last name only). Email + password have their
+      required:
+      - role
+      title: UserRoleUpdate
+      description: 'Body for PATCH /users/{user_id}. Admin-only — changes the target
 
-        own dedicated endpoints.'
+        user''s workspace role. Blocked by last-admin guard when demoting.'
+    UserPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/UserResponse'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+      type: object
+      required:
+      - items
+      title: UserPage
     ErrorCode:
       type: string
       enum:
@@ -859,6 +798,67 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    UserResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        email:
+          type: string
+          title: Email
+        first_name:
+          type: string
+          title: First Name
+        last_name:
+          type: string
+          title: Last Name
+        role:
+          $ref: '#/components/schemas/WorkspaceRole'
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      type: object
+      required:
+      - id
+      - email
+      - first_name
+      - last_name
+      - role
+      - created_at
+      - updated_at
+      title: UserResponse
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
   securitySchemes:
     HTTPBearer:
       type: http
