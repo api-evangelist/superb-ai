@@ -1546,81 +1546,195 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    KeypointNodeGeom:
+    ValidationError:
       properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    ClassificationOption:
+      properties:
+        value:
+          type: string
+          maxLength: 128
+          minLength: 1
+          title: Value
+        display:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Display
+      type: object
+      required:
+      - value
+      - display
+      title: ClassificationOption
+    AnnotationCreate:
+      properties:
+        id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Id
+        class_id:
+          type: string
+          format: uuid
+          title: Class Id
+        type:
+          $ref: '#/components/schemas/AnnotationType'
+        geometry:
+          anyOf:
+          - oneOf:
+            - $ref: '#/components/schemas/BboxGeometry'
+            - $ref: '#/components/schemas/PolygonGeometry'
+            - $ref: '#/components/schemas/KeypointGeometry'
+            discriminator:
+              propertyName: type
+              mapping:
+                bbox: '#/components/schemas/BboxGeometry'
+                keypoint: '#/components/schemas/KeypointGeometry'
+                polygon: '#/components/schemas/PolygonGeometry'
+          - type: 'null'
+          title: Geometry
+        data:
+          additionalProperties: true
+          type: object
+          title: Data
+        instance_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Instance Id
+        parent_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Parent Id
+        locked:
+          type: boolean
+          title: Locked
+          default: false
+      type: object
+      required:
+      - class_id
+      - type
+      title: AnnotationCreate
+    AttributeResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        name:
+          type: string
+          title: Name
+        owner_class_id:
+          type: string
+          format: uuid
+          title: Owner Class Id
+        color:
+          type: string
+          title: Color
+        archived:
+          type: boolean
+          title: Archived
+        classification_config:
+          anyOf:
+          - $ref: '#/components/schemas/ClassificationConfig'
+          - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      type: object
+      required:
+      - id
+      - name
+      - owner_class_id
+      - color
+      - archived
+      - created_at
+      - updated_at
+      title: AttributeResponse
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    AssetDownloadUrl:
+      properties:
+        url:
+          type: string
+          title: Url
+        expires_at:
+          type: string
+          format: date-time
+          title: Expires At
+      type: object
+      required:
+      - url
+      - expires_at
+      title: AssetDownloadUrl
+      description: Presigned GET URL for asset content (canvas rendering).
+    BboxGeometry:
+      properties:
+        type:
+          type: string
+          const: bbox
+          title: Type
+          default: bbox
         x:
           type: number
           title: X
         y:
           type: number
           title: Y
-        visibility:
-          type: integer
-          maximum: 2.0
-          minimum: 0.0
-          title: Visibility
-          default: 2
+        w:
+          type: number
+          exclusiveMinimum: 0.0
+          title: W
+        h:
+          type: number
+          exclusiveMinimum: 0.0
+          title: H
       type: object
       required:
       - x
       - y
-      title: KeypointNodeGeom
-    LabelingContext:
-      properties:
-        asset_state:
-          $ref: '#/components/schemas/AssetStateResponse'
-          description: The asset's per-project workflow state.
-        asset:
-          $ref: '#/components/schemas/AssetSummary'
-          description: Asset metadata for the labeler page.
-        download_url:
-          type: string
-          title: Download Url
-          description: Presigned GET URL for the asset's full-resolution bytes.
-        download_url_expires_at:
-          type: string
-          format: date-time
-          title: Download Url Expires At
-          description: When `download_url` expires.
-        shapes:
-          items:
-            $ref: '#/components/schemas/AnnotationResponse'
-          type: array
-          title: Shapes
-          description: All annotations on the asset in this project.
-        annotations:
-          items:
-            $ref: '#/components/schemas/AnnotationResponse'
-          type: array
-          title: Annotations
-          description: Legacy alias of `shapes`; prefer `shapes`.
-        classes:
-          items:
-            $ref: '#/components/schemas/ClassResponse'
-          type: array
-          title: Classes
-          description: Object classes with inline attributes (ADR-0090).
-        image_classifications:
-          items:
-            $ref: '#/components/schemas/ImageClassificationResponse'
-          type: array
-          title: Image Classifications
-          description: Image-level classifications for this project.
-      type: object
-      required:
-      - asset_state
-      - asset
-      - download_url
-      - download_url_expires_at
-      title: LabelingContext
-      description: 'Bundled labeler-page payload: state + asset metadata + annotations + classes
-
-        + presigned download URL. One round-trip instead of four.
-
-
-        `annotations` (legacy) is kept for backward-compat — it equals `shapes`.
-
-        New FE code should read `shapes` directly.'
+      - w
+      - h
+      title: BboxGeometry
     AssetStateResponse:
       properties:
         project_id:
@@ -1773,410 +1887,6 @@ components:
       required:
       - exterior
       title: PolygonPartRead
-    UserSummary:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-        email:
-          type: string
-          title: Email
-        first_name:
-          type: string
-          title: First Name
-        last_name:
-          type: string
-          title: Last Name
-      type: object
-      required:
-      - id
-      - email
-      - first_name
-      - last_name
-      title: UserSummary
-      description: 'Compact user reference for embedding in other responses (members,
-
-        asset_state, etc.) so the FE doesn''t have to do N+1 lookups for names.'
-    KeypointTopology:
-      properties:
-        version:
-          type: integer
-          minimum: 1.0
-          title: Version
-          default: 1
-        dim:
-          type: integer
-          enum:
-          - 2
-          - 3
-          title: Dim
-          default: 2
-        nodes:
-          items:
-            $ref: '#/components/schemas/KeypointNode'
-          type: array
-          maxItems: 512
-          minItems: 1
-          title: Nodes
-        edges:
-          items:
-            items:
-              type: integer
-            type: array
-          type: array
-          title: Edges
-        visibility_model:
-          $ref: '#/components/schemas/VisibilityModel'
-          default: coco_ternary
-      type: object
-      required:
-      - nodes
-      title: KeypointTopology
-      description: 'Per-label keypoint topology — names the nodes, defines skeleton edges.
-
-        ADR-0030. Stored on `ProjectClass.keypoint_topology` as JSONB.
-
-
-        `nodes` are 0-indexed by their position in the array; the `id` field is
-
-        the explicit canonical index and MUST equal the array index. `edges` are
-
-        0-indexed pairs into `nodes`. Empty `edges` = single-keypoint label
-
-        (no skeleton render).'
-    ClassResponse:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-        kind:
-          $ref: '#/components/schemas/ClassKind'
-        name:
-          type: string
-          title: Name
-        color:
-          type: string
-          title: Color
-        allowed_types:
-          items:
-            type: string
-          type: array
-          title: Allowed Types
-        archived:
-          type: boolean
-          title: Archived
-        keypoint_topology:
-          anyOf:
-          - $ref: '#/components/schemas/KeypointTopology'
-          - type: 'null'
-        attributes:
-          items:
-            $ref: '#/components/schemas/AttributeResponse'
-          type: array
-          title: Attributes
-        created_at:
-          type: string
-          format: date-time
-          title: Created At
-        updated_at:
-          type: string
-          format: date-time
-          title: Updated At
-      type: object
-      required:
-      - id
-      - kind
-      - name
-      - color
-      - allowed_types
-      - archived
-      - created_at
-      - updated_at
-      title: ClassResponse
-      description: An object class with its owned attributes inline (ADR-0090 §3, Option A).
-    KeypointNode:
-      properties:
-        id:
-          type: integer
-          minimum: 0.0
-          title: Id
-        name:
-          type: string
-          maxLength: 64
-          minLength: 1
-          title: Name
-        default_position:
-          anyOf:
-          - $ref: '#/components/schemas/KeypointPosition'
-          - type: 'null'
-      type: object
-      required:
-      - id
-      - name
-      title: KeypointNode
-    ClassificationConfig:
-      properties:
-        version:
-          type: integer
-          minimum: 1.0
-          title: Version
-          default: 1
-        input_type:
-          $ref: '#/components/schemas/ClassificationInputType'
-        options:
-          items:
-            $ref: '#/components/schemas/ClassificationOption'
-          type: array
-          title: Options
-        default:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Default
-        required:
-          type: boolean
-          title: Required
-          default: false
-      type: object
-      required:
-      - input_type
-      title: ClassificationConfig
-      description: 'Per-label config for `type=classification` annotations. Stored on
-
-        `ProjectClass.classification_config` as JSONB. ADR-0031.
-
-
-        `options` is required for `radio` / `checkbox`, ignored for `text`.
-
-        `default` (optional) names the pre-selected value (radio/text) or single
-
-        pre-selected option (checkbox). `required: true` makes the workflow
-
-        `submit` transition refuse if no annotation for this label exists on
-
-        the asset.'
-    BboxGeometry:
-      properties:
-        type:
-          type: string
-          const: bbox
-          title: Type
-          default: bbox
-        x:
-          type: number
-          title: X
-        y:
-          type: number
-          title: Y
-        w:
-          type: number
-          exclusiveMinimum: 0.0
-          title: W
-        h:
-          type: number
-          exclusiveMinimum: 0.0
-          title: H
-      type: object
-      required:
-      - x
-      - y
-      - w
-      - h
-      title: BboxGeometry
-    PolygonGeometryRead:
-      properties:
-        type:
-          type: string
-          const: polygon
-          title: Type
-          default: polygon
-        polygons:
-          items:
-            $ref: '#/components/schemas/PolygonPartRead'
-          type: array
-          title: Polygons
-      additionalProperties: true
-      type: object
-      required:
-      - polygons
-      title: PolygonGeometryRead
-    PolygonPart:
-      properties:
-        exterior:
-          items:
-            prefixItems:
-            - type: number
-            - type: number
-            type: array
-            maxItems: 2
-            minItems: 2
-          type: array
-          minItems: 3
-          title: Exterior
-        holes:
-          items:
-            items:
-              prefixItems:
-              - type: number
-              - type: number
-              type: array
-              maxItems: 2
-              minItems: 2
-            type: array
-          type: array
-          title: Holes
-      type: object
-      required:
-      - exterior
-      title: PolygonPart
-      description: 'One part of a (possibly multi-part) polygon: an exterior ring + optional hole rings.'
-    AssetStatePage:
-      properties:
-        items:
-          items:
-            $ref: '#/components/schemas/AssetStateResponse'
-          type: array
-          title: Items
-        next_cursor:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Next Cursor
-        total:
-          anyOf:
-          - type: integer
-          - type: 'null'
-          title: Total
-      type: object
-      required:
-      - items
-      title: AssetStatePage
-    KeypointPosition:
-      properties:
-        x:
-          type: number
-          maximum: 1.0
-          minimum: 0.0
-          title: X
-        y:
-          type: number
-          maximum: 1.0
-          minimum: 0.0
-          title: Y
-      type: object
-      required:
-      - x
-      - y
-      title: KeypointPosition
-      description: 'Normalized (0-1) (x, y) inside a unit bbox. Origin is top-left; y grows
-
-        down. The FE multiplies by the drawn bbox dimensions to seed each joint
-
-        when the user creates a new keypoint annotation by dragging a rect.'
-    ClassificationInputType:
-      type: string
-      enum:
-      - radio
-      - checkbox
-      - text
-      title: ClassificationInputType
-    ErrorResponse:
-      type: object
-      required:
-      - error
-      properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
-    WorkflowStatus:
-      type: string
-      enum:
-      - to_label
-      - in_progress
-      - in_review
-      - done
-      - skipped
-      title: WorkflowStatus
-    KeypointGeometryRead:
-      properties:
-        type:
-          type: string
-          const: keypoint
-          title: Type
-          default: keypoint
-        points:
-          items:
-            $ref: '#/components/schemas/KeypointNodeGeomRead'
-          type: array
-          title: Points
-      additionalProperties: true
-      type: object
-      required:
-      - points
-      title: KeypointGeometryRead
-    AttributeResponse:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-        name:
-          type: string
-          title: Name
-        owner_class_id:
-          type: string
-          format: uuid
-          title: Owner Class Id
-        color:
-          type: string
-          title: Color
-        archived:
-          type: boolean
-          title: Archived
-        classification_config:
-          anyOf:
-          - $ref: '#/components/schemas/ClassificationConfig'
-          - type: 'null'
-        created_at:
-          type: string
-          format: date-time
-          title: Created At
-        updated_at:
-          type: string
-          format: date-time
-          title: Updated At
-      type: object
-      required:
-      - id
-      - name
-      - owner_class_id
-      - color
-      - archived
-      - created_at
-      - updated_at
-      title: AttributeResponse
     ClassificationSummary:
       properties:
         class_id:
@@ -2203,12 +1913,79 @@ components:
       - value
       title: ClassificationSummary
       description: One answered image-level classification on an asset (asset-list summary).
-    ClassKind:
-      type: string
-      enum:
-      - object
-      - classification
-      title: ClassKind
+    LabelingContext:
+      properties:
+        asset_state:
+          $ref: '#/components/schemas/AssetStateResponse'
+          description: The asset's per-project workflow state.
+        asset:
+          $ref: '#/components/schemas/AssetSummary'
+          description: Asset metadata for the labeler page.
+        download_url:
+          type: string
+          title: Download Url
+          description: Presigned GET URL for the asset's full-resolution bytes.
+        download_url_expires_at:
+          type: string
+          format: date-time
+          title: Download Url Expires At
+          description: When `download_url` expires.
+        shapes:
+          items:
+            $ref: '#/components/schemas/AnnotationResponse'
+          type: array
+          title: Shapes
+          description: All annotations on the asset in this project.
+        annotations:
+          items:
+            $ref: '#/components/schemas/AnnotationResponse'
+          type: array
+          title: Annotations
+          description: Legacy alias of `shapes`; prefer `shapes`.
+        classes:
+          items:
+            $ref: '#/components/schemas/ClassResponse'
+          type: array
+          title: Classes
+          description: Object classes with inline attributes (ADR-0090).
+        image_classifications:
+          items:
+            $ref: '#/components/schemas/ImageClassificationResponse'
+          type: array
+          title: Image Classifications
+          description: Image-level classifications for this project.
+      type: object
+      required:
+      - asset_state
+      - asset
+      - download_url
+      - download_url_expires_at
+      title: LabelingContext
+      description: 'Bundled labeler-page payload: state + asset metadata + annotations + classes
+
+        + presigned download URL. One round-trip instead of four.
+
+
+        `annotations` (legacy) is kept for backward-compat — it equals `shapes`.
+
+        New FE code should read `shapes` directly.'
+    KeypointGeometryRead:
+      properties:
+        type:
+          type: string
+          const: keypoint
+          title: Type
+          default: keypoint
+        points:
+          items:
+            $ref: '#/components/schemas/KeypointNodeGeomRead'
+          type: array
+          title: Points
+      additionalProperties: true
+      type: object
+      required:
+      - points
+      title: KeypointGeometryRead
     AnnotationSource:
       type: string
       enum:
@@ -2216,111 +1993,55 @@ components:
       - imported
       - model
       title: AnnotationSource
-    AnnotationCreate:
+    KeypointPosition:
       properties:
-        id:
-          anyOf:
-          - type: string
-            format: uuid
-          - type: 'null'
-          title: Id
-        class_id:
-          type: string
-          format: uuid
-          title: Class Id
-        type:
-          $ref: '#/components/schemas/AnnotationType'
-        geometry:
-          anyOf:
-          - oneOf:
-            - $ref: '#/components/schemas/BboxGeometry'
-            - $ref: '#/components/schemas/PolygonGeometry'
-            - $ref: '#/components/schemas/KeypointGeometry'
-            discriminator:
-              propertyName: type
-              mapping:
-                bbox: '#/components/schemas/BboxGeometry'
-                keypoint: '#/components/schemas/KeypointGeometry'
-                polygon: '#/components/schemas/PolygonGeometry'
-          - type: 'null'
-          title: Geometry
-        data:
-          additionalProperties: true
-          type: object
-          title: Data
-        instance_id:
-          anyOf:
-          - type: string
-            format: uuid
-          - type: 'null'
-          title: Instance Id
-        parent_id:
-          anyOf:
-          - type: string
-            format: uuid
-          - type: 'null'
-          title: Parent Id
-        locked:
-          type: boolean
-          title: Locked
-          default: false
+        x:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: X
+        y:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Y
       type: object
       required:
-      - class_id
-      - type
-      title: AnnotationCreate
-    ClassificationOption:
+      - x
+      - y
+      title: KeypointPosition
+      description: 'Normalized (0-1) (x, y) inside a unit bbox. Origin is top-left; y grows
+
+        down. The FE multiplies by the drawn bbox dimensions to seed each joint
+
+        when the user creates a new keypoint annotation by dragging a rect.'
+    BboxGeometryRead:
       properties:
-        value:
-          type: string
-          maxLength: 128
-          minLength: 1
-          title: Value
-        display:
-          type: string
-          maxLength: 255
-          minLength: 1
-          title: Display
-      type: object
-      required:
-      - value
-      - display
-      title: ClassificationOption
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
         type:
           type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
+          const: bbox
+          title: Type
+          default: bbox
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        w:
+          type: number
+          title: W
+        h:
+          type: number
+          title: H
+      additionalProperties: true
       type: object
       required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    AssetStatus:
-      type: string
-      enum:
-      - pending
-      - processing
-      - ready
-      - failed
-      - deleted
-      title: AssetStatus
+      - x
+      - y
+      - w
+      - h
+      title: BboxGeometryRead
     AnnotationUpdate:
       properties:
         class_id:
@@ -2362,6 +2083,31 @@ components:
           title: Locked
       type: object
       title: AnnotationUpdate
+    KeypointNodeGeom:
+      properties:
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        visibility:
+          type: integer
+          maximum: 2.0
+          minimum: 0.0
+          title: Visibility
+          default: 2
+      type: object
+      required:
+      - x
+      - y
+      title: KeypointNodeGeom
+    ClassKind:
+      type: string
+      enum:
+      - object
+      - classification
+      title: ClassKind
     AnnotationResponse:
       properties:
         id:
@@ -2456,53 +2202,6 @@ components:
       - created_at
       - updated_at
       title: AnnotationResponse
-    AnnotationBatchCreate:
-      properties:
-        annotations:
-          items:
-            $ref: '#/components/schemas/AnnotationCreate'
-          type: array
-          maxItems: 1000
-          minItems: 1
-          title: Annotations
-        replace:
-          type: boolean
-          title: Replace
-          default: false
-      type: object
-      required:
-      - annotations
-      title: AnnotationBatchCreate
-      description: 'Body for `POST /{pid}/assets/{aid}/annotations/batch-create` — sync, one
-
-        asset (asset in the path). `source` is always `manual` (the labeling path).
-
-        `replace=true` deletes the asset''s existing annotations before inserting.'
-    AssignRequest:
-      properties:
-        user_id:
-          type: string
-          format: uuid
-          title: User Id
-      type: object
-      required:
-      - user_id
-      title: AssignRequest
-    AssetDownloadUrl:
-      properties:
-        url:
-          type: string
-          title: Url
-        expires_at:
-          type: string
-          format: date-time
-          title: Expires At
-      type: object
-      required:
-      - url
-      - expires_at
-      title: AssetDownloadUrl
-      description: Presigned GET URL for asset content (canvas rendering).
     AnnotationType:
       type: string
       enum:
@@ -2511,47 +2210,106 @@ components:
       - keypoint
       - classification
       title: AnnotationType
-    VisibilityModel:
-      type: string
-      enum:
-      - binary
-      - coco_ternary
-      title: VisibilityModel
-    PolygonGeometry:
+    AssetStatePage:
       properties:
-        type:
-          type: string
-          const: polygon
-          title: Type
-          default: polygon
-        polygons:
+        items:
           items:
-            $ref: '#/components/schemas/PolygonPart'
+            $ref: '#/components/schemas/AssetStateResponse'
           type: array
-          minItems: 1
-          title: Polygons
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+        total:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Total
       type: object
       required:
-      - polygons
-      title: PolygonGeometry
-    KeypointNodeGeomRead:
+      - items
+      title: AssetStatePage
+    ErrorResponse:
+      type: object
+      required:
+      - error
       properties:
-        x:
-          type: number
-          title: X
-        y:
-          type: number
-          title: Y
-        visibility:
-          type: integer
-          title: Visibility
-          default: 2
-      additionalProperties: true
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    ClassResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        kind:
+          $ref: '#/components/schemas/ClassKind'
+        name:
+          type: string
+          title: Name
+        color:
+          type: string
+          title: Color
+        allowed_types:
+          items:
+            type: string
+          type: array
+          title: Allowed Types
+        archived:
+          type: boolean
+          title: Archived
+        keypoint_topology:
+          anyOf:
+          - $ref: '#/components/schemas/KeypointTopology'
+          - type: 'null'
+        attributes:
+          items:
+            $ref: '#/components/schemas/AttributeResponse'
+          type: array
+          title: Attributes
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
       type: object
       required:
-      - x
-      - y
-      title: KeypointNodeGeomRead
+      - id
+      - kind
+      - name
+      - color
+      - allowed_types
+      - archived
+      - created_at
+      - updated_at
+      title: ClassResponse
+      description: An object class with its owned attributes inline (ADR-0090 §3, Option A).
     ErrorCode:
       type: string
       enum:
@@ -2617,6 +2375,405 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    AnnotationBatchCreate:
+      properties:
+        annotations:
+          items:
+            $ref: '#/components/schemas/AnnotationCreate'
+          type: array
+          maxItems: 1000
+          minItems: 1
+          title: Annotations
+        replace:
+          type: boolean
+          title: Replace
+          default: false
+      type: object
+      required:
+      - annotations
+      title: AnnotationBatchCreate
+      description: 'Body for `POST /{pid}/assets/{aid}/annotations/batch-create` — sync, one
+
+        asset (asset in the path). `source` is always `manual` (the labeling path).
+
+        `replace=true` deletes the asset''s existing annotations before inserting.'
+    AssetProperties:
+      properties:
+        width:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Width
+        height:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Height
+        format:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Format
+      additionalProperties: true
+      type: object
+      title: AssetProperties
+      description: 'Extracted image facts persisted on `ImageAsset.properties` (JSONB) and
+
+        echoed on the wire. Written once by `extract.extract_image` (typed →
+
+        `model_dump`); read leniently everywhere else (job_worker freeze, exports,
+
+        asset responses). `{}` when extraction soft-failed, so every field is
+
+        Optional-with-default — a legacy row that predates a later-added key, or a
+
+        failed extraction, must still parse. `extra="allow"` keeps unknown future
+
+        keys through a round-trip rather than dropping them.'
+    PolygonGeometryRead:
+      properties:
+        type:
+          type: string
+          const: polygon
+          title: Type
+          default: polygon
+        polygons:
+          items:
+            $ref: '#/components/schemas/PolygonPartRead'
+          type: array
+          title: Polygons
+      additionalProperties: true
+      type: object
+      required:
+      - polygons
+      title: PolygonGeometryRead
+    PolygonGeometry:
+      properties:
+        type:
+          type: string
+          const: polygon
+          title: Type
+          default: polygon
+        polygons:
+          items:
+            $ref: '#/components/schemas/PolygonPart'
+          type: array
+          minItems: 1
+          title: Polygons
+      type: object
+      required:
+      - polygons
+      title: PolygonGeometry
+    AssetStatus:
+      type: string
+      enum:
+      - pending
+      - processing
+      - ready
+      - failed
+      - deleted
+      title: AssetStatus
+    RejectRequest:
+      properties:
+        reason:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Reason
+      type: object
+      title: RejectRequest
+    PolygonPart:
+      properties:
+        exterior:
+          items:
+            prefixItems:
+            - type: number
+            - type: number
+            type: array
+            maxItems: 2
+            minItems: 2
+          type: array
+          minItems: 3
+          title: Exterior
+        holes:
+          items:
+            items:
+              prefixItems:
+              - type: number
+              - type: number
+              type: array
+              maxItems: 2
+              minItems: 2
+            type: array
+          type: array
+          title: Holes
+      type: object
+      required:
+      - exterior
+      title: PolygonPart
+      description: 'One part of a (possibly multi-part) polygon: an exterior ring + optional hole rings.'
+    VisibilityModel:
+      type: string
+      enum:
+      - binary
+      - coco_ternary
+      title: VisibilityModel
+    QueueStatsResponse:
+      properties:
+        all:
+          type: integer
+          title: All
+          description: 'Total in-scope tasks: to_label + rework + continue.'
+        to_label:
+          type: integer
+          title: To Label
+          description: Tasks in `to_label` (the New card).
+        rework:
+          type: integer
+          title: Rework
+          description: '`in_progress` tasks with `rework_count > 0` (Rework card).'
+        continue:
+          type: integer
+          title: Continue
+          description: '`in_progress` tasks with `rework_count = 0` (Continue card).'
+      type: object
+      required:
+      - all
+      - to_label
+      - rework
+      - continue
+      title: QueueStatsResponse
+      description: Bucket counts for the labeler's 4-card hero (ADR-0029).
+    UserSummary:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        email:
+          type: string
+          title: Email
+        first_name:
+          type: string
+          title: First Name
+        last_name:
+          type: string
+          title: Last Name
+      type: object
+      required:
+      - id
+      - email
+      - first_name
+      - last_name
+      title: UserSummary
+      description: 'Compact user reference for embedding in other responses (members,
+
+        asset_state, etc.) so the FE doesn''t have to do N+1 lookups for names.'
+    AssignRequest:
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          title: User Id
+      type: object
+      required:
+      - user_id
+      title: AssignRequest
+    KeypointTopology:
+      properties:
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+          default: 1
+        dim:
+          type: integer
+          enum:
+          - 2
+          - 3
+          title: Dim
+          default: 2
+        nodes:
+          items:
+            $ref: '#/components/schemas/KeypointNode'
+          type: array
+          maxItems: 512
+          minItems: 1
+          title: Nodes
+        edges:
+          items:
+            items:
+              type: integer
+            type: array
+          type: array
+          title: Edges
+        visibility_model:
+          $ref: '#/components/schemas/VisibilityModel'
+          default: coco_ternary
+      type: object
+      required:
+      - nodes
+      title: KeypointTopology
+      description: 'Per-label keypoint topology — names the nodes, defines skeleton edges.
+
+        ADR-0030. Stored on `ProjectClass.keypoint_topology` as JSONB.
+
+
+        `nodes` are 0-indexed by their position in the array; the `id` field is
+
+        the explicit canonical index and MUST equal the array index. `edges` are
+
+        0-indexed pairs into `nodes`. Empty `edges` = single-keypoint label
+
+        (no skeleton render).'
+    KeypointNode:
+      properties:
+        id:
+          type: integer
+          minimum: 0.0
+          title: Id
+        name:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Name
+        default_position:
+          anyOf:
+          - $ref: '#/components/schemas/KeypointPosition'
+          - type: 'null'
+      type: object
+      required:
+      - id
+      - name
+      title: KeypointNode
+    WorkflowStatus:
+      type: string
+      enum:
+      - to_label
+      - in_progress
+      - in_review
+      - done
+      - skipped
+      title: WorkflowStatus
+    AssetSummary:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        filename:
+          type: string
+          title: Filename
+        content_type:
+          type: string
+          title: Content Type
+        status:
+          $ref: '#/components/schemas/AssetStatus'
+        properties:
+          $ref: '#/components/schemas/AssetProperties'
+        thumbnail_url:
+          anyOf:
+          - $ref: '#/components/schemas/AssetDownloadUrl'
+          - type: 'null'
+      type: object
+      required:
+      - id
+      - filename
+      - content_type
+      - status
+      - properties
+      title: AssetSummary
+      description: 'Compact asset reference for embedding in project asset-state rows so the
+
+        FE can render filename + dimensions without N+1 lookups. Does NOT include a
+
+        download URL — generating presigned URLs per row would be expensive on lists;
+
+        the FE calls /download-url per asset when actually rendering the canvas.'
+    KeypointGeometry:
+      properties:
+        type:
+          type: string
+          const: keypoint
+          title: Type
+          default: keypoint
+        points:
+          items:
+            $ref: '#/components/schemas/KeypointNodeGeom'
+          type: array
+          minItems: 1
+          title: Points
+      type: object
+      required:
+      - points
+      title: KeypointGeometry
+    ClassificationConfig:
+      properties:
+        version:
+          type: integer
+          minimum: 1.0
+          title: Version
+          default: 1
+        input_type:
+          $ref: '#/components/schemas/ClassificationInputType'
+        options:
+          items:
+            $ref: '#/components/schemas/ClassificationOption'
+          type: array
+          title: Options
+        default:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Default
+        required:
+          type: boolean
+          title: Required
+          default: false
+      type: object
+      required:
+      - input_type
+      title: ClassificationConfig
+      description: 'Per-label config for `type=classification` annotations. Stored on
+
+        `ProjectClass.classification_config` as JSONB. ADR-0031.
+
+
+        `options` is required for `radio` / `checkbox`, ignored for `text`.
+
+        `default` (optional) names the pre-selected value (radio/text) or single
+
+        pre-selected option (checkbox). `required: true` makes the workflow
+
+        `submit` transition refuse if no annotation for this label exists on
+
+        the asset.'
+    ClassificationInputType:
+      type: string
+      enum:
+      - radio
+      - checkbox
+      - text
+      title: ClassificationInputType
+    KeypointNodeGeomRead:
+      properties:
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        visibility:
+          type: integer
+          title: Visibility
+          default: 2
+      additionalProperties: true
+      type: object
+      required:
+      - x
+      - y
+      title: KeypointNodeGeomRead
     ImageClassificationResponse:
       properties:
         id:
@@ -2662,163 +2819,6 @@ components:
       - created_at
       - updated_at
       title: ImageClassificationResponse
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    KeypointGeometry:
-      properties:
-        type:
-          type: string
-          const: keypoint
-          title: Type
-          default: keypoint
-        points:
-          items:
-            $ref: '#/components/schemas/KeypointNodeGeom'
-          type: array
-          minItems: 1
-          title: Points
-      type: object
-      required:
-      - points
-      title: KeypointGeometry
-    RejectRequest:
-      properties:
-        reason:
-          anyOf:
-          - type: string
-            maxLength: 1000
-          - type: 'null'
-          title: Reason
-      type: object
-      title: RejectRequest
-    AssetSummary:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-        filename:
-          type: string
-          title: Filename
-        content_type:
-          type: string
-          title: Content Type
-        status:
-          $ref: '#/components/schemas/AssetStatus'
-        properties:
-          $ref: '#/components/schemas/AssetProperties'
-        thumbnail_url:
-          anyOf:
-          - $ref: '#/components/schemas/AssetDownloadUrl'
-          - type: 'null'
-      type: object
-      required:
-      - id
-      - filename
-      - content_type
-      - status
-      - properties
-      title: AssetSummary
-      description: 'Compact asset reference for embedding in project asset-state rows so the
-
-        FE can render filename + dimensions without N+1 lookups. Does NOT include a
-
-        download URL — generating presigned URLs per row would be expensive on lists;
-
-        the FE calls /download-url per asset when actually rendering the canvas.'
-    QueueStatsResponse:
-      properties:
-        all:
-          type: integer
-          title: All
-          description: 'Total in-scope tasks: to_label + rework + continue.'
-        to_label:
-          type: integer
-          title: To Label
-          description: Tasks in `to_label` (the New card).
-        rework:
-          type: integer
-          title: Rework
-          description: '`in_progress` tasks with `rework_count > 0` (Rework card).'
-        continue:
-          type: integer
-          title: Continue
-          description: '`in_progress` tasks with `rework_count = 0` (Continue card).'
-      type: object
-      required:
-      - all
-      - to_label
-      - rework
-      - continue
-      title: QueueStatsResponse
-      description: Bucket counts for the labeler's 4-card hero (ADR-0029).
-    BboxGeometryRead:
-      properties:
-        type:
-          type: string
-          const: bbox
-          title: Type
-          default: bbox
-        x:
-          type: number
-          title: X
-        y:
-          type: number
-          title: Y
-        w:
-          type: number
-          title: W
-        h:
-          type: number
-          title: H
-      additionalProperties: true
-      type: object
-      required:
-      - x
-      - y
-      - w
-      - h
-      title: BboxGeometryRead
-    AssetProperties:
-      properties:
-        width:
-          anyOf:
-          - type: integer
-          - type: 'null'
-          title: Width
-        height:
-          anyOf:
-          - type: integer
-          - type: 'null'
-          title: Height
-        format:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Format
-      additionalProperties: true
-      type: object
-      title: AssetProperties
-      description: 'Extracted image facts persisted on `ImageAsset.properties` (JSONB) and
-
-        echoed on the wire. Written once by `extract.extract_image` (typed →
-
-        `model_dump`); read leniently everywhere else (job_worker freeze, exports,
-
-        asset responses). `{}` when extraction soft-failed, so every field is
-
-        Optional-with-default — a legacy row that predates a later-added key, or a
-
-        failed extraction, must still parse. `extra="allow"` keeps unknown future
-
-        keys through a round-trip rather than dropping them.'
   securitySchemes:
     HTTPBearer:
       type: http

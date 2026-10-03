@@ -668,35 +668,41 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    PointAnchor:
+    ValidationError:
       properties:
-        x:
-          type: number
-          maximum: 2.0
-          minimum: -1.0
-          title: X
-        y:
-          type: number
-          maximum: 2.0
-          minimum: -1.0
-          title: Y
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
       required:
-      - x
-      - y
-      title: PointAnchor
-    DatasetKind:
-      type: string
-      enum:
-      - image
-      - video
-      title: DatasetKind
-    CommentOrigin:
-      type: string
-      enum:
-      - user
-      - workflow_reject
-      title: CommentOrigin
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     CommentUpdateRequest:
       properties:
         body:
@@ -745,20 +751,6 @@ components:
         replaced and re-validated as a unit — so you can''t end up `kind=box` with a
 
         stale `point` coord. Anchor edits are rejected on replies (route-level).'
-    AnchorKind:
-      type: string
-      enum:
-      - asset
-      - point
-      - box
-      - annotation
-      title: AnchorKind
-    CommentStatus:
-      type: string
-      enum:
-      - open
-      - resolved
-      title: CommentStatus
     BoxAnchor:
       properties:
         x:
@@ -788,96 +780,6 @@ components:
       - w
       - h
       title: BoxAnchor
-    CommentListPage:
-      properties:
-        items:
-          items:
-            $ref: '#/components/schemas/CommentResponse'
-          type: array
-          title: Items
-        next_cursor:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Next Cursor
-        total:
-          anyOf:
-          - type: integer
-          - type: 'null'
-          title: Total
-      type: object
-      required:
-      - items
-      title: CommentListPage
-    ErrorResponse:
-      type: object
-      required:
-      - error
-      properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
-    CommentCreateRequest:
-      properties:
-        anchor_kind:
-          type: string
-          enum:
-          - asset
-          - point
-          - box
-          - annotation
-          - point3d
-          - cuboid3d
-          title: Anchor Kind
-          default: asset
-        anchor_coords:
-          anyOf:
-          - additionalProperties: true
-            type: object
-          - type: 'null'
-          title: Anchor Coords
-        annotation_id:
-          anyOf:
-          - type: string
-            format: uuid
-          - type: 'null'
-          title: Annotation Id
-        parent_id:
-          anyOf:
-          - type: string
-            format: uuid
-          - type: 'null'
-          title: Parent Id
-        body:
-          type: string
-          maxLength: 10000
-          minLength: 1
-          title: Body
-      type: object
-      required:
-      - body
-      title: CommentCreateRequest
-      description: "POST /projects/{pid}/assets/{aid}/comments.\n\nAnchor is one-of:\n  - kind=asset: no coords, no annotation_id\n  - kind=point: coords={\"x\", \"y\"}\n  - kind=box: coords={\"x\", \"y\", \"w\", \"h\"}\n  - kind=annotation: annotation_id required\nReplies: set parent_id (and inherit anchor from the root server-side)."
     CommentResponse:
       properties:
         id:
@@ -961,6 +863,113 @@ components:
       - created_at
       - updated_at
       title: CommentResponse
+    PointAnchor:
+      properties:
+        x:
+          type: number
+          maximum: 2.0
+          minimum: -1.0
+          title: X
+        y:
+          type: number
+          maximum: 2.0
+          minimum: -1.0
+          title: Y
+      type: object
+      required:
+      - x
+      - y
+      title: PointAnchor
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    CommentListPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/CommentResponse'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+        total:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Total
+      type: object
+      required:
+      - items
+      title: CommentListPage
+    CommentCreateRequest:
+      properties:
+        anchor_kind:
+          type: string
+          enum:
+          - asset
+          - point
+          - box
+          - annotation
+          - point3d
+          - cuboid3d
+          title: Anchor Kind
+          default: asset
+        anchor_coords:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Anchor Coords
+        annotation_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Annotation Id
+        parent_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Parent Id
+        body:
+          type: string
+          maxLength: 10000
+          minLength: 1
+          title: Body
+      type: object
+      required:
+      - body
+      title: CommentCreateRequest
+      description: "POST /projects/{pid}/assets/{aid}/comments.\n\nAnchor is one-of:\n  - kind=asset: no coords, no annotation_id\n  - kind=point: coords={\"x\", \"y\"}\n  - kind=box: coords={\"x\", \"y\", \"w\", \"h\"}\n  - kind=annotation: annotation_id required\nReplies: set parent_id (and inherit anchor from the root server-side)."
     ErrorCode:
       type: string
       enum:
@@ -1026,41 +1035,32 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
+    CommentOrigin:
+      type: string
+      enum:
+      - user
+      - workflow_reject
+      title: CommentOrigin
+    AnchorKind:
+      type: string
+      enum:
+      - asset
+      - point
+      - box
+      - annotation
+      title: AnchorKind
+    CommentStatus:
+      type: string
+      enum:
+      - open
+      - resolved
+      title: CommentStatus
+    DatasetKind:
+      type: string
+      enum:
+      - image
+      - video
+      title: DatasetKind
   securitySchemes:
     HTTPBearer:
       type: http

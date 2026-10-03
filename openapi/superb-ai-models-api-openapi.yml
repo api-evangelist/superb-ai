@@ -306,33 +306,38 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    PerClassMetrics:
+    TrainingTask:
+      type: string
+      enum:
+      - detection
+      - segmentation
+      title: TrainingTask
+    ValidationError:
       properties:
-        class:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
           type: string
-          title: Class
-        precision:
-          type: number
-          title: Precision
-        recall:
-          type: number
-          title: Recall
-        f1:
-          type: number
-          title: F1
-        support:
-          type: integer
-          title: Support
-      additionalProperties: false
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
       required:
-      - class
-      - precision
-      - recall
-      - f1
-      - support
-      title: PerClassMetrics
-      description: One class's P/R/F1 + GT support at the chosen threshold.
+      - loc
+      - msg
+      - type
+      title: ValidationError
     TrainingMetricsSummary:
       properties:
         optimal_confidence:
@@ -364,50 +369,42 @@ components:
         so a future added key never 500s a model read; `num_test` is set only on the
 
         final (full) scorecard, so it is Optional.'
-    TrainedModelUpdate:
+    HTTPValidationError:
       properties:
-        name:
-          anyOf:
-          - type: string
-            maxLength: 255
-          - type: 'null'
-          title: Name
-          description: New display name (unique per tenant, case-insensitive); omit to leave unchanged.
-        description:
-          anyOf:
-          - type: string
-            maxLength: 1000
-          - type: 'null'
-          title: Description
-          description: New description; send null to clear it, omit to leave unchanged.
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
       type: object
-      title: TrainedModelUpdate
-      description: 'Edit a trained model (ADR-0072) — name and/or description (partial; send only
-
-        what changes). Name is unique per tenant (case-insensitive); `description` may be
-
-        set to null to clear it.'
-    ConfusionMatrix:
+      title: HTTPValidationError
+    PerClassMetrics:
       properties:
-        labels:
-          items:
-            type: string
-          type: array
-          title: Labels
-        matrix:
-          items:
-            items:
-              type: integer
-            type: array
-          type: array
-          title: Matrix
+        class:
+          type: string
+          title: Class
+        precision:
+          type: number
+          title: Precision
+        recall:
+          type: number
+          title: Recall
+        f1:
+          type: number
+          title: F1
+        support:
+          type: integer
+          title: Support
       additionalProperties: false
       type: object
       required:
-      - labels
-      - matrix
-      title: ConfusionMatrix
-      description: K classes + a trailing 'background' bucket for FP/missed.
+      - class
+      - precision
+      - recall
+      - f1
+      - support
+      title: PerClassMetrics
+      description: One class's P/R/F1 + GT support at the chosen threshold.
     TrainedModelListPage:
       properties:
         items:
@@ -424,34 +421,6 @@ components:
       required:
       - items
       title: TrainedModelListPage
-    ErrorResponse:
-      type: object
-      required:
-      - error
-      properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
     OverallMetrics:
       properties:
         precision:
@@ -482,12 +451,57 @@ components:
         `map`/`map_50` are injected post-hoc by `trainer._score_split` (torchmetrics),
 
         so `evaluate()` returns them unset — hence Optional-with-default.'
-    TrainingTask:
-      type: string
-      enum:
-      - detection
-      - segmentation
-      title: TrainingTask
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    TrainedModelUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 255
+          - type: 'null'
+          title: Name
+          description: New display name (unique per tenant, case-insensitive); omit to leave unchanged.
+        description:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Description
+          description: New description; send null to clear it, omit to leave unchanged.
+      type: object
+      title: TrainedModelUpdate
+      description: 'Edit a trained model (ADR-0072) — name and/or description (partial; send only
+
+        what changes). Name is unique per tenant (case-insensitive); `description` may be
+
+        set to null to clear it.'
     ErrorCode:
       type: string
       enum:
@@ -626,41 +640,27 @@ components:
       - created_at
       - updated_at
       title: TrainedModelResponse
-    HTTPValidationError:
+    ConfusionMatrix:
       properties:
-        detail:
+        labels:
           items:
-            $ref: '#/components/schemas/ValidationError'
+            type: string
           type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    ValidationError:
-      properties:
-        loc:
+          title: Labels
+        matrix:
           items:
-            anyOf:
-            - type: string
-            - type: integer
+            items:
+              type: integer
+            type: array
           type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
+          title: Matrix
+      additionalProperties: false
       type: object
       required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
+      - labels
+      - matrix
+      title: ConfusionMatrix
+      description: K classes + a trailing 'background' bucket for FP/missed.
   securitySchemes:
     HTTPBearer:
       type: http

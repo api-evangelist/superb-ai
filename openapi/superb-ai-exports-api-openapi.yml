@@ -424,13 +424,34 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    ExportFormat:
-      type: string
-      enum:
-      - coco
-      - yolo
-      - delta
-      title: ExportFormat
+    SkippedDetail:
+      properties:
+        asset_id:
+          type: string
+          title: Asset Id
+        annotation_id:
+          anyOf:
+          - type: integer
+          - type: string
+          title: Annotation Id
+        annotation_type:
+          type: string
+          title: Annotation Type
+        reason:
+          type: string
+          title: Reason
+      type: object
+      required:
+      - asset_id
+      - annotation_id
+      - annotation_type
+      - reason
+      title: SkippedDetail
+      description: 'One annotation the bundler couldn''t represent (persisted serialization of
+
+        `FormatterSkip`). `asset_id` is stringified on write; `annotation_id` is int
+
+        (COCO/YOLO) or str (delta/manifest-miss sentinel).'
     ValidationError:
       properties:
         loc:
@@ -457,68 +478,44 @@ components:
       - msg
       - type
       title: ValidationError
-    ClassCountByIdx:
+    ExportCreateRequest:
       properties:
-        name:
-          type: string
-          title: Name
-        count:
-          type: integer
-          title: Count
-        idx:
-          type: integer
-          title: Idx
+        format:
+          $ref: '#/components/schemas/ExportFormat'
+          description: 'Export bundle format: coco, yolo, or delta.'
+        include_assets:
+          type: boolean
+          title: Include Assets
+          description: Whether to include the source asset files in the export bundle.
+          default: true
+        exclude_empty:
+          type: boolean
+          title: Exclude Empty
+          description: If true, skip assets that have no annotations from the export.
+          default: false
       type: object
       required:
-      - name
-      - count
-      - idx
-      title: ClassCountByIdx
-      description: YOLO per-class entry (0-based dataset index).
-    ErrorResponse:
-      type: object
-      required:
-      - error
+      - format
+      title: ExportCreateRequest
+      description: 'POST body. All fields optional except `format`.
+
+
+        Pydantic defaults to ignoring unknown fields (`extra=''ignore''`), so callers
+
+        that still send the deprecated `splits` / `split_seed` / `stratify_by`
+
+        fields from the v1 contract get a silent no-op. The export is always
+
+        unsplit regardless.'
+    HTTPValidationError:
       properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
-    ExportDownloadResponse:
-      properties:
-        url:
-          type: string
-          title: Url
-          description: Pre-signed HTTPS URL to download the export bundle; valid for 1 hour.
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
       type: object
-      required:
-      - url
-      title: ExportDownloadResponse
-      description: 'Response from `/exports/{eid}/download` when ready.
-
-
-        Caller follows `url` with a normal HTTPS GET. S3 validates expiry at
-
-        request start so 1h TTL covers arbitrary-duration downloads.'
+      title: HTTPValidationError
     ExportResponse:
       properties:
         id:
@@ -624,110 +621,98 @@ components:
       - created_at
       - completed_at
       title: ExportResponse
-    YoloResultDetails:
+    ClassCountById:
       properties:
-        format:
+        name:
           type: string
-          const: yolo
-          title: Format
-        num_images:
+          title: Name
+        count:
           type: integer
-          title: Num Images
-        num_labels:
-          type: integer
-          title: Num Labels
-        num_classes:
-          type: integer
-          title: Num Classes
-        classes:
-          items:
-            $ref: '#/components/schemas/ClassCountByIdx'
-          type: array
-          title: Classes
-        classes_truncated:
-          type: boolean
-          title: Classes Truncated
-          default: false
-        classes_total:
-          type: integer
-          title: Classes Total
-          default: 0
+          title: Count
+        id:
+          anyOf:
+          - type: integer
+          - type: string
+          title: Id
       type: object
       required:
-      - format
-      - num_images
-      - num_labels
-      - num_classes
-      title: YoloResultDetails
-    CocoResultDetails:
+      - name
+      - count
+      - id
+      title: ClassCountById
+      description: 'COCO/Delta per-class entry (id-keyed). COCO id is int; delta id is the
+
+        class UUID stringified — hence `int | str`.'
+    ExportStatus:
+      type: string
+      enum:
+      - pending
+      - queued
+      - running
+      - ready
+      - failed
+      - expired
+      title: ExportStatus
+    ExportDownloadResponse:
       properties:
-        format:
+        url:
           type: string
-          const: coco
-          title: Format
-        num_images:
-          type: integer
-          title: Num Images
-        num_annotations:
-          type: integer
-          title: Num Annotations
-        num_categories:
-          type: integer
-          title: Num Categories
-        classes:
-          items:
-            $ref: '#/components/schemas/ClassCountById'
-          type: array
-          title: Classes
-        classes_truncated:
-          type: boolean
-          title: Classes Truncated
-          default: false
-        classes_total:
-          type: integer
-          title: Classes Total
-          default: 0
+          title: Url
+          description: Pre-signed HTTPS URL to download the export bundle; valid for 1 hour.
       type: object
       required:
-      - format
-      - num_images
-      - num_annotations
-      - num_categories
-      title: CocoResultDetails
-      description: '`result_details` for a COCO bundle. `classes`/`classes_truncated`/
+      - url
+      title: ExportDownloadResponse
+      description: 'Response from `/exports/{eid}/download` when ready.
 
-        `classes_total` were added when `_top_classes` landed — Optional-with-default
 
-        so a pre-that-change row still serializes.'
-    ExportCreateRequest:
+        Caller follows `url` with a normal HTTPS GET. S3 validates expiry at
+
+        request start so 1h TTL covers arbitrary-duration downloads.'
+    ErrorResponse:
+      type: object
+      required:
+      - error
       properties:
-        format:
-          $ref: '#/components/schemas/ExportFormat'
-          description: 'Export bundle format: coco, yolo, or delta.'
-        include_assets:
-          type: boolean
-          title: Include Assets
-          description: Whether to include the source asset files in the export bundle.
-          default: true
-        exclude_empty:
-          type: boolean
-          title: Exclude Empty
-          description: If true, skip assets that have no annotations from the export.
-          default: false
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    ExportListPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ExportResponse'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
       type: object
       required:
-      - format
-      title: ExportCreateRequest
-      description: 'POST body. All fields optional except `format`.
-
-
-        Pydantic defaults to ignoring unknown fields (`extra=''ignore''`), so callers
-
-        that still send the deprecated `splits` / `split_seed` / `stratify_by`
-
-        fields from the v1 contract get a silent no-op. The export is always
-
-        unsplit regardless.'
+      - items
+      title: ExportListPage
     ErrorCode:
       type: string
       enum:
@@ -793,6 +778,31 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    ClassCountByIdx:
+      properties:
+        name:
+          type: string
+          title: Name
+        count:
+          type: integer
+          title: Count
+        idx:
+          type: integer
+          title: Idx
+      type: object
+      required:
+      - name
+      - count
+      - idx
+      title: ClassCountByIdx
+      description: YOLO per-class entry (0-based dataset index).
+    ExportFormat:
+      type: string
+      enum:
+      - coco
+      - yolo
+      - delta
+      title: ExportFormat
     DeltaResultDetails:
       properties:
         format:
@@ -836,91 +846,81 @@ components:
       description: '`annotations_by_type` is genuinely open-ended by annotation type — the one
 
         legit dict inside an otherwise-fixed model.'
-    ExportStatus:
-      type: string
-      enum:
-      - pending
-      - queued
-      - running
-      - ready
-      - failed
-      - expired
-      title: ExportStatus
-    ExportListPage:
+    CocoResultDetails:
       properties:
-        items:
-          items:
-            $ref: '#/components/schemas/ExportResponse'
-          type: array
-          title: Items
-        next_cursor:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Next Cursor
-      type: object
-      required:
-      - items
-      title: ExportListPage
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    ClassCountById:
-      properties:
-        name:
+        format:
           type: string
-          title: Name
-        count:
+          const: coco
+          title: Format
+        num_images:
           type: integer
-          title: Count
-        id:
-          anyOf:
-          - type: integer
-          - type: string
-          title: Id
+          title: Num Images
+        num_annotations:
+          type: integer
+          title: Num Annotations
+        num_categories:
+          type: integer
+          title: Num Categories
+        classes:
+          items:
+            $ref: '#/components/schemas/ClassCountById'
+          type: array
+          title: Classes
+        classes_truncated:
+          type: boolean
+          title: Classes Truncated
+          default: false
+        classes_total:
+          type: integer
+          title: Classes Total
+          default: 0
       type: object
       required:
-      - name
-      - count
-      - id
-      title: ClassCountById
-      description: 'COCO/Delta per-class entry (id-keyed). COCO id is int; delta id is the
+      - format
+      - num_images
+      - num_annotations
+      - num_categories
+      title: CocoResultDetails
+      description: '`result_details` for a COCO bundle. `classes`/`classes_truncated`/
 
-        class UUID stringified — hence `int | str`.'
-    SkippedDetail:
+        `classes_total` were added when `_top_classes` landed — Optional-with-default
+
+        so a pre-that-change row still serializes.'
+    YoloResultDetails:
       properties:
-        asset_id:
+        format:
           type: string
-          title: Asset Id
-        annotation_id:
-          anyOf:
-          - type: integer
-          - type: string
-          title: Annotation Id
-        annotation_type:
-          type: string
-          title: Annotation Type
-        reason:
-          type: string
-          title: Reason
+          const: yolo
+          title: Format
+        num_images:
+          type: integer
+          title: Num Images
+        num_labels:
+          type: integer
+          title: Num Labels
+        num_classes:
+          type: integer
+          title: Num Classes
+        classes:
+          items:
+            $ref: '#/components/schemas/ClassCountByIdx'
+          type: array
+          title: Classes
+        classes_truncated:
+          type: boolean
+          title: Classes Truncated
+          default: false
+        classes_total:
+          type: integer
+          title: Classes Total
+          default: 0
       type: object
       required:
-      - asset_id
-      - annotation_id
-      - annotation_type
-      - reason
-      title: SkippedDetail
-      description: 'One annotation the bundler couldn''t represent (persisted serialization of
-
-        `FormatterSkip`). `asset_id` is stringified on write; `annotation_id` is int
-
-        (COCO/YOLO) or str (delta/manifest-miss sentinel).'
+      - format
+      - num_images
+      - num_labels
+      - num_classes
+      title: YoloResultDetails
   securitySchemes:
     HTTPBearer:
       type: http

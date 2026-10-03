@@ -212,71 +212,41 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    InvitationPage:
+    ValidationError:
       properties:
-        items:
+        loc:
           items:
-            $ref: '#/components/schemas/InvitationResponse'
+            anyOf:
+            - type: string
+            - type: integer
           type: array
-          title: Items
-          description: This workspace's invitations, newest first. Unpaginated — bounded by the per-tenant user quota.
-      type: object
-      required:
-      - items
-      title: InvitationPage
-    InvitationCreate:
-      properties:
-        email:
+          title: Location
+        msg:
           type: string
-          maxLength: 254
-          format: email
-          title: Email
-          description: Email address to invite.
-        role:
-          $ref: '#/components/schemas/WorkspaceRole'
-          description: Workspace role granted when the invitation is accepted.
-          default: member
-      type: object
-      required:
-      - email
-      title: InvitationCreate
-      description: 'An invitation is email + role, nothing else (ADR-0112 principle carried
-
-        forward): the invitee names themselves at sign-up.'
-    ErrorResponse:
-      type: object
-      required:
-      - error
-      properties:
-        error:
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
           type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
-    WorkspaceRole:
-      type: string
-      enum:
-      - admin
-      - member
-      title: WorkspaceRole
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     InvitationResponse:
       properties:
         id:
@@ -320,6 +290,24 @@ components:
       - expires_at
       - created_at
       title: InvitationResponse
+    InvitationPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/InvitationResponse'
+          type: array
+          title: Items
+          description: This workspace's invitations, newest first. Unpaginated — bounded by the per-tenant user quota.
+      type: object
+      required:
+      - items
+      title: InvitationPage
+    WorkspaceRole:
+      type: string
+      enum:
+      - admin
+      - member
+      title: WorkspaceRole
     InvitationStatus:
       type: string
       enum:
@@ -332,6 +320,34 @@ components:
       description: 'Lifecycle of a workspace invitation (ADR-0113). Terminal states are
 
         kept as history; only `pending` rows are actionable/unique per email.'
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
     ErrorCode:
       type: string
       enum:
@@ -397,41 +413,25 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    HTTPValidationError:
+    InvitationCreate:
       properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
+        email:
           type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
+          maxLength: 254
+          format: email
+          title: Email
+          description: Email address to invite.
+        role:
+          $ref: '#/components/schemas/WorkspaceRole'
+          description: Workspace role granted when the invitation is accepted.
+          default: member
       type: object
       required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
+      - email
+      title: InvitationCreate
+      description: 'An invitation is email + role, nothing else (ADR-0112 principle carried
+
+        forward): the invitee names themselves at sign-up.'
   securitySchemes:
     HTTPBearer:
       type: http

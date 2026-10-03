@@ -187,6 +187,43 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
+    RefreshRequest:
+      properties:
+        refresh_token:
+          type: string
+          minLength: 1
+          title: Refresh Token
+          description: A refresh token from /auth/callback or a prior /auth/refresh.
+      type: object
+      required:
+      - refresh_token
+      title: RefreshRequest
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
     CallbackRequest:
       properties:
         code:
@@ -199,43 +236,15 @@ components:
       - code
       title: CallbackRequest
       description: Body for POST /auth/callback — the `code` WorkOS appended to the redirect.
-    AuthTokens:
+    HTTPValidationError:
       properties:
-        access_token:
-          type: string
-          title: Access Token
-          description: 'JWT access token; send as `Authorization: Bearer <token>`.'
-        refresh_token:
-          type: string
-          title: Refresh Token
-          description: Long-lived token; exchange via /auth/refresh.
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
       type: object
-      required:
-      - access_token
-      - refresh_token
-      title: AuthTokens
-      description: 'Tokens issued by WorkOS. The access token is a short-lived (~5 min) JWT sent
-
-        as `Authorization: Bearer <token>`; the refresh token trades for a new pair via
-
-        /auth/refresh. (WorkOS issues no separate id_token — identity claims live in the
-
-        access token.)'
-    AuthorizeResponse:
-      properties:
-        authorization_url:
-          type: string
-          title: Authorization Url
-          description: Hosted AuthKit URL to redirect the user to.
-      type: object
-      required:
-      - authorization_url
-      title: AuthorizeResponse
-      description: 'The hosted-AuthKit URL the FE redirects the browser to for sign-in/sign-up
-
-        (ADR-0053). After login, WorkOS redirects back to the configured callback with
-
-        a one-time `code`.'
+      title: HTTPValidationError
     ErrorResponse:
       type: object
       required:
@@ -264,17 +273,21 @@ components:
               type: string
               nullable: true
               description: Correlation id for support / log lookups.
-    RefreshRequest:
+    AuthorizeResponse:
       properties:
-        refresh_token:
+        authorization_url:
           type: string
-          minLength: 1
-          title: Refresh Token
-          description: A refresh token from /auth/callback or a prior /auth/refresh.
+          title: Authorization Url
+          description: Hosted AuthKit URL to redirect the user to.
       type: object
       required:
-      - refresh_token
-      title: RefreshRequest
+      - authorization_url
+      title: AuthorizeResponse
+      description: 'The hosted-AuthKit URL the FE redirects the browser to for sign-in/sign-up
+
+        (ADR-0053). After login, WorkOS redirects back to the configured callback with
+
+        a one-time `code`.'
     ErrorCode:
       type: string
       enum:
@@ -340,41 +353,28 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    HTTPValidationError:
+    AuthTokens:
       properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
+        access_token:
           type: string
-          title: Message
-        type:
+          title: Access Token
+          description: 'JWT access token; send as `Authorization: Bearer <token>`.'
+        refresh_token:
           type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
+          title: Refresh Token
+          description: Long-lived token; exchange via /auth/refresh.
       type: object
       required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
+      - access_token
+      - refresh_token
+      title: AuthTokens
+      description: 'Tokens issued by WorkOS. The access token is a short-lived (~5 min) JWT sent
+
+        as `Authorization: Bearer <token>`; the refresh token trades for a new pair via
+
+        /auth/refresh. (WorkOS issues no separate id_token — identity claims live in the
+
+        access token.)'
   securitySchemes:
     HTTPBearer:
       type: http

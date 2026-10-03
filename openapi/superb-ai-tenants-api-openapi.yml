@@ -54,6 +54,67 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    OwnerResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Unique identifier of the owner user.
+        email:
+          type: string
+          title: Email
+          description: Email address of the owner user.
+        first_name:
+          type: string
+          title: First Name
+          description: Given name of the owner user.
+        last_name:
+          type: string
+          title: Last Name
+          description: Family name of the owner user.
+      type: object
+      required:
+      - id
+      - email
+      - first_name
+      - last_name
+      title: OwnerResponse
     ErrorResponse:
       type: object
       required:
@@ -82,32 +143,6 @@ components:
               type: string
               nullable: true
               description: Correlation id for support / log lookups.
-    OwnerResponse:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-          description: Unique identifier of the owner user.
-        email:
-          type: string
-          title: Email
-          description: Email address of the owner user.
-        first_name:
-          type: string
-          title: First Name
-          description: Given name of the owner user.
-        last_name:
-          type: string
-          title: Last Name
-          description: Family name of the owner user.
-      type: object
-      required:
-      - id
-      - email
-      - first_name
-      - last_name
-      title: OwnerResponse
     TenantResponse:
       properties:
         id:
@@ -260,41 +295,6 @@ components:
       - last_name
       - password
       title: OwnerCreate
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
   securitySchemes:
     HTTPBearer:
       type: http

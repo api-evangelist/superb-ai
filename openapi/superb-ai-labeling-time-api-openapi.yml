@@ -239,52 +239,32 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    ErrorResponse:
-      type: object
-      required:
-      - error
+    ValidationError:
       properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
-    LabelingTimeReport:
-      properties:
-        items:
+        loc:
           items:
-            $ref: '#/components/schemas/LabelingTimeRow'
+            anyOf:
+            - type: string
+            - type: integer
           type: array
-          title: Items
-          description: Aggregated labeling-time rows, one per group_by dimension combination.
-        next_cursor:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Next Cursor
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
       required:
-      - items
-      title: LabelingTimeReport
-      description: GET /labeling-time response.
+      - loc
+      - msg
+      - type
+      title: ValidationError
     LabelingTimeRow:
       properties:
         user_id:
@@ -326,40 +306,61 @@ components:
       description: 'One report row. Columns are populated when their dimension is in
 
         the group_by list — otherwise they''re absent (treated as aggregated).'
-    LabelingTimeHeartbeat:
+    HTTPValidationError:
       properties:
-        asset_id:
-          type: string
-          format: uuid
-          title: Asset Id
-          description: Project asset the labeler is actively working on.
-        class_id:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    LabelingTimeReport:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/LabelingTimeRow'
+          type: array
+          title: Items
+          description: Aggregated labeling-time rows, one per group_by dimension combination.
+        next_cursor:
           anyOf:
           - type: string
-            format: uuid
           - type: 'null'
-          title: Class Id
-          description: Project class currently being labeled, if any. Omit when the active time isn't attributable to a specific class.
-        active_seconds:
-          type: integer
-          maximum: 30.0
-          exclusiveMinimum: 0.0
-          title: Active Seconds
-          description: Active seconds since the previous heartbeat. Capped at 30s (= 2× the 15s heartbeat cadence) to prevent crafted-payload inflation.
-        heartbeat_id:
-          type: string
-          format: uuid
-          title: Heartbeat Id
-          description: Client-generated UUID v4 per heartbeat. Server deduplicates within a 5-minute sliding window per user; replays are silently no-op'd (204).
+          title: Next Cursor
       type: object
       required:
-      - asset_id
-      - active_seconds
-      - heartbeat_id
-      title: LabelingTimeHeartbeat
-      description: 'Body of POST /labeling-time/heartbeat. Fired by the FE every ~15s
-
-        while a labeler is actively working on a project asset.'
+      - items
+      title: LabelingTimeReport
+      description: GET /labeling-time response.
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
     ErrorCode:
       type: string
       enum:
@@ -425,41 +426,40 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    HTTPValidationError:
+    LabelingTimeHeartbeat:
       properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
+        asset_id:
           type: string
-          title: Message
-        type:
+          format: uuid
+          title: Asset Id
+          description: Project asset the labeler is actively working on.
+        class_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Class Id
+          description: Project class currently being labeled, if any. Omit when the active time isn't attributable to a specific class.
+        active_seconds:
+          type: integer
+          maximum: 30.0
+          exclusiveMinimum: 0.0
+          title: Active Seconds
+          description: Active seconds since the previous heartbeat. Capped at 30s (= 2× the 15s heartbeat cadence) to prevent crafted-payload inflation.
+        heartbeat_id:
           type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
+          format: uuid
+          title: Heartbeat Id
+          description: Client-generated UUID v4 per heartbeat. Server deduplicates within a 5-minute sliding window per user; replays are silently no-op'd (204).
       type: object
       required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
+      - asset_id
+      - active_seconds
+      - heartbeat_id
+      title: LabelingTimeHeartbeat
+      description: 'Body of POST /labeling-time/heartbeat. Fired by the FE every ~15s
+
+        while a labeler is actively working on a project asset.'
   securitySchemes:
     HTTPBearer:
       type: http

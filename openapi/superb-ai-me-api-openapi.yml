@@ -255,34 +255,87 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    ErrorResponse:
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
       required:
-      - error
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    TenantMembership:
       properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
+        tenant_id:
+          type: string
+          format: uuid
+          title: Tenant Id
+          description: Tenant id (stable reference).
+        slug:
+          type: string
+          title: Slug
+          description: URL handle — routes into `/tenants/{slug}/…`.
+        name:
+          type: string
+          title: Name
+          description: Display name of the workspace.
+        role:
+          $ref: '#/components/schemas/WorkspaceRole'
+          description: This account's workspace role here.
+        joined_at:
+          type: string
+          format: date-time
+          title: Joined At
+          description: When this membership was created.
+      type: object
+      required:
+      - tenant_id
+      - slug
+      - name
+      - role
+      - joined_at
+      title: TenantMembership
+      description: 'One workspace this account belongs to (`GET /me/tenants` item, and the
+
+        result of accepting an invitation).'
+    MyInvitationsResponse:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/MyInvitation'
+          type: array
+          title: Items
+          description: Pending, unexpired invitations whose email exactly matches the account's email.
+      type: object
+      required:
+      - items
+      title: MyInvitationsResponse
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     MyInvitation:
       properties:
         id:
@@ -336,6 +389,46 @@ components:
       - admin
       - member
       title: WorkspaceRole
+    MyTenantsResponse:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/TenantMembership'
+          type: array
+          title: Items
+          description: Every workspace this account belongs to. Unpaginated — bounded by how many workspaces one person can realistically join.
+      type: object
+      required:
+      - items
+      title: MyTenantsResponse
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
     TenantCreateMe:
       properties:
         name:
@@ -358,52 +451,6 @@ components:
       description: 'Body for `POST /me/tenants` — create a workspace as the authenticated
 
         account (who becomes its admin). No owner block: the account exists.'
-    TenantMembership:
-      properties:
-        tenant_id:
-          type: string
-          format: uuid
-          title: Tenant Id
-          description: Tenant id (stable reference).
-        slug:
-          type: string
-          title: Slug
-          description: URL handle — routes into `/tenants/{slug}/…`.
-        name:
-          type: string
-          title: Name
-          description: Display name of the workspace.
-        role:
-          $ref: '#/components/schemas/WorkspaceRole'
-          description: This account's workspace role here.
-        joined_at:
-          type: string
-          format: date-time
-          title: Joined At
-          description: When this membership was created.
-      type: object
-      required:
-      - tenant_id
-      - slug
-      - name
-      - role
-      - joined_at
-      title: TenantMembership
-      description: 'One workspace this account belongs to (`GET /me/tenants` item, and the
-
-        result of accepting an invitation).'
-    MyInvitationsResponse:
-      properties:
-        items:
-          items:
-            $ref: '#/components/schemas/MyInvitation'
-          type: array
-          title: Items
-          description: Pending, unexpired invitations whose email exactly matches the account's email.
-      type: object
-      required:
-      - items
-      title: MyInvitationsResponse
     ErrorCode:
       type: string
       enum:
@@ -469,53 +516,6 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    MyTenantsResponse:
-      properties:
-        items:
-          items:
-            $ref: '#/components/schemas/TenantMembership'
-          type: array
-          title: Items
-          description: Every workspace this account belongs to. Unpaginated — bounded by how many workspaces one person can realistically join.
-      type: object
-      required:
-      - items
-      title: MyTenantsResponse
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
   securitySchemes:
     HTTPBearer:
       type: http

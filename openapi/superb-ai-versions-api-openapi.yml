@@ -143,20 +143,32 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    FrozenClassSet:
+    ValidationError:
       properties:
-        classes:
+        loc:
           items:
-            $ref: '#/components/schemas/FrozenClass'
+            anyOf:
+            - type: string
+            - type: integer
           type: array
-          title: Classes
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
-      title: FrozenClassSet
-      description: 'The `ProjectVersion.frozen_classes` blob: `{"classes": [FrozenClass, ...]}`.
-
-        Typed on the wire (`VersionResponse.frozen_classes`) — rows are uniform
-
-        post-0075. Storage stays JSON (`.model_dump(mode="json")` into JSONB).'
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
     VersionPage:
       properties:
         items:
@@ -178,76 +190,15 @@ components:
       required:
       - items
       title: VersionPage
-    KeypointPosition:
+    HTTPValidationError:
       properties:
-        x:
-          type: number
-          maximum: 1.0
-          minimum: 0.0
-          title: X
-        y:
-          type: number
-          maximum: 1.0
-          minimum: 0.0
-          title: Y
-      type: object
-      required:
-      - x
-      - y
-      title: KeypointPosition
-      description: 'Normalized (0-1) (x, y) inside a unit bbox. Origin is top-left; y grows
-
-        down. The FE multiplies by the drawn bbox dimensions to seed each joint
-
-        when the user creates a new keypoint annotation by dragging a rect.'
-    FrozenClass:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-        name:
-          type: string
-          title: Name
-        color:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Color
-        allowed_types:
+        detail:
           items:
-            type: string
+            $ref: '#/components/schemas/ValidationError'
           type: array
-          title: Allowed Types
-        keypoint_topology:
-          anyOf:
-          - $ref: '#/components/schemas/KeypointTopology'
-          - type: 'null'
-        archived:
-          type: boolean
-          title: Archived
-          default: false
+          title: Detail
       type: object
-      required:
-      - id
-      - name
-      title: FrozenClass
-      description: 'One class as frozen into a `ProjectVersion.frozen_classes` snapshot at
-
-        version-create time. Mirrors the writer at `routes/projects.py` create_version.
-
-
-        `keypoint_topology` is typed as the same `KeypointTopology` the write-to-class
-
-        path validates (ADR-0104): the frozen copy is that validated JSONB verbatim,
-
-        and the shape hasn''t changed since ADR-0030, so re-declaring it costs nothing
-
-        and gives the SDK the real type. `classification_config` is deliberately NOT
-
-        frozen. Post-migration-0075 the inner key is `classes` (renamed from the
-
-        legacy `labels`, ADR-0097), so all live rows are uniform.'
+      title: HTTPValidationError
     KeypointTopology:
       properties:
         version:
@@ -295,20 +246,26 @@ components:
         0-indexed pairs into `nodes`. Empty `edges` = single-keypoint label
 
         (no skeleton render).'
-    VersionStatus:
-      type: string
-      enum:
-      - pending
-      - building
-      - ready
-      - failed
-      title: VersionStatus
-    VisibilityModel:
-      type: string
-      enum:
-      - binary
-      - coco_ternary
-      title: VisibilityModel
+    KeypointNode:
+      properties:
+        id:
+          type: integer
+          minimum: 0.0
+          title: Id
+        name:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Name
+        default_position:
+          anyOf:
+          - $ref: '#/components/schemas/KeypointPosition'
+          - type: 'null'
+      type: object
+      required:
+      - id
+      - name
+      title: KeypointNode
     ErrorResponse:
       type: object
       required:
@@ -337,6 +294,85 @@ components:
               type: string
               nullable: true
               description: Correlation id for support / log lookups.
+    VisibilityModel:
+      type: string
+      enum:
+      - binary
+      - coco_ternary
+      title: VisibilityModel
+    VersionStatus:
+      type: string
+      enum:
+      - pending
+      - building
+      - ready
+      - failed
+      title: VersionStatus
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
     VersionResponse:
       properties:
         id:
@@ -417,126 +453,90 @@ components:
       - updated_at
       - completed_at
       title: VersionResponse
-    KeypointNode:
+    KeypointPosition:
+      properties:
+        x:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: X
+        y:
+          type: number
+          maximum: 1.0
+          minimum: 0.0
+          title: Y
+      type: object
+      required:
+      - x
+      - y
+      title: KeypointPosition
+      description: 'Normalized (0-1) (x, y) inside a unit bbox. Origin is top-left; y grows
+
+        down. The FE multiplies by the drawn bbox dimensions to seed each joint
+
+        when the user creates a new keypoint annotation by dragging a rect.'
+    FrozenClass:
       properties:
         id:
-          type: integer
-          minimum: 0.0
+          type: string
+          format: uuid
           title: Id
         name:
           type: string
-          maxLength: 64
-          minLength: 1
           title: Name
-        default_position:
+        color:
           anyOf:
-          - $ref: '#/components/schemas/KeypointPosition'
+          - type: string
           - type: 'null'
+          title: Color
+        allowed_types:
+          items:
+            type: string
+          type: array
+          title: Allowed Types
+        keypoint_topology:
+          anyOf:
+          - $ref: '#/components/schemas/KeypointTopology'
+          - type: 'null'
+        archived:
+          type: boolean
+          title: Archived
+          default: false
       type: object
       required:
       - id
       - name
-      title: KeypointNode
-    ErrorCode:
-      type: string
-      enum:
-      - UNCATEGORIZED
-      - AUTH_MISSING
-      - AUTH_INVALID_CREDENTIAL
-      - AUTH_TOKEN_EXPIRED
-      - AUTH_FORBIDDEN
-      - AUTH_TENANT_MISMATCH
-      - VALIDATION_ERROR
-      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
-      - BAD_REQUEST
-      - INVALID_CURSOR
-      - INVALID_FILTER
-      - UNSUPPORTED_OPERATION
-      - PAYLOAD_TOO_LARGE
-      - TENANT_NOT_FOUND
-      - TENANT_SLUG_TAKEN
-      - USER_NOT_FOUND
-      - USER_EMAIL_TAKEN
-      - INVITATION_NOT_FOUND
-      - INVITATION_PENDING
-      - INVITATION_NOT_PENDING
-      - INVITATION_EXPIRED
-      - LAST_ADMIN
-      - DATASET_NOT_FOUND
-      - DATASET_NAME_TAKEN
-      - DATASET_DELETED
-      - DATASET_ASSET_CAP_EXCEEDED
-      - ASSET_NOT_FOUND
-      - ASSET_DELETED
-      - ASSET_NOT_EMBEDDED
-      - ASSET_FORMAT_UNSUPPORTED
-      - ASSET_TOO_LARGE
-      - PROJECT_NOT_FOUND
-      - PROJECT_ARCHIVED
-      - PROJECT_MEMBER_NOT_FOUND
-      - PROJECT_CLASS_NOT_FOUND
-      - VERSION_NOT_FOUND
-      - MODEL_NOT_FOUND
-      - RESOURCE_NOT_READY
-      - PROJECT_STATE_FORBIDDEN
-      - CLASS_LOCKED
-      - CLASS_IN_USE
-      - DEPLOYMENT_NOT_FOUND
-      - DEPLOYMENT_STATE_FORBIDDEN
-      - EXPORT_EXPIRED
-      - EXPORT_FAILED
-      - ANNOTATION_NOT_FOUND
-      - JOB_NOT_FOUND
-      - JOB_ALREADY_RUNNING
-      - JOB_PER_TENANT_CAP
-      - JOB_TERMINAL
-      - EMBEDDER_UNAVAILABLE
-      - EMBEDDER_INVOCATION_FAILED
-      - NAME_TAKEN
-      - IDEMPOTENCY_REPLAY
-      - CONCURRENT_MODIFICATION
-      - RATE_LIMITED
-      - RESOURCE_LIMIT_EXCEEDED
-      - INTERNAL_ERROR
-      - DEPENDENCY_UNAVAILABLE
-      - MODEL_LOADING
-      - MODEL_STARTING
-      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    HTTPValidationError:
+      title: FrozenClass
+      description: 'One class as frozen into a `ProjectVersion.frozen_classes` snapshot at
+
+        version-create time. Mirrors the writer at `routes/projects.py` create_version.
+
+
+        `keypoint_topology` is typed as the same `KeypointTopology` the write-to-class
+
+        path validates (ADR-0104): the frozen copy is that validated JSONB verbatim,
+
+        and the shape hasn''t changed since ADR-0030, so re-declaring it costs nothing
+
+        and gives the SDK the real type. `classification_config` is deliberately NOT
+
+        frozen. Post-migration-0075 the inner key is `classes` (renamed from the
+
+        legacy `labels`, ADR-0097), so all live rows are uniform.'
+    FrozenClassSet:
       properties:
-        detail:
+        classes:
           items:
-            $ref: '#/components/schemas/ValidationError'
+            $ref: '#/components/schemas/FrozenClass'
           type: array
-          title: Detail
+          title: Classes
       type: object
-      title: HTTPValidationError
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
+      title: FrozenClassSet
+      description: 'The `ProjectVersion.frozen_classes` blob: `{"classes": [FrozenClass, ...]}`.
+
+        Typed on the wire (`VersionResponse.frozen_classes`) — rows are uniform
+
+        post-0075. Storage stays JSON (`.model_dump(mode="json")` into JSONB).'
   securitySchemes:
     HTTPBearer:
       type: http
