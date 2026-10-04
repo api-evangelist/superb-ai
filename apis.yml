@@ -372,6 +372,9 @@ maintainers:
 - FN: APIs.json
   email: info@apis.io
 common:
+- type: CapabilityMap
+  url: capabilities/superb-ai-capability-edges.yml
+  name: Superb AI Business Capability Map
 - type: Overlay
   url: overlays/superb-ai-mlops-platform-overlay.yaml
 - type: Website

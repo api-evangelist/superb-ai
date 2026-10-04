@@ -1,0 +1,113 @@
+slug: superb-ai
+provider: Superb AI
+generated_by: planning/capability-mapping/scripts/classify_capabilities.py
+model: claude-opus-5
+frame:
+- Software & Technology
+min_confidence: 0.7
+capability_model:
+  source: https://github.com/vincentmakes/turbo-ea-capabilities
+  license: CC-BY-4.0
+  attribution: Turbo EA Capabilities by Vincent Verdet — Turbo EA, https://github.com/vincentmakes/turbo-ea-capabilities,
+    CC BY 4.0
+  notice: NOTICE
+edge_count: 10
+edges:
+- tag: Training
+  spec_file: superb-ai-training-api-openapi.yml
+  capability_id: BC-610.60
+  capability_id_l1: BC-610
+  capability_name: Artificial Intelligence Management
+  confidence: 0.92
+  evidence: training-create_training_run 'Create Training Run', training-get_training_metrics, schemas
+    TrainingRunStatus, SplitStrategy, CatalogEarlyStoppingKnob
+  reason: Launching, monitoring and cancelling model training runs with hyperparameter catalogue and metrics
+    is the core of ML model lifecycle / MLOps.
+- tag: Models
+  spec_file: superb-ai-models-api-openapi.yml
+  capability_id: BC-610.60
+  capability_id_l1: BC-610
+  capability_name: Artificial Intelligence Management
+  confidence: 0.88
+  evidence: GET /tenants/{slug}/models 'List Models', schemas TrainedModelResponse, TrainingMetricsSummary,
+    ConfusionMatrix
+  reason: Operations manage the registry of trained ML models and their evaluation metrics — squarely
+    AI/ML model lifecycle (MLOps) within Information & Data Management.
+- tag: Deployments
+  spec_file: superb-ai-deployments-api-openapi.yml
+  capability_id: BC-610.60
+  capability_id_l1: BC-610
+  capability_name: Artificial Intelligence Management
+  confidence: 0.85
+  evidence: POST /tenants/{slug}/models/{model_id}/deployments  'Deploy Model'; POST /tenants/{slug}/deployments/{deployment_id}/predict  'Predict'
+  reason: Deploying trained models and serving predictions is model-serving/MLOps, squarely Artificial
+    Intelligence Management rather than general software deployment orchestration.
+- tag: Foundation Models
+  spec_file: superb-ai-foundation-models-api-openapi.yml
+  capability_id: BC-610.60
+  capability_id_l1: BC-610
+  capability_name: Artificial Intelligence Management
+  confidence: 0.85
+  evidence: GET /tenants/{slug}/foundation-models 'List Foundation Models'; POST /tenants/{slug}/foundation-models/{key}/predict
+    'Predict'; ZeroPredictRequest, FoundationModelStatus
+  reason: Catalogue and zero-shot inference against foundation models is AI/ML model lifecycle management.
+- tag: auto-label
+  spec_file: superb-ai-auto-label-api-openapi.yml
+  capability_id: BC-610.60
+  capability_id_l1: BC-610
+  capability_name: Artificial Intelligence Management
+  confidence: 0.85
+  evidence: auto-label-create_run 'Create Run', auto-label-suggest 'Suggest', schemas AutoLabelSuggestion,
+    ModelRefKind, AutoLabelConfig
+  reason: Model-driven automated annotation runs and inference suggestions — applied ML inference within
+    the data-centric AI lifecycle.
+- tag: Tenants
+  spec_file: superb-ai-tenants-api-openapi.yml
+  capability_id: BC-4230.10
+  capability_id_l1: BC-4230
+  capability_name: Tenant Provisioning & Lifecycle
+  confidence: 0.75
+  evidence: POST /tenants tenants-create_tenant 'Create Tenant'; description 'Multi-tenant labeling-platform
+    backend'; schemas TenantCreate, OwnerCreate
+  reason: Creation of tenants with an owner in an explicitly multi-tenant SaaS backend is tenant provisioning/lifecycle;
+    surface is small so confidence is moderate.
+- tag: Annotations
+  spec_file: superb-ai-annotations-api-openapi.yml
+  capability_id: BC-610.60
+  capability_id_l1: BC-610
+  capability_name: Artificial Intelligence Management
+  confidence: 0.7
+  evidence: POST /tenants/{slug}/projects/{project_id}/annotations/batch-create — 'Project Batch Create
+    Annotations'; schemas BboxGeometry, KeypointGeometryRead, AnnotationSource
+  reason: Creation and revision of image annotations (bounding boxes, polygons, keypoints) is training-data
+    labelling within the ML/MLOps lifecycle, which the frame places under Artificial Intelligence Management.
+- tag: Segment
+  spec_file: superb-ai-segment-api-openapi.yml
+  capability_id: BC-610.60
+  capability_id_l1: BC-610
+  capability_name: Artificial Intelligence Management
+  confidence: 0.7
+  evidence: POST /tenants/{slug}/projects/{project_id}/assets/{asset_id}/segment, schemas SegmentSuggestion,
+    PolygonGeometryRead
+  reason: Model-assisted segmentation inference producing annotation geometry suggestions — part of the
+    AI/ML annotation pipeline.
+- tag: image_assets
+  spec_file: superb-ai-image-assets-api-openapi.yml
+  capability_id: BC-610
+  capability_id_l1: BC-610
+  capability_name: Information & Data Management
+  confidence: 0.7
+  evidence: image_assets-upload_init 'Upload Init', image_assets-search_assets 'Search Assets', schemas
+    AssetResponse, EmbeddingStatus, SearchHit
+  reason: Ingestion, cataloguing, search and bulk deletion of image data assets used for ML — information
+    and data asset management; no single L2 clearly dominates (data management vs AI lifecycle).
+- tag: image_datasets
+  spec_file: superb-ai-image-datasets-api-openapi.yml
+  capability_id: BC-610
+  capability_id_l1: BC-610
+  capability_name: Information & Data Management
+  confidence: 0.7
+  evidence: image_datasets-create_image_dataset 'Create Image Dataset', image_datasets-embed_image_dataset
+    'Embed Image Dataset', DatasetStatsResponse
+  reason: Lifecycle and statistics of image datasets plus embedding generation — management of data assets
+    feeding ML; L1 data management is defensible, the precise L2 is ambiguous.
