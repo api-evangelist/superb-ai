@@ -89,91 +89,29 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
-    OwnerResponse:
+    TenantCreate:
       properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-          description: Unique identifier of the owner user.
-        email:
-          type: string
-          title: Email
-          description: Email address of the owner user.
-        first_name:
-          type: string
-          title: First Name
-          description: Given name of the owner user.
-        last_name:
-          type: string
-          title: Last Name
-          description: Family name of the owner user.
-      type: object
-      required:
-      - id
-      - email
-      - first_name
-      - last_name
-      title: OwnerResponse
-    ErrorResponse:
-      type: object
-      required:
-      - error
-      properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
-    TenantResponse:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-          description: Unique identifier of the tenant.
         slug:
           type: string
+          maxLength: 30
+          minLength: 3
           title: Slug
-          description: URL-safe unique identifier for the tenant.
+          description: URL-safe unique identifier for the tenant (lowercase alphanumeric with single hyphens).
         name:
           type: string
+          maxLength: 255
+          minLength: 1
           title: Name
           description: Human-readable display name of the tenant.
-        created_at:
-          type: string
-          format: date-time
-          title: Created At
-          description: Timestamp when the tenant was created.
         owner:
-          $ref: '#/components/schemas/OwnerResponse'
-          description: The tenant's owner user.
+          $ref: '#/components/schemas/OwnerCreate'
+          description: Details of the initial owner account created alongside the tenant.
       type: object
       required:
-      - id
       - slug
       - name
-      - created_at
       - owner
-      title: TenantResponse
+      title: TenantCreate
     ErrorCode:
       type: string
       enum:
@@ -239,29 +177,37 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    TenantCreate:
+    TenantResponse:
       properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Unique identifier of the tenant.
         slug:
           type: string
-          maxLength: 30
-          minLength: 3
           title: Slug
-          description: URL-safe unique identifier for the tenant (lowercase alphanumeric with single hyphens).
+          description: URL-safe unique identifier for the tenant.
         name:
           type: string
-          maxLength: 255
-          minLength: 1
           title: Name
           description: Human-readable display name of the tenant.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: Timestamp when the tenant was created.
         owner:
-          $ref: '#/components/schemas/OwnerCreate'
-          description: Details of the initial owner account created alongside the tenant.
+          $ref: '#/components/schemas/OwnerResponse'
+          description: The tenant's owner user.
       type: object
       required:
+      - id
       - slug
       - name
+      - created_at
       - owner
-      title: TenantCreate
+      title: TenantResponse
     OwnerCreate:
       properties:
         email:
@@ -295,6 +241,60 @@ components:
       - last_name
       - password
       title: OwnerCreate
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    OwnerResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Unique identifier of the owner user.
+        email:
+          type: string
+          title: Email
+          description: Email address of the owner user.
+        first_name:
+          type: string
+          title: First Name
+          description: Given name of the owner user.
+        last_name:
+          type: string
+          title: Last Name
+          description: Family name of the owner user.
+      type: object
+      required:
+      - id
+      - email
+      - first_name
+      - last_name
+      title: OwnerResponse
   securitySchemes:
     HTTPBearer:
       type: http

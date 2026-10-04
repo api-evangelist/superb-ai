@@ -575,32 +575,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
     ChangePasswordRequest:
       properties:
         previous_password:
@@ -659,38 +633,38 @@ components:
       - created_at
       - updated_at
       title: UserResponse
-    UserSelfUpdate:
+    WorkspaceRole:
+      type: string
+      enum:
+      - admin
+      - member
+      title: WorkspaceRole
+    ValidationError:
       properties:
-        first_name:
-          anyOf:
-          - type: string
-            maxLength: 100
-            minLength: 1
-          - type: 'null'
-          title: First Name
-          description: Updated given name. Omit to leave unchanged.
-        last_name:
-          anyOf:
-          - type: string
-            maxLength: 100
-            minLength: 1
-          - type: 'null'
-          title: Last Name
-          description: Updated family name. Omit to leave unchanged.
-      type: object
-      title: UserSelfUpdate
-      description: 'Edit your own profile (first/last name only). Email + password have their
-
-        own dedicated endpoints.'
-    HTTPValidationError:
-      properties:
-        detail:
+        loc:
           items:
-            $ref: '#/components/schemas/ValidationError'
+            anyOf:
+            - type: string
+            - type: integer
           type: array
-          title: Detail
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
       type: object
-      title: HTTPValidationError
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
     UserPage:
       properties:
         items:
@@ -707,40 +681,57 @@ components:
       required:
       - items
       title: UserPage
-    WorkspaceRole:
-      type: string
-      enum:
-      - admin
-      - member
-      title: WorkspaceRole
-    ErrorResponse:
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    UserSeedCreate:
+      properties:
+        email:
+          type: string
+          maxLength: 254
+          format: email
+          title: Email
+          description: Email address of the account to create.
+        first_name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: First Name
+          description: Given name (no sign-up form runs on this path).
+        last_name:
+          type: string
+          maxLength: 100
+          minLength: 1
+          title: Last Name
+          description: Family name.
+        password:
+          type: string
+          maxLength: 128
+          minLength: 10
+          title: Password
+          description: Initial password (WorkOS strength rules apply).
+        role:
+          $ref: '#/components/schemas/WorkspaceRole'
+          description: Workspace role to grant.
+          default: member
       type: object
       required:
-      - error
-      properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
+      - email
+      - first_name
+      - last_name
+      - password
+      title: UserSeedCreate
+      description: 'Body for `POST /users` — programmatic seeding ONLY (ADR-0113): create a
+
+        ready-to-login member directly (WorkOS account with password + membership,
+
+        no email). Humans join via `/tenants/{slug}/invitations` + in-app accept.'
     ErrorCode:
       type: string
       enum:
@@ -806,48 +797,57 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    UserSeedCreate:
+    UserSelfUpdate:
       properties:
-        email:
-          type: string
-          maxLength: 254
-          format: email
-          title: Email
-          description: Email address of the account to create.
         first_name:
-          type: string
-          maxLength: 100
-          minLength: 1
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
           title: First Name
-          description: Given name (no sign-up form runs on this path).
+          description: Updated given name. Omit to leave unchanged.
         last_name:
-          type: string
-          maxLength: 100
-          minLength: 1
+          anyOf:
+          - type: string
+            maxLength: 100
+            minLength: 1
+          - type: 'null'
           title: Last Name
-          description: Family name.
-        password:
-          type: string
-          maxLength: 128
-          minLength: 10
-          title: Password
-          description: Initial password (WorkOS strength rules apply).
-        role:
-          $ref: '#/components/schemas/WorkspaceRole'
-          description: Workspace role to grant.
-          default: member
+          description: Updated family name. Omit to leave unchanged.
+      type: object
+      title: UserSelfUpdate
+      description: 'Edit your own profile (first/last name only). Email + password have their
+
+        own dedicated endpoints.'
+    ErrorResponse:
       type: object
       required:
-      - email
-      - first_name
-      - last_name
-      - password
-      title: UserSeedCreate
-      description: 'Body for `POST /users` — programmatic seeding ONLY (ADR-0113): create a
-
-        ready-to-login member directly (WorkOS account with password + membership,
-
-        no email). Humans join via `/tenants/{slug}/invitations` + in-app accept.'
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
     UserRoleUpdate:
       properties:
         role:

@@ -424,34 +424,32 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    SkippedDetail:
+    ExportListPage:
       properties:
-        asset_id:
-          type: string
-          title: Asset Id
-        annotation_id:
+        items:
+          items:
+            $ref: '#/components/schemas/ExportResponse'
+          type: array
+          title: Items
+        next_cursor:
           anyOf:
-          - type: integer
           - type: string
-          title: Annotation Id
-        annotation_type:
-          type: string
-          title: Annotation Type
-        reason:
-          type: string
-          title: Reason
+          - type: 'null'
+          title: Next Cursor
       type: object
       required:
-      - asset_id
-      - annotation_id
-      - annotation_type
-      - reason
-      title: SkippedDetail
-      description: 'One annotation the bundler couldn''t represent (persisted serialization of
-
-        `FormatterSkip`). `asset_id` is stringified on write; `annotation_id` is int
-
-        (COCO/YOLO) or str (delta/manifest-miss sentinel).'
+      - items
+      title: ExportListPage
+    ExportStatus:
+      type: string
+      enum:
+      - pending
+      - queued
+      - running
+      - ready
+      - failed
+      - expired
+      title: ExportStatus
     ValidationError:
       properties:
         loc:
@@ -478,35 +476,49 @@ components:
       - msg
       - type
       title: ValidationError
-    ExportCreateRequest:
+    DeltaResultDetails:
       properties:
         format:
-          $ref: '#/components/schemas/ExportFormat'
-          description: 'Export bundle format: coco, yolo, or delta.'
-        include_assets:
+          type: string
+          const: delta
+          title: Format
+        schema_version:
+          type: string
+          title: Schema Version
+        num_assets:
+          type: integer
+          title: Num Assets
+        num_annotations:
+          type: integer
+          title: Num Annotations
+        annotations_by_type:
+          additionalProperties:
+            type: integer
+          type: object
+          title: Annotations By Type
+        classes:
+          items:
+            $ref: '#/components/schemas/ClassCountById'
+          type: array
+          title: Classes
+        classes_truncated:
           type: boolean
-          title: Include Assets
-          description: Whether to include the source asset files in the export bundle.
-          default: true
-        exclude_empty:
-          type: boolean
-          title: Exclude Empty
-          description: If true, skip assets that have no annotations from the export.
+          title: Classes Truncated
           default: false
+        classes_total:
+          type: integer
+          title: Classes Total
+          default: 0
       type: object
       required:
       - format
-      title: ExportCreateRequest
-      description: 'POST body. All fields optional except `format`.
+      - schema_version
+      - num_assets
+      - num_annotations
+      title: DeltaResultDetails
+      description: '`annotations_by_type` is genuinely open-ended by annotation type — the one
 
-
-        Pydantic defaults to ignoring unknown fields (`extra=''ignore''`), so callers
-
-        that still send the deprecated `splits` / `split_seed` / `stratify_by`
-
-        fields from the v1 contract get a silent no-op. The export is always
-
-        unsplit regardless.'
+        legit dict inside an otherwise-fixed model.'
     HTTPValidationError:
       properties:
         detail:
@@ -516,6 +528,24 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
+    ClassCountByIdx:
+      properties:
+        name:
+          type: string
+          title: Name
+        count:
+          type: integer
+          title: Count
+        idx:
+          type: integer
+          title: Idx
+      type: object
+      required:
+      - name
+      - count
+      - idx
+      title: ClassCountByIdx
+      description: YOLO per-class entry (0-based dataset index).
     ExportResponse:
       properties:
         id:
@@ -621,6 +651,41 @@ components:
       - created_at
       - completed_at
       title: ExportResponse
+    SkippedDetail:
+      properties:
+        asset_id:
+          type: string
+          title: Asset Id
+        annotation_id:
+          anyOf:
+          - type: integer
+          - type: string
+          title: Annotation Id
+        annotation_type:
+          type: string
+          title: Annotation Type
+        reason:
+          type: string
+          title: Reason
+      type: object
+      required:
+      - asset_id
+      - annotation_id
+      - annotation_type
+      - reason
+      title: SkippedDetail
+      description: 'One annotation the bundler couldn''t represent (persisted serialization of
+
+        `FormatterSkip`). `asset_id` is stringified on write; `annotation_id` is int
+
+        (COCO/YOLO) or str (delta/manifest-miss sentinel).'
+    ExportFormat:
+      type: string
+      enum:
+      - coco
+      - yolo
+      - delta
+      title: ExportFormat
     ClassCountById:
       properties:
         name:
@@ -643,76 +708,35 @@ components:
       description: 'COCO/Delta per-class entry (id-keyed). COCO id is int; delta id is the
 
         class UUID stringified — hence `int | str`.'
-    ExportStatus:
-      type: string
-      enum:
-      - pending
-      - queued
-      - running
-      - ready
-      - failed
-      - expired
-      title: ExportStatus
-    ExportDownloadResponse:
+    ExportCreateRequest:
       properties:
-        url:
-          type: string
-          title: Url
-          description: Pre-signed HTTPS URL to download the export bundle; valid for 1 hour.
+        format:
+          $ref: '#/components/schemas/ExportFormat'
+          description: 'Export bundle format: coco, yolo, or delta.'
+        include_assets:
+          type: boolean
+          title: Include Assets
+          description: Whether to include the source asset files in the export bundle.
+          default: true
+        exclude_empty:
+          type: boolean
+          title: Exclude Empty
+          description: If true, skip assets that have no annotations from the export.
+          default: false
       type: object
       required:
-      - url
-      title: ExportDownloadResponse
-      description: 'Response from `/exports/{eid}/download` when ready.
+      - format
+      title: ExportCreateRequest
+      description: 'POST body. All fields optional except `format`.
 
 
-        Caller follows `url` with a normal HTTPS GET. S3 validates expiry at
+        Pydantic defaults to ignoring unknown fields (`extra=''ignore''`), so callers
 
-        request start so 1h TTL covers arbitrary-duration downloads.'
-    ErrorResponse:
-      type: object
-      required:
-      - error
-      properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
-    ExportListPage:
-      properties:
-        items:
-          items:
-            $ref: '#/components/schemas/ExportResponse'
-          type: array
-          title: Items
-        next_cursor:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Next Cursor
-      type: object
-      required:
-      - items
-      title: ExportListPage
+        that still send the deprecated `splits` / `split_seed` / `stratify_by`
+
+        fields from the v1 contract get a silent no-op. The export is always
+
+        unsplit regardless.'
     ErrorCode:
       type: string
       enum:
@@ -778,74 +802,22 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    ClassCountByIdx:
+    ExportDownloadResponse:
       properties:
-        name:
+        url:
           type: string
-          title: Name
-        count:
-          type: integer
-          title: Count
-        idx:
-          type: integer
-          title: Idx
+          title: Url
+          description: Pre-signed HTTPS URL to download the export bundle; valid for 1 hour.
       type: object
       required:
-      - name
-      - count
-      - idx
-      title: ClassCountByIdx
-      description: YOLO per-class entry (0-based dataset index).
-    ExportFormat:
-      type: string
-      enum:
-      - coco
-      - yolo
-      - delta
-      title: ExportFormat
-    DeltaResultDetails:
-      properties:
-        format:
-          type: string
-          const: delta
-          title: Format
-        schema_version:
-          type: string
-          title: Schema Version
-        num_assets:
-          type: integer
-          title: Num Assets
-        num_annotations:
-          type: integer
-          title: Num Annotations
-        annotations_by_type:
-          additionalProperties:
-            type: integer
-          type: object
-          title: Annotations By Type
-        classes:
-          items:
-            $ref: '#/components/schemas/ClassCountById'
-          type: array
-          title: Classes
-        classes_truncated:
-          type: boolean
-          title: Classes Truncated
-          default: false
-        classes_total:
-          type: integer
-          title: Classes Total
-          default: 0
-      type: object
-      required:
-      - format
-      - schema_version
-      - num_assets
-      - num_annotations
-      title: DeltaResultDetails
-      description: '`annotations_by_type` is genuinely open-ended by annotation type — the one
+      - url
+      title: ExportDownloadResponse
+      description: 'Response from `/exports/{eid}/download` when ready.
 
-        legit dict inside an otherwise-fixed model.'
+
+        Caller follows `url` with a normal HTTPS GET. S3 validates expiry at
+
+        request start so 1h TTL covers arbitrary-duration downloads.'
     CocoResultDetails:
       properties:
         format:
@@ -886,6 +858,34 @@ components:
         `classes_total` were added when `_top_classes` landed — Optional-with-default
 
         so a pre-that-change row still serializes.'
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
     YoloResultDetails:
       properties:
         format:

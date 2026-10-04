@@ -199,6 +199,50 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
+    ApiKeySummary:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Server-assigned unique id of the API key.
+        name:
+          type: string
+          title: Name
+          description: The user-supplied label for the key.
+        prefix:
+          type: string
+          title: Prefix
+          description: Short non-secret prefix of the key (e.g. `sbd_pk_a3f4…`), used to identify which key is which.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: When the key was created.
+        last_used_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Used At
+          description: When the key was last used to authenticate; null if never used.
+        expires_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Expires At
+          description: When the key expires; null means it never expires.
+      type: object
+      required:
+      - id
+      - name
+      - prefix
+      - created_at
+      - last_used_at
+      - expires_at
+      title: ApiKeySummary
+      description: List response item. Never carries the plaintext.
     ValidationError:
       properties:
         loc:
@@ -225,79 +269,6 @@ components:
       - msg
       - type
       title: ValidationError
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    ApiKeyCreate:
-      properties:
-        name:
-          type: string
-          maxLength: 64
-          minLength: 1
-          title: Name
-          description: User-supplied label so you can recognize the key later (e.g. "ci-cd", "my-laptop").
-        expires_at:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
-          title: Expires At
-          description: ISO 8601 timestamp after which the key stops authenticating; null or omitted means the key never expires.
-      type: object
-      required:
-      - name
-      title: ApiKeyCreate
-      description: Body for `POST /api-keys`.
-    ErrorResponse:
-      type: object
-      required:
-      - error
-      properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
-    ApiKeyList:
-      properties:
-        items:
-          items:
-            $ref: '#/components/schemas/ApiKeySummary'
-          type: array
-          title: Items
-        next_cursor:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Next Cursor
-      type: object
-      required:
-      - items
-      title: ApiKeyList
     ApiKeyCreated:
       properties:
         id:
@@ -343,6 +314,51 @@ components:
         exactly once and never again** — store it securely (env var, secret manager).
 
         Subsequent calls to GET return everything except the plaintext.'
+    ApiKeyCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 64
+          minLength: 1
+          title: Name
+          description: User-supplied label so you can recognize the key later (e.g. "ci-cd", "my-laptop").
+        expires_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Expires At
+          description: ISO 8601 timestamp after which the key stops authenticating; null or omitted means the key never expires.
+      type: object
+      required:
+      - name
+      title: ApiKeyCreate
+      description: Body for `POST /api-keys`.
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ApiKeyList:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ApiKeySummary'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+      type: object
+      required:
+      - items
+      title: ApiKeyList
     ErrorCode:
       type: string
       enum:
@@ -408,50 +424,34 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    ApiKeySummary:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-          description: Server-assigned unique id of the API key.
-        name:
-          type: string
-          title: Name
-          description: The user-supplied label for the key.
-        prefix:
-          type: string
-          title: Prefix
-          description: Short non-secret prefix of the key (e.g. `sbd_pk_a3f4…`), used to identify which key is which.
-        created_at:
-          type: string
-          format: date-time
-          title: Created At
-          description: When the key was created.
-        last_used_at:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
-          title: Last Used At
-          description: When the key was last used to authenticate; null if never used.
-        expires_at:
-          anyOf:
-          - type: string
-            format: date-time
-          - type: 'null'
-          title: Expires At
-          description: When the key expires; null means it never expires.
+    ErrorResponse:
       type: object
       required:
-      - id
-      - name
-      - prefix
-      - created_at
-      - last_used_at
-      - expires_at
-      title: ApiKeySummary
-      description: List response item. Never carries the plaintext.
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
   securitySchemes:
     HTTPBearer:
       type: http

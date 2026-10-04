@@ -187,17 +187,21 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    RefreshRequest:
+    AuthorizeResponse:
       properties:
-        refresh_token:
+        authorization_url:
           type: string
-          minLength: 1
-          title: Refresh Token
-          description: A refresh token from /auth/callback or a prior /auth/refresh.
+          title: Authorization Url
+          description: Hosted AuthKit URL to redirect the user to.
       type: object
       required:
-      - refresh_token
-      title: RefreshRequest
+      - authorization_url
+      title: AuthorizeResponse
+      description: 'The hosted-AuthKit URL the FE redirects the browser to for sign-in/sign-up
+
+        (ADR-0053). After login, WorkOS redirects back to the configured callback with
+
+        a one-time `code`.'
     ValidationError:
       properties:
         loc:
@@ -245,49 +249,39 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
-    ErrorResponse:
-      type: object
-      required:
-      - error
+    AuthTokens:
       properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
-    AuthorizeResponse:
-      properties:
-        authorization_url:
+        access_token:
           type: string
-          title: Authorization Url
-          description: Hosted AuthKit URL to redirect the user to.
+          title: Access Token
+          description: 'JWT access token; send as `Authorization: Bearer <token>`.'
+        refresh_token:
+          type: string
+          title: Refresh Token
+          description: Long-lived token; exchange via /auth/refresh.
       type: object
       required:
-      - authorization_url
-      title: AuthorizeResponse
-      description: 'The hosted-AuthKit URL the FE redirects the browser to for sign-in/sign-up
+      - access_token
+      - refresh_token
+      title: AuthTokens
+      description: 'Tokens issued by WorkOS. The access token is a short-lived (~5 min) JWT sent
 
-        (ADR-0053). After login, WorkOS redirects back to the configured callback with
+        as `Authorization: Bearer <token>`; the refresh token trades for a new pair via
 
-        a one-time `code`.'
+        /auth/refresh. (WorkOS issues no separate id_token — identity claims live in the
+
+        access token.)'
+    RefreshRequest:
+      properties:
+        refresh_token:
+          type: string
+          minLength: 1
+          title: Refresh Token
+          description: A refresh token from /auth/callback or a prior /auth/refresh.
+      type: object
+      required:
+      - refresh_token
+      title: RefreshRequest
     ErrorCode:
       type: string
       enum:
@@ -353,28 +347,34 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    AuthTokens:
-      properties:
-        access_token:
-          type: string
-          title: Access Token
-          description: 'JWT access token; send as `Authorization: Bearer <token>`.'
-        refresh_token:
-          type: string
-          title: Refresh Token
-          description: Long-lived token; exchange via /auth/refresh.
+    ErrorResponse:
       type: object
       required:
-      - access_token
-      - refresh_token
-      title: AuthTokens
-      description: 'Tokens issued by WorkOS. The access token is a short-lived (~5 min) JWT sent
-
-        as `Authorization: Bearer <token>`; the refresh token trades for a new pair via
-
-        /auth/refresh. (WorkOS issues no separate id_token — identity claims live in the
-
-        access token.)'
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
   securitySchemes:
     HTTPBearer:
       type: http

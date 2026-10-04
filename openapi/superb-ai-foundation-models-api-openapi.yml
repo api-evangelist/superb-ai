@@ -200,41 +200,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
     BboxGeometry:
       properties:
         type:
@@ -284,53 +249,62 @@ components:
       - image
       - inference_ms
       title: ZeroPredictResponse
-    KeypointNodeGeom:
+    HTTPValidationError:
       properties:
-        x:
-          type: number
-          title: X
-        y:
-          type: number
-          title: Y
-        visibility:
-          type: integer
-          maximum: 2.0
-          minimum: 0.0
-          title: Visibility
-          default: 2
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    PolygonPart:
+      properties:
+        exterior:
+          items:
+            prefixItems:
+            - type: number
+            - type: number
+            type: array
+            maxItems: 2
+            minItems: 2
+          type: array
+          minItems: 3
+          title: Exterior
+        holes:
+          items:
+            items:
+              prefixItems:
+              - type: number
+              - type: number
+              type: array
+              maxItems: 2
+              minItems: 2
+            type: array
+          type: array
+          title: Holes
       type: object
       required:
-      - x
-      - y
-      title: KeypointNodeGeom
-    ErrorResponse:
+      - exterior
+      title: PolygonPart
+      description: 'One part of a (possibly multi-part) polygon: an exterior ring + optional hole rings.'
+    PolygonGeometry:
+      properties:
+        type:
+          type: string
+          const: polygon
+          title: Type
+          default: polygon
+        polygons:
+          items:
+            $ref: '#/components/schemas/PolygonPart'
+          type: array
+          minItems: 1
+          title: Polygons
       type: object
       required:
-      - error
-      properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
+      - polygons
+      title: PolygonGeometry
     ErrorCode:
       type: string
       enum:
@@ -396,6 +370,92 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    ParamSpec:
+      properties:
+        min:
+          type: number
+          title: Min
+          description: Minimum allowed value for the parameter.
+        max:
+          type: number
+          title: Max
+          description: Maximum allowed value for the parameter.
+        default:
+          type: number
+          title: Default
+          description: 'Applied when the parameter is omitted from predict. Seeded from the model''s train-time VALIDATION split: detection confidence and IoU are swept jointly under serving-identical per-class NMS; segmentation exposes confidence only because its serving postprocessor does not apply mask NMS. max_detections is data-derived (max ground-truth instances in any single val image, floor 10, cap 1000). Deliberately NOT the scorecard''s `optimal_confidence`, which is a test-split diagnostic measured without NMS — the two answer different questions and will differ slightly.'
+      type: object
+      required:
+      - min
+      - max
+      - default
+      title: ParamSpec
+    KeypointGeometry:
+      properties:
+        type:
+          type: string
+          const: keypoint
+          title: Type
+          default: keypoint
+        points:
+          items:
+            $ref: '#/components/schemas/KeypointNodeGeom'
+          type: array
+          minItems: 1
+          title: Points
+      type: object
+      required:
+      - points
+      title: KeypointGeometry
+    FoundationModelResponse:
+      properties:
+        key:
+          type: string
+          title: Key
+        name:
+          type: string
+          title: Name
+        description:
+          type: string
+          title: Description
+        task:
+          type: string
+          const: detection
+          title: Task
+        output:
+          type: string
+          const: bbox
+          title: Output
+        prompt_modes:
+          items:
+            type: string
+          type: array
+          title: Prompt Modes
+          description: Supported prompt kinds (e.g. text, box) for this model.
+        image_sources:
+          items:
+            type: string
+          type: array
+          title: Image Sources
+          description: Accepted image input sources for predict.
+        params:
+          additionalProperties:
+            $ref: '#/components/schemas/ParamSpec'
+          type: object
+          title: Params
+          description: Tunable predict parameters (confidence) with bounds and defaults.
+      type: object
+      required:
+      - key
+      - name
+      - description
+      - task
+      - output
+      - prompt_modes
+      - image_sources
+      - params
+      title: FoundationModelResponse
+      description: One catalog entry (the playground's model picker + control schema).
     ImageRef:
       properties:
         image_b64:
@@ -406,80 +466,46 @@ components:
           description: Base64-encoded image bytes.
       type: object
       title: ImageRef
-    PolygonGeometry:
+    KeypointNodeGeom:
       properties:
-        type:
-          type: string
-          const: polygon
-          title: Type
-          default: polygon
-        polygons:
-          items:
-            $ref: '#/components/schemas/PolygonPart'
-          type: array
-          minItems: 1
-          title: Polygons
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        visibility:
+          type: integer
+          maximum: 2.0
+          minimum: 0.0
+          title: Visibility
+          default: 2
       type: object
       required:
-      - polygons
-      title: PolygonGeometry
-    PolygonPart:
+      - x
+      - y
+      title: KeypointNodeGeom
+    FoundationModelPage:
       properties:
-        exterior:
+        items:
           items:
-            prefixItems:
-            - type: number
-            - type: number
-            type: array
-            maxItems: 2
-            minItems: 2
+            $ref: '#/components/schemas/FoundationModelResponse'
           type: array
-          minItems: 3
-          title: Exterior
-        holes:
-          items:
-            items:
-              prefixItems:
-              - type: number
-              - type: number
-              type: array
-              maxItems: 2
-              minItems: 2
-            type: array
-          type: array
-          title: Holes
-      type: object
-      required:
-      - exterior
-      title: PolygonPart
-      description: 'One part of a (possibly multi-part) polygon: an exterior ring + optional hole rings.'
-    BoxPrompt:
-      properties:
-        box:
-          items:
-            type: number
-          type: array
-          maxItems: 4
-          minItems: 4
-          title: Box
-          description: '[x1,y1,x2,y2] pixels on ref_image.'
-        ref_image:
+          title: Items
+        next_cursor:
           anyOf:
-          - $ref: '#/components/schemas/ImageRef'
+          - type: string
           - type: 'null'
-          description: Image the box is drawn on; defaults to the search image when omitted.
-        prompt:
-          type: string
-          title: Prompt
-          description: Free-text prompt naming the matches (ZERO needs a non-empty text).
-          default: object
+          title: Next Cursor
       type: object
       required:
-      - box
-      title: BoxPrompt
-      description: 'A visual (few-shot) prompt: ''find things like the object in this box''.
+      - items
+      title: FoundationModelPage
+      description: 'ADR-0012 pagination envelope. The catalog is a static bounded set, so it always
 
-        `ref_image` defaults to the search image when omitted (box drawn on it directly).'
+        fits one page and `next_cursor` is always None — the shape is kept uniform with the
+
+        other list endpoints so clients can page-loop without special-casing.'
     FoundationPrediction:
       properties:
         type:
@@ -515,6 +541,32 @@ components:
       - geometry
       - confidence
       title: FoundationPrediction
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
     ZeroPredictRequest:
       properties:
         image:
@@ -563,23 +615,33 @@ components:
         pixel-space geometry without re-reading the image. Shared by the deployment
 
         and foundation (ZERO) predict responses.'
-    KeypointGeometry:
+    BoxPrompt:
       properties:
-        type:
-          type: string
-          const: keypoint
-          title: Type
-          default: keypoint
-        points:
+        box:
           items:
-            $ref: '#/components/schemas/KeypointNodeGeom'
+            type: number
           type: array
-          minItems: 1
-          title: Points
+          maxItems: 4
+          minItems: 4
+          title: Box
+          description: '[x1,y1,x2,y2] pixels on ref_image.'
+        ref_image:
+          anyOf:
+          - $ref: '#/components/schemas/ImageRef'
+          - type: 'null'
+          description: Image the box is drawn on; defaults to the search image when omitted.
+        prompt:
+          type: string
+          title: Prompt
+          description: Free-text prompt naming the matches (ZERO needs a non-empty text).
+          default: object
       type: object
       required:
-      - points
-      title: KeypointGeometry
+      - box
+      title: BoxPrompt
+      description: 'A visual (few-shot) prompt: ''find things like the object in this box''.
+
+        `ref_image` defaults to the search image when omitted (box drawn on it directly).'
     FoundationModelStatus:
       properties:
         key:
@@ -643,96 +705,34 @@ components:
         - warming     → endpoint creating (just brought up; ~3-8 min to ready)
 
         - unavailable → endpoint down (off-hours; predict returns 503)'
-    FoundationModelPage:
-      properties:
-        items:
-          items:
-            $ref: '#/components/schemas/FoundationModelResponse'
-          type: array
-          title: Items
-        next_cursor:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Next Cursor
+    ErrorResponse:
       type: object
       required:
-      - items
-      title: FoundationModelPage
-      description: 'ADR-0012 pagination envelope. The catalog is a static bounded set, so it always
-
-        fits one page and `next_cursor` is always None — the shape is kept uniform with the
-
-        other list endpoints so clients can page-loop without special-casing.'
-    FoundationModelResponse:
+      - error
       properties:
-        key:
-          type: string
-          title: Key
-        name:
-          type: string
-          title: Name
-        description:
-          type: string
-          title: Description
-        task:
-          type: string
-          const: detection
-          title: Task
-        output:
-          type: string
-          const: bbox
-          title: Output
-        prompt_modes:
-          items:
-            type: string
-          type: array
-          title: Prompt Modes
-          description: Supported prompt kinds (e.g. text, box) for this model.
-        image_sources:
-          items:
-            type: string
-          type: array
-          title: Image Sources
-          description: Accepted image input sources for predict.
-        params:
-          additionalProperties:
-            $ref: '#/components/schemas/ParamSpec'
+        error:
           type: object
-          title: Params
-          description: Tunable predict parameters (confidence) with bounds and defaults.
-      type: object
-      required:
-      - key
-      - name
-      - description
-      - task
-      - output
-      - prompt_modes
-      - image_sources
-      - params
-      title: FoundationModelResponse
-      description: One catalog entry (the playground's model picker + control schema).
-    ParamSpec:
-      properties:
-        min:
-          type: number
-          title: Min
-          description: Minimum allowed value for the parameter.
-        max:
-          type: number
-          title: Max
-          description: Maximum allowed value for the parameter.
-        default:
-          type: number
-          title: Default
-          description: 'Applied when the parameter is omitted from predict. Seeded from the model''s train-time VALIDATION split: detection confidence and IoU are swept jointly under serving-identical per-class NMS; segmentation exposes confidence only because its serving postprocessor does not apply mask NMS. max_detections is data-derived (max ground-truth instances in any single val image, floor 10, cap 1000). Deliberately NOT the scorecard''s `optimal_confidence`, which is a test-split diagnostic measured without NMS — the two answer different questions and will differ slightly.'
-      type: object
-      required:
-      - min
-      - max
-      - default
-      title: ParamSpec
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
   securitySchemes:
     HTTPBearer:
       type: http

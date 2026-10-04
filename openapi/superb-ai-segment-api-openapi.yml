@@ -91,6 +91,130 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
+    BboxGeometryRead:
+      properties:
+        type:
+          type: string
+          const: bbox
+          title: Type
+          default: bbox
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        w:
+          type: number
+          title: W
+        h:
+          type: number
+          title: H
+      additionalProperties: true
+      type: object
+      required:
+      - x
+      - y
+      - w
+      - h
+      title: BboxGeometryRead
+    PolygonGeometryRead:
+      properties:
+        type:
+          type: string
+          const: polygon
+          title: Type
+          default: polygon
+        polygons:
+          items:
+            $ref: '#/components/schemas/PolygonPartRead'
+          type: array
+          title: Polygons
+      additionalProperties: true
+      type: object
+      required:
+      - polygons
+      title: PolygonGeometryRead
+    SegmentResponse:
+      properties:
+        suggestions:
+          items:
+            $ref: '#/components/schemas/SegmentSuggestion'
+          type: array
+          title: Suggestions
+          description: Zero or one suggestion (SAM returns the best mask for the prompt). Not persisted — the labeler assigns a class and commits via the normal annotation create.
+        inference_ms:
+          type: integer
+          title: Inference Ms
+          description: Server-side SAM inference time in milliseconds.
+      type: object
+      required:
+      - suggestions
+      - inference_ms
+      title: SegmentResponse
+    SegmentRequest:
+      properties:
+        points:
+          items:
+            $ref: '#/components/schemas/SegmentPoint'
+          type: array
+          maxItems: 64
+          title: Points
+          description: Click prompts. Positive/negative points that seed and refine the mask.
+        box:
+          anyOf:
+          - items:
+              type: number
+            type: array
+          - type: 'null'
+          title: Box
+          description: Optional bounding-box prompt [x1, y1, x2, y2] in ORIGINAL image pixels.
+      type: object
+      title: SegmentRequest
+    KeypointGeometryRead:
+      properties:
+        type:
+          type: string
+          const: keypoint
+          title: Type
+          default: keypoint
+        points:
+          items:
+            $ref: '#/components/schemas/KeypointNodeGeomRead'
+          type: array
+          title: Points
+      additionalProperties: true
+      type: object
+      required:
+      - points
+      title: KeypointGeometryRead
+    KeypointNodeGeomRead:
+      properties:
+        x:
+          type: number
+          title: X
+        y:
+          type: number
+          title: Y
+        visibility:
+          type: integer
+          title: Visibility
+          default: 2
+      additionalProperties: true
+      type: object
+      required:
+      - x
+      - y
+      title: KeypointNodeGeomRead
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     ValidationError:
       properties:
         loc:
@@ -117,128 +241,35 @@ components:
       - msg
       - type
       title: ValidationError
-    SegmentResponse:
+    PolygonPartRead:
       properties:
-        suggestions:
+        exterior:
           items:
-            $ref: '#/components/schemas/SegmentSuggestion'
+            prefixItems:
+            - type: number
+            - type: number
+            type: array
+            maxItems: 2
+            minItems: 2
           type: array
-          title: Suggestions
-          description: Zero or one suggestion (SAM returns the best mask for the prompt). Not persisted — the labeler assigns a class and commits via the normal annotation create.
-        inference_ms:
-          type: integer
-          title: Inference Ms
-          description: Server-side SAM inference time in milliseconds.
-      type: object
-      required:
-      - suggestions
-      - inference_ms
-      title: SegmentResponse
-    HTTPValidationError:
-      properties:
-        detail:
+          title: Exterior
+        holes:
           items:
-            $ref: '#/components/schemas/ValidationError'
+            items:
+              prefixItems:
+              - type: number
+              - type: number
+              type: array
+              maxItems: 2
+              minItems: 2
+            type: array
           type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    OutputGeometry:
-      type: string
-      enum:
-      - bbox
-      - polygon
-      title: OutputGeometry
-      description: 'Geometry kinds a model can emit (subset of AnnotationType). Used by the
-
-        serving/deployment + foundation-model capability descriptors.'
-    SegmentPoint:
-      properties:
-        x:
-          type: number
-          title: X
-          description: Click x in ORIGINAL image pixels.
-        y:
-          type: number
-          title: Y
-          description: Click y in ORIGINAL image pixels.
-        label:
-          type: integer
-          maximum: 1.0
-          minimum: 0.0
-          title: Label
-          description: 1 = positive (include this region), 0 = negative (exclude). Refine a mask by adding negative clicks on over-segmented areas, positive clicks to grow it.
-          default: 1
-      type: object
-      required:
-      - x
-      - y
-      title: SegmentPoint
-    KeypointNodeGeomRead:
-      properties:
-        x:
-          type: number
-          title: X
-        y:
-          type: number
-          title: Y
-        visibility:
-          type: integer
-          title: Visibility
-          default: 2
+          title: Holes
       additionalProperties: true
       type: object
       required:
-      - x
-      - y
-      title: KeypointNodeGeomRead
-    ErrorResponse:
-      type: object
-      required:
-      - error
-      properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
-    SegmentRequest:
-      properties:
-        points:
-          items:
-            $ref: '#/components/schemas/SegmentPoint'
-          type: array
-          maxItems: 64
-          title: Points
-          description: Click prompts. Positive/negative points that seed and refine the mask.
-        box:
-          anyOf:
-          - items:
-              type: number
-            type: array
-          - type: 'null'
-          title: Box
-          description: Optional bounding-box prompt [x1, y1, x2, y2] in ORIGINAL image pixels.
-      type: object
-      title: SegmentRequest
+      - exterior
+      title: PolygonPartRead
     ErrorCode:
       type: string
       enum:
@@ -304,96 +335,15 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    PolygonPartRead:
-      properties:
-        exterior:
-          items:
-            prefixItems:
-            - type: number
-            - type: number
-            type: array
-            maxItems: 2
-            minItems: 2
-          type: array
-          title: Exterior
-        holes:
-          items:
-            items:
-              prefixItems:
-              - type: number
-              - type: number
-              type: array
-              maxItems: 2
-              minItems: 2
-            type: array
-          type: array
-          title: Holes
-      additionalProperties: true
-      type: object
-      required:
-      - exterior
-      title: PolygonPartRead
-    KeypointGeometryRead:
-      properties:
-        type:
-          type: string
-          const: keypoint
-          title: Type
-          default: keypoint
-        points:
-          items:
-            $ref: '#/components/schemas/KeypointNodeGeomRead'
-          type: array
-          title: Points
-      additionalProperties: true
-      type: object
-      required:
-      - points
-      title: KeypointGeometryRead
-    PolygonGeometryRead:
-      properties:
-        type:
-          type: string
-          const: polygon
-          title: Type
-          default: polygon
-        polygons:
-          items:
-            $ref: '#/components/schemas/PolygonPartRead'
-          type: array
-          title: Polygons
-      additionalProperties: true
-      type: object
-      required:
-      - polygons
-      title: PolygonGeometryRead
-    BboxGeometryRead:
-      properties:
-        type:
-          type: string
-          const: bbox
-          title: Type
-          default: bbox
-        x:
-          type: number
-          title: X
-        y:
-          type: number
-          title: Y
-        w:
-          type: number
-          title: W
-        h:
-          type: number
-          title: H
-      additionalProperties: true
-      type: object
-      required:
-      - x
-      - y
-      - w
-      - h
-      title: BboxGeometryRead
+    OutputGeometry:
+      type: string
+      enum:
+      - bbox
+      - polygon
+      title: OutputGeometry
+      description: 'Geometry kinds a model can emit (subset of AnnotationType). Used by the
+
+        serving/deployment + foundation-model capability descriptors.'
     SegmentSuggestion:
       properties:
         type:
@@ -422,6 +372,56 @@ components:
       - geometry
       - score
       title: SegmentSuggestion
+    SegmentPoint:
+      properties:
+        x:
+          type: number
+          title: X
+          description: Click x in ORIGINAL image pixels.
+        y:
+          type: number
+          title: Y
+          description: Click y in ORIGINAL image pixels.
+        label:
+          type: integer
+          maximum: 1.0
+          minimum: 0.0
+          title: Label
+          description: 1 = positive (include this region), 0 = negative (exclude). Refine a mask by adding negative clicks on over-segmented areas, positive clicks to grow it.
+          default: 1
+      type: object
+      required:
+      - x
+      - y
+      title: SegmentPoint
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
   securitySchemes:
     HTTPBearer:
       type: http

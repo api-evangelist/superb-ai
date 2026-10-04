@@ -306,38 +306,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    TrainingTask:
-      type: string
-      enum:
-      - detection
-      - segmentation
-      title: TrainingTask
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
     TrainingMetricsSummary:
       properties:
         optimal_confidence:
@@ -369,15 +337,22 @@ components:
         so a future added key never 500s a model read; `num_test` is set only on the
 
         final (full) scorecard, so it is Optional.'
-    HTTPValidationError:
+    TrainedModelListPage:
       properties:
-        detail:
+        items:
           items:
-            $ref: '#/components/schemas/ValidationError'
+            $ref: '#/components/schemas/TrainedModelResponse'
           type: array
-          title: Detail
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
       type: object
-      title: HTTPValidationError
+      required:
+      - items
+      title: TrainedModelListPage
     PerClassMetrics:
       properties:
         class:
@@ -405,22 +380,206 @@ components:
       - support
       title: PerClassMetrics
       description: One class's P/R/F1 + GT support at the chosen threshold.
-    TrainedModelListPage:
+    TrainedModelResponse:
       properties:
-        items:
-          items:
-            $ref: '#/components/schemas/TrainedModelResponse'
-          type: array
-          title: Items
-        next_cursor:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Trained-model id.
+        name:
+          type: string
+          title: Name
+          description: Display name (unique per tenant, case-insensitive).
+        description:
           anyOf:
           - type: string
           - type: 'null'
-          title: Next Cursor
+          title: Description
+          description: Optional free-text description; null if unset.
+        task:
+          $ref: '#/components/schemas/TrainingTask'
+          description: Task the model performs (detection or segmentation).
+        model:
+          type: string
+          title: Model
+          description: Catalog model key the run used (e.g. 'rf-detr-nano').
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+          description: 'Lineage: which project''s data produced this model (tenant registry).'
+        training_run_id:
+          type: string
+          format: uuid
+          title: Training Run Id
+          description: Training run that produced this model.
+        project_version_id:
+          type: string
+          format: uuid
+          title: Project Version Id
+          description: Frozen project version the run trained on.
+        class_map:
+          additionalProperties:
+            type: string
+          type: object
+          title: Class Map
+          description: Model class index → class name.
+        metrics_summary:
+          $ref: '#/components/schemas/TrainingMetricsSummary'
+          description: Summary evaluation metrics for the trained model.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: When the model was registered.
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+          description: When the model was last updated.
       type: object
       required:
-      - items
-      title: TrainedModelListPage
+      - id
+      - name
+      - description
+      - task
+      - model
+      - project_id
+      - training_run_id
+      - project_version_id
+      - class_map
+      - metrics_summary
+      - created_at
+      - updated_at
+      title: TrainedModelResponse
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ConfusionMatrix:
+      properties:
+        labels:
+          items:
+            type: string
+          type: array
+          title: Labels
+        matrix:
+          items:
+            items:
+              type: integer
+            type: array
+          type: array
+          title: Matrix
+      additionalProperties: false
+      type: object
+      required:
+      - labels
+      - matrix
+      title: ConfusionMatrix
+      description: K classes + a trailing 'background' bucket for FP/missed.
+    TrainingTask:
+      type: string
+      enum:
+      - detection
+      - segmentation
+      title: TrainingTask
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
     OverallMetrics:
       properties:
         precision:
@@ -502,165 +661,6 @@ components:
         what changes). Name is unique per tenant (case-insensitive); `description` may be
 
         set to null to clear it.'
-    ErrorCode:
-      type: string
-      enum:
-      - UNCATEGORIZED
-      - AUTH_MISSING
-      - AUTH_INVALID_CREDENTIAL
-      - AUTH_TOKEN_EXPIRED
-      - AUTH_FORBIDDEN
-      - AUTH_TENANT_MISMATCH
-      - VALIDATION_ERROR
-      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
-      - BAD_REQUEST
-      - INVALID_CURSOR
-      - INVALID_FILTER
-      - UNSUPPORTED_OPERATION
-      - PAYLOAD_TOO_LARGE
-      - TENANT_NOT_FOUND
-      - TENANT_SLUG_TAKEN
-      - USER_NOT_FOUND
-      - USER_EMAIL_TAKEN
-      - INVITATION_NOT_FOUND
-      - INVITATION_PENDING
-      - INVITATION_NOT_PENDING
-      - INVITATION_EXPIRED
-      - LAST_ADMIN
-      - DATASET_NOT_FOUND
-      - DATASET_NAME_TAKEN
-      - DATASET_DELETED
-      - DATASET_ASSET_CAP_EXCEEDED
-      - ASSET_NOT_FOUND
-      - ASSET_DELETED
-      - ASSET_NOT_EMBEDDED
-      - ASSET_FORMAT_UNSUPPORTED
-      - ASSET_TOO_LARGE
-      - PROJECT_NOT_FOUND
-      - PROJECT_ARCHIVED
-      - PROJECT_MEMBER_NOT_FOUND
-      - PROJECT_CLASS_NOT_FOUND
-      - VERSION_NOT_FOUND
-      - MODEL_NOT_FOUND
-      - RESOURCE_NOT_READY
-      - PROJECT_STATE_FORBIDDEN
-      - CLASS_LOCKED
-      - CLASS_IN_USE
-      - DEPLOYMENT_NOT_FOUND
-      - DEPLOYMENT_STATE_FORBIDDEN
-      - EXPORT_EXPIRED
-      - EXPORT_FAILED
-      - ANNOTATION_NOT_FOUND
-      - JOB_NOT_FOUND
-      - JOB_ALREADY_RUNNING
-      - JOB_PER_TENANT_CAP
-      - JOB_TERMINAL
-      - EMBEDDER_UNAVAILABLE
-      - EMBEDDER_INVOCATION_FAILED
-      - NAME_TAKEN
-      - IDEMPOTENCY_REPLAY
-      - CONCURRENT_MODIFICATION
-      - RATE_LIMITED
-      - RESOURCE_LIMIT_EXCEEDED
-      - INTERNAL_ERROR
-      - DEPENDENCY_UNAVAILABLE
-      - MODEL_LOADING
-      - MODEL_STARTING
-      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    TrainedModelResponse:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-          description: Trained-model id.
-        name:
-          type: string
-          title: Name
-          description: Display name (unique per tenant, case-insensitive).
-        description:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Description
-          description: Optional free-text description; null if unset.
-        task:
-          $ref: '#/components/schemas/TrainingTask'
-          description: Task the model performs (detection or segmentation).
-        model:
-          type: string
-          title: Model
-          description: Catalog model key the run used (e.g. 'rf-detr-nano').
-        project_id:
-          type: string
-          format: uuid
-          title: Project Id
-          description: 'Lineage: which project''s data produced this model (tenant registry).'
-        training_run_id:
-          type: string
-          format: uuid
-          title: Training Run Id
-          description: Training run that produced this model.
-        project_version_id:
-          type: string
-          format: uuid
-          title: Project Version Id
-          description: Frozen project version the run trained on.
-        class_map:
-          additionalProperties:
-            type: string
-          type: object
-          title: Class Map
-          description: Model class index → class name.
-        metrics_summary:
-          $ref: '#/components/schemas/TrainingMetricsSummary'
-          description: Summary evaluation metrics for the trained model.
-        created_at:
-          type: string
-          format: date-time
-          title: Created At
-          description: When the model was registered.
-        updated_at:
-          type: string
-          format: date-time
-          title: Updated At
-          description: When the model was last updated.
-      type: object
-      required:
-      - id
-      - name
-      - description
-      - task
-      - model
-      - project_id
-      - training_run_id
-      - project_version_id
-      - class_map
-      - metrics_summary
-      - created_at
-      - updated_at
-      title: TrainedModelResponse
-    ConfusionMatrix:
-      properties:
-        labels:
-          items:
-            type: string
-          type: array
-          title: Labels
-        matrix:
-          items:
-            items:
-              type: integer
-            type: array
-          type: array
-          title: Matrix
-      additionalProperties: false
-      type: object
-      required:
-      - labels
-      - matrix
-      title: ConfusionMatrix
-      description: K classes + a trailing 'background' bucket for FP/missed.
   securitySchemes:
     HTTPBearer:
       type: http
