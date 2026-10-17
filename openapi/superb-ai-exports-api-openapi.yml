@@ -424,32 +424,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    ExportListPage:
-      properties:
-        items:
-          items:
-            $ref: '#/components/schemas/ExportResponse'
-          type: array
-          title: Items
-        next_cursor:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Next Cursor
-      type: object
-      required:
-      - items
-      title: ExportListPage
-    ExportStatus:
-      type: string
-      enum:
-      - pending
-      - queued
-      - running
-      - ready
-      - failed
-      - expired
-      title: ExportStatus
     ValidationError:
       properties:
         loc:
@@ -476,6 +450,57 @@ components:
       - msg
       - type
       title: ValidationError
+    ExportListPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/ExportResponse'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+      type: object
+      required:
+      - items
+      title: ExportListPage
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    ExportFormat:
+      type: string
+      enum:
+      - coco
+      - yolo
+      - delta
+      title: ExportFormat
     DeltaResultDetails:
       properties:
         format:
@@ -519,6 +544,136 @@ components:
       description: '`annotations_by_type` is genuinely open-ended by annotation type — the one
 
         legit dict inside an otherwise-fixed model.'
+    ExportStatus:
+      type: string
+      enum:
+      - pending
+      - queued
+      - running
+      - ready
+      - failed
+      - expired
+      title: ExportStatus
+    YoloResultDetails:
+      properties:
+        format:
+          type: string
+          const: yolo
+          title: Format
+        num_images:
+          type: integer
+          title: Num Images
+        num_labels:
+          type: integer
+          title: Num Labels
+        num_classes:
+          type: integer
+          title: Num Classes
+        classes:
+          items:
+            $ref: '#/components/schemas/ClassCountByIdx'
+          type: array
+          title: Classes
+        classes_truncated:
+          type: boolean
+          title: Classes Truncated
+          default: false
+        classes_total:
+          type: integer
+          title: Classes Total
+          default: 0
+      type: object
+      required:
+      - format
+      - num_images
+      - num_labels
+      - num_classes
+      title: YoloResultDetails
+    ExportCreateRequest:
+      properties:
+        format:
+          $ref: '#/components/schemas/ExportFormat'
+          description: 'Export bundle format: coco, yolo, or delta.'
+        include_assets:
+          type: boolean
+          title: Include Assets
+          description: Whether to include the source asset files in the export bundle.
+          default: true
+        exclude_empty:
+          type: boolean
+          title: Exclude Empty
+          description: If true, skip assets that have no annotations from the export.
+          default: false
+      type: object
+      required:
+      - format
+      title: ExportCreateRequest
+      description: 'POST body. All fields optional except `format`.
+
+
+        Pydantic defaults to ignoring unknown fields (`extra=''ignore''`), so callers
+
+        that still send the deprecated `splits` / `split_seed` / `stratify_by`
+
+        fields from the v1 contract get a silent no-op. The export is always
+
+        unsplit regardless.'
+    ExportDownloadResponse:
+      properties:
+        url:
+          type: string
+          title: Url
+          description: Pre-signed HTTPS URL to download the export bundle; valid for 1 hour.
+      type: object
+      required:
+      - url
+      title: ExportDownloadResponse
+      description: 'Response from `/exports/{eid}/download` when ready.
+
+
+        Caller follows `url` with a normal HTTPS GET. S3 validates expiry at
+
+        request start so 1h TTL covers arbitrary-duration downloads.'
+    CocoResultDetails:
+      properties:
+        format:
+          type: string
+          const: coco
+          title: Format
+        num_images:
+          type: integer
+          title: Num Images
+        num_annotations:
+          type: integer
+          title: Num Annotations
+        num_categories:
+          type: integer
+          title: Num Categories
+        classes:
+          items:
+            $ref: '#/components/schemas/ClassCountById'
+          type: array
+          title: Classes
+        classes_truncated:
+          type: boolean
+          title: Classes Truncated
+          default: false
+        classes_total:
+          type: integer
+          title: Classes Total
+          default: 0
+      type: object
+      required:
+      - format
+      - num_images
+      - num_annotations
+      - num_categories
+      title: CocoResultDetails
+      description: '`result_details` for a COCO bundle. `classes`/`classes_truncated`/
+
+        `classes_total` were added when `_top_classes` landed — Optional-with-default
+
+        so a pre-that-change row still serializes.'
     HTTPValidationError:
       properties:
         detail:
@@ -528,7 +683,72 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
-    ClassCountByIdx:
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    ClassCountById:
       properties:
         name:
           type: string
@@ -536,16 +756,20 @@ components:
         count:
           type: integer
           title: Count
-        idx:
-          type: integer
-          title: Idx
+        id:
+          anyOf:
+          - type: integer
+          - type: string
+          title: Id
       type: object
       required:
       - name
       - count
-      - idx
-      title: ClassCountByIdx
-      description: YOLO per-class entry (0-based dataset index).
+      - id
+      title: ClassCountById
+      description: 'COCO/Delta per-class entry (id-keyed). COCO id is int; delta id is the
+
+        class UUID stringified — hence `int | str`.'
     ExportResponse:
       properties:
         id:
@@ -679,14 +903,7 @@ components:
         `FormatterSkip`). `asset_id` is stringified on write; `annotation_id` is int
 
         (COCO/YOLO) or str (delta/manifest-miss sentinel).'
-    ExportFormat:
-      type: string
-      enum:
-      - coco
-      - yolo
-      - delta
-      title: ExportFormat
-    ClassCountById:
+    ClassCountByIdx:
       properties:
         name:
           type: string
@@ -694,233 +911,16 @@ components:
         count:
           type: integer
           title: Count
-        id:
-          anyOf:
-          - type: integer
-          - type: string
-          title: Id
+        idx:
+          type: integer
+          title: Idx
       type: object
       required:
       - name
       - count
-      - id
-      title: ClassCountById
-      description: 'COCO/Delta per-class entry (id-keyed). COCO id is int; delta id is the
-
-        class UUID stringified — hence `int | str`.'
-    ExportCreateRequest:
-      properties:
-        format:
-          $ref: '#/components/schemas/ExportFormat'
-          description: 'Export bundle format: coco, yolo, or delta.'
-        include_assets:
-          type: boolean
-          title: Include Assets
-          description: Whether to include the source asset files in the export bundle.
-          default: true
-        exclude_empty:
-          type: boolean
-          title: Exclude Empty
-          description: If true, skip assets that have no annotations from the export.
-          default: false
-      type: object
-      required:
-      - format
-      title: ExportCreateRequest
-      description: 'POST body. All fields optional except `format`.
-
-
-        Pydantic defaults to ignoring unknown fields (`extra=''ignore''`), so callers
-
-        that still send the deprecated `splits` / `split_seed` / `stratify_by`
-
-        fields from the v1 contract get a silent no-op. The export is always
-
-        unsplit regardless.'
-    ErrorCode:
-      type: string
-      enum:
-      - UNCATEGORIZED
-      - AUTH_MISSING
-      - AUTH_INVALID_CREDENTIAL
-      - AUTH_TOKEN_EXPIRED
-      - AUTH_FORBIDDEN
-      - AUTH_TENANT_MISMATCH
-      - VALIDATION_ERROR
-      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
-      - BAD_REQUEST
-      - INVALID_CURSOR
-      - INVALID_FILTER
-      - UNSUPPORTED_OPERATION
-      - PAYLOAD_TOO_LARGE
-      - TENANT_NOT_FOUND
-      - TENANT_SLUG_TAKEN
-      - USER_NOT_FOUND
-      - USER_EMAIL_TAKEN
-      - INVITATION_NOT_FOUND
-      - INVITATION_PENDING
-      - INVITATION_NOT_PENDING
-      - INVITATION_EXPIRED
-      - LAST_ADMIN
-      - DATASET_NOT_FOUND
-      - DATASET_NAME_TAKEN
-      - DATASET_DELETED
-      - DATASET_ASSET_CAP_EXCEEDED
-      - ASSET_NOT_FOUND
-      - ASSET_DELETED
-      - ASSET_NOT_EMBEDDED
-      - ASSET_FORMAT_UNSUPPORTED
-      - ASSET_TOO_LARGE
-      - PROJECT_NOT_FOUND
-      - PROJECT_ARCHIVED
-      - PROJECT_MEMBER_NOT_FOUND
-      - PROJECT_CLASS_NOT_FOUND
-      - VERSION_NOT_FOUND
-      - MODEL_NOT_FOUND
-      - RESOURCE_NOT_READY
-      - PROJECT_STATE_FORBIDDEN
-      - CLASS_LOCKED
-      - CLASS_IN_USE
-      - DEPLOYMENT_NOT_FOUND
-      - DEPLOYMENT_STATE_FORBIDDEN
-      - EXPORT_EXPIRED
-      - EXPORT_FAILED
-      - ANNOTATION_NOT_FOUND
-      - JOB_NOT_FOUND
-      - JOB_ALREADY_RUNNING
-      - JOB_PER_TENANT_CAP
-      - JOB_TERMINAL
-      - EMBEDDER_UNAVAILABLE
-      - EMBEDDER_INVOCATION_FAILED
-      - NAME_TAKEN
-      - IDEMPOTENCY_REPLAY
-      - CONCURRENT_MODIFICATION
-      - RATE_LIMITED
-      - RESOURCE_LIMIT_EXCEEDED
-      - INTERNAL_ERROR
-      - DEPENDENCY_UNAVAILABLE
-      - MODEL_LOADING
-      - MODEL_STARTING
-      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    ExportDownloadResponse:
-      properties:
-        url:
-          type: string
-          title: Url
-          description: Pre-signed HTTPS URL to download the export bundle; valid for 1 hour.
-      type: object
-      required:
-      - url
-      title: ExportDownloadResponse
-      description: 'Response from `/exports/{eid}/download` when ready.
-
-
-        Caller follows `url` with a normal HTTPS GET. S3 validates expiry at
-
-        request start so 1h TTL covers arbitrary-duration downloads.'
-    CocoResultDetails:
-      properties:
-        format:
-          type: string
-          const: coco
-          title: Format
-        num_images:
-          type: integer
-          title: Num Images
-        num_annotations:
-          type: integer
-          title: Num Annotations
-        num_categories:
-          type: integer
-          title: Num Categories
-        classes:
-          items:
-            $ref: '#/components/schemas/ClassCountById'
-          type: array
-          title: Classes
-        classes_truncated:
-          type: boolean
-          title: Classes Truncated
-          default: false
-        classes_total:
-          type: integer
-          title: Classes Total
-          default: 0
-      type: object
-      required:
-      - format
-      - num_images
-      - num_annotations
-      - num_categories
-      title: CocoResultDetails
-      description: '`result_details` for a COCO bundle. `classes`/`classes_truncated`/
-
-        `classes_total` were added when `_top_classes` landed — Optional-with-default
-
-        so a pre-that-change row still serializes.'
-    ErrorResponse:
-      type: object
-      required:
-      - error
-      properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
-    YoloResultDetails:
-      properties:
-        format:
-          type: string
-          const: yolo
-          title: Format
-        num_images:
-          type: integer
-          title: Num Images
-        num_labels:
-          type: integer
-          title: Num Labels
-        num_classes:
-          type: integer
-          title: Num Classes
-        classes:
-          items:
-            $ref: '#/components/schemas/ClassCountByIdx'
-          type: array
-          title: Classes
-        classes_truncated:
-          type: boolean
-          title: Classes Truncated
-          default: false
-        classes_total:
-          type: integer
-          title: Classes Total
-          default: 0
-      type: object
-      required:
-      - format
-      - num_images
-      - num_labels
-      - num_classes
-      title: YoloResultDetails
+      - idx
+      title: ClassCountByIdx
+      description: YOLO per-class entry (0-based dataset index).
   securitySchemes:
     HTTPBearer:
       type: http

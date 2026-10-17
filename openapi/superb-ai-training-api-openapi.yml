@@ -565,93 +565,71 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    CatalogPatienceKnob:
-      properties:
-        default:
-          type: integer
-          title: Default
-          description: Default patience (epochs without val-mAP improvement).
-        min:
-          type: integer
-          title: Min
-          description: Lowest accepted `patience` value.
-        max:
-          anyOf:
-          - type: integer
-          - type: string
-            const: epochs
-          title: Max
-          description: Highest accepted `patience`; the literal string 'epochs' means the bound is dynamic — the run's own chosen epoch count.
-      type: object
-      required:
-      - default
-      - min
-      - max
-      title: CatalogPatienceKnob
-    TrainingRunListPage:
-      properties:
-        items:
-          items:
-            $ref: '#/components/schemas/TrainingRunResponse'
-          type: array
-          title: Items
-        next_cursor:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Next Cursor
-      type: object
-      required:
-      - items
-      title: TrainingRunListPage
-    CatalogSplitKnob:
-      properties:
-        default:
-          $ref: '#/components/schemas/CatalogSplitDefault'
-          description: Split applied when the run omits one.
-        strategies:
-          items:
-            $ref: '#/components/schemas/SplitStrategy'
-          type: array
-          title: Strategies
-          description: Accepted split strategies.
-      type: object
-      required:
-      - default
-      - strategies
-      title: CatalogSplitKnob
-    CatalogModelResponse:
-      properties:
-        key:
-          type: string
-          title: Key
-          description: Catalog model key (selection id, e.g. 'rf-detr-nano').
-        name:
-          type: string
-          title: Name
-          description: Display name (e.g. 'RF-DETR Nano').
-        task:
-          $ref: '#/components/schemas/TrainingTask'
-          description: Task the variant trains for (detection or segmentation).
-        options:
-          $ref: '#/components/schemas/CatalogOptions'
-          description: 'Configurable-knob schema: defaults and bounds for epochs / early_stopping / patience / split.'
-      type: object
-      required:
-      - key
-      - name
-      - task
-      - options
-      title: CatalogModelResponse
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
     TrainingRunResponse:
       properties:
         id:
@@ -732,131 +710,49 @@ components:
       - started_at
       - completed_at
       title: TrainingRunResponse
-    CatalogOptions:
+    TrainingStatsClass:
       properties:
-        epochs:
-          $ref: '#/components/schemas/CatalogEpochsKnob'
-        early_stopping:
-          $ref: '#/components/schemas/CatalogEarlyStoppingKnob'
-        patience:
-          $ref: '#/components/schemas/CatalogPatienceKnob'
-        split:
-          $ref: '#/components/schemas/CatalogSplitKnob'
+        class_id:
+          type: string
+          format: uuid
+          title: Class Id
+          description: Class id.
+        name:
+          type: string
+          title: Name
+          description: Class display name.
+        instance_count:
+          type: integer
+          title: Instance Count
+          description: Total annotations of this class (of the task geometry).
+        image_count:
+          type: integer
+          title: Image Count
+          description: Distinct images containing this class.
       type: object
       required:
-      - epochs
-      - early_stopping
-      - patience
-      - split
-      title: CatalogOptions
+      - class_id
+      - name
+      - instance_count
+      - image_count
+      title: TrainingStatsClass
     TrainingTask:
       type: string
       enum:
       - detection
       - segmentation
       title: TrainingTask
-    CatalogEpochsKnob:
+    TrainingMetricsResponse:
       properties:
-        default:
-          type: integer
-          title: Default
-          description: Default epoch count when the run omits `epochs`.
-        min:
-          type: integer
-          title: Min
-          description: Lowest accepted `epochs` value.
-        max:
-          type: integer
-          title: Max
-          description: Highest accepted `epochs` value.
+        items:
+          items:
+            $ref: '#/components/schemas/TrainingMetricPoint'
+          type: array
+          title: Items
       type: object
       required:
-      - default
-      - min
-      - max
-      title: CatalogEpochsKnob
-    TrainingRunStatus:
-      type: string
-      enum:
-      - queued
-      - running
-      - succeeded
-      - failed
-      - canceled
-      title: TrainingRunStatus
-    ErrorCode:
-      type: string
-      enum:
-      - UNCATEGORIZED
-      - AUTH_MISSING
-      - AUTH_INVALID_CREDENTIAL
-      - AUTH_TOKEN_EXPIRED
-      - AUTH_FORBIDDEN
-      - AUTH_TENANT_MISMATCH
-      - VALIDATION_ERROR
-      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
-      - BAD_REQUEST
-      - INVALID_CURSOR
-      - INVALID_FILTER
-      - UNSUPPORTED_OPERATION
-      - PAYLOAD_TOO_LARGE
-      - TENANT_NOT_FOUND
-      - TENANT_SLUG_TAKEN
-      - USER_NOT_FOUND
-      - USER_EMAIL_TAKEN
-      - INVITATION_NOT_FOUND
-      - INVITATION_PENDING
-      - INVITATION_NOT_PENDING
-      - INVITATION_EXPIRED
-      - LAST_ADMIN
-      - DATASET_NOT_FOUND
-      - DATASET_NAME_TAKEN
-      - DATASET_DELETED
-      - DATASET_ASSET_CAP_EXCEEDED
-      - ASSET_NOT_FOUND
-      - ASSET_DELETED
-      - ASSET_NOT_EMBEDDED
-      - ASSET_FORMAT_UNSUPPORTED
-      - ASSET_TOO_LARGE
-      - PROJECT_NOT_FOUND
-      - PROJECT_ARCHIVED
-      - PROJECT_MEMBER_NOT_FOUND
-      - PROJECT_CLASS_NOT_FOUND
-      - VERSION_NOT_FOUND
-      - MODEL_NOT_FOUND
-      - RESOURCE_NOT_READY
-      - PROJECT_STATE_FORBIDDEN
-      - CLASS_LOCKED
-      - CLASS_IN_USE
-      - DEPLOYMENT_NOT_FOUND
-      - DEPLOYMENT_STATE_FORBIDDEN
-      - EXPORT_EXPIRED
-      - EXPORT_FAILED
-      - ANNOTATION_NOT_FOUND
-      - JOB_NOT_FOUND
-      - JOB_ALREADY_RUNNING
-      - JOB_PER_TENANT_CAP
-      - JOB_TERMINAL
-      - EMBEDDER_UNAVAILABLE
-      - EMBEDDER_INVOCATION_FAILED
-      - NAME_TAKEN
-      - IDEMPOTENCY_REPLAY
-      - CONCURRENT_MODIFICATION
-      - RATE_LIMITED
-      - RESOURCE_LIMIT_EXCEEDED
-      - INTERNAL_ERROR
-      - DEPENDENCY_UNAVAILABLE
-      - MODEL_LOADING
-      - MODEL_STARTING
-      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    SplitStrategy:
-      type: string
-      enum:
-      - random
-      - stratified
-      - manual
-      title: SplitStrategy
-      description: Train/val/test split strategy (stored in training-run options JSONB).
+      - items
+      title: TrainingMetricsResponse
     SplitConfig:
       properties:
         strategy:
@@ -909,108 +805,29 @@ components:
           description: 'Manual split (ADR-0065): frozen tag marking the test split; null falls back to a seeded ratio split.'
       type: object
       title: SplitConfig
-    TrainingStatsClass:
+    CatalogModelResponse:
       properties:
-        class_id:
+        key:
           type: string
-          format: uuid
-          title: Class Id
-          description: Class id.
+          title: Key
+          description: Catalog model key (selection id, e.g. 'rf-detr-nano').
         name:
           type: string
           title: Name
-          description: Class display name.
-        instance_count:
-          type: integer
-          title: Instance Count
-          description: Total annotations of this class (of the task geometry).
-        image_count:
-          type: integer
-          title: Image Count
-          description: Distinct images containing this class.
-      type: object
-      required:
-      - class_id
-      - name
-      - instance_count
-      - image_count
-      title: TrainingStatsClass
-    CatalogSplitDefault:
-      properties:
-        strategy:
-          $ref: '#/components/schemas/SplitStrategy'
-          description: Default split strategy.
-        train:
-          type: number
-          title: Train
-          description: Default train fraction.
-        val:
-          type: number
-          title: Val
-          description: Default val fraction.
-        test:
-          type: number
-          title: Test
-          description: Default test fraction.
-        seed:
-          type: integer
-          title: Seed
-          description: Default split seed.
-      type: object
-      required:
-      - strategy
-      - train
-      - val
-      - test
-      - seed
-      title: CatalogSplitDefault
-    TrainingRunCreate:
-      properties:
-        name:
-          type: string
-          maxLength: 255
-          minLength: 1
-          title: Name
-          description: Display name for the training run.
+          description: Display name (e.g. 'RF-DETR Nano').
         task:
           $ref: '#/components/schemas/TrainingTask'
-          description: Task the run trains for (detection or segmentation).
-        model:
-          type: string
-          title: Model
-          description: Catalog model key (e.g. 'rf-detr-nano').
-        epochs:
-          anyOf:
-          - type: integer
-            maximum: 300.0
-            minimum: 1.0
-          - type: 'null'
-          title: Epochs
-          description: Number of training epochs; null uses the catalog default.
-        early_stopping:
-          anyOf:
-          - type: boolean
-          - type: 'null'
-          title: Early Stopping
-          description: Stop early on val-loss plateau; null uses the catalog default.
-        patience:
-          anyOf:
-          - type: integer
-            minimum: 1.0
-          - type: 'null'
-          title: Patience
-          description: Epochs without improvement before early-stop; null uses the catalog default.
-        split:
-          anyOf:
-          - $ref: '#/components/schemas/SplitConfig'
-          - type: 'null'
-          description: Train/val/test split config; null uses the catalog default.
+          description: Task the variant trains for (detection or segmentation).
+        options:
+          $ref: '#/components/schemas/CatalogOptions'
+          description: 'Configurable-knob schema: defaults and bounds for epochs / early_stopping / patience / split.'
       type: object
       required:
+      - key
       - name
       - task
-      - model
-      title: TrainingRunCreate
+      - options
+      title: CatalogModelResponse
     TrainingMetricPoint:
       properties:
         epoch:
@@ -1070,32 +887,77 @@ components:
         the val split. Any field may be null (e.g. a run with no val split → losses
 
         only).'
-    ValidationError:
+    TrainingRunCreate:
       properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
+        name:
           type: string
-          title: Message
-        type:
+          maxLength: 255
+          minLength: 1
+          title: Name
+          description: Display name for the training run.
+        task:
+          $ref: '#/components/schemas/TrainingTask'
+          description: Task the run trains for (detection or segmentation).
+        model:
           type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
+          title: Model
+          description: Catalog model key (e.g. 'rf-detr-nano').
+        epochs:
+          anyOf:
+          - type: integer
+            maximum: 300.0
+            minimum: 1.0
+          - type: 'null'
+          title: Epochs
+          description: Number of training epochs; null uses the catalog default.
+        early_stopping:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Early Stopping
+          description: Stop early on val-loss plateau; null uses the catalog default.
+        patience:
+          anyOf:
+          - type: integer
+            minimum: 1.0
+          - type: 'null'
+          title: Patience
+          description: Epochs without improvement before early-stop; null uses the catalog default.
+        split:
+          anyOf:
+          - $ref: '#/components/schemas/SplitConfig'
+          - type: 'null'
+          description: Train/val/test split config; null uses the catalog default.
       type: object
       required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
+      - name
+      - task
+      - model
+      title: TrainingRunCreate
+    SplitStrategy:
+      type: string
+      enum:
+      - random
+      - stratified
+      - manual
+      title: SplitStrategy
+      description: Train/val/test split strategy (stored in training-run options JSONB).
+    CatalogSplitKnob:
+      properties:
+        default:
+          $ref: '#/components/schemas/CatalogSplitDefault'
+          description: Split applied when the run omits one.
+        strategies:
+          items:
+            $ref: '#/components/schemas/SplitStrategy'
+          type: array
+          title: Strategies
+          description: Accepted split strategies.
+      type: object
+      required:
+      - default
+      - strategies
+      title: CatalogSplitKnob
     TrainingStatsResponse:
       properties:
         task:
@@ -1147,17 +1009,81 @@ components:
       required:
       - default
       title: CatalogEarlyStoppingKnob
-    TrainingMetricsResponse:
+    CatalogSplitDefault:
       properties:
-        items:
-          items:
-            $ref: '#/components/schemas/TrainingMetricPoint'
-          type: array
-          title: Items
+        strategy:
+          $ref: '#/components/schemas/SplitStrategy'
+          description: Default split strategy.
+        train:
+          type: number
+          title: Train
+          description: Default train fraction.
+        val:
+          type: number
+          title: Val
+          description: Default val fraction.
+        test:
+          type: number
+          title: Test
+          description: Default test fraction.
+        seed:
+          type: integer
+          title: Seed
+          description: Default split seed.
       type: object
       required:
-      - items
-      title: TrainingMetricsResponse
+      - strategy
+      - train
+      - val
+      - test
+      - seed
+      title: CatalogSplitDefault
+    CatalogEpochsKnob:
+      properties:
+        default:
+          type: integer
+          title: Default
+          description: Default epoch count when the run omits `epochs`.
+        min:
+          type: integer
+          title: Min
+          description: Lowest accepted `epochs` value.
+        max:
+          type: integer
+          title: Max
+          description: Highest accepted `epochs` value.
+      type: object
+      required:
+      - default
+      - min
+      - max
+      title: CatalogEpochsKnob
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
     ErrorResponse:
       type: object
       required:
@@ -1186,6 +1112,80 @@ components:
               type: string
               nullable: true
               description: Correlation id for support / log lookups.
+    CatalogPatienceKnob:
+      properties:
+        default:
+          type: integer
+          title: Default
+          description: Default patience (epochs without val-mAP improvement).
+        min:
+          type: integer
+          title: Min
+          description: Lowest accepted `patience` value.
+        max:
+          anyOf:
+          - type: integer
+          - type: string
+            const: epochs
+          title: Max
+          description: Highest accepted `patience`; the literal string 'epochs' means the bound is dynamic — the run's own chosen epoch count.
+      type: object
+      required:
+      - default
+      - min
+      - max
+      title: CatalogPatienceKnob
+    TrainingRunListPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/TrainingRunResponse'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+      type: object
+      required:
+      - items
+      title: TrainingRunListPage
+    TrainingRunStatus:
+      type: string
+      enum:
+      - queued
+      - running
+      - succeeded
+      - failed
+      - canceled
+      title: TrainingRunStatus
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    CatalogOptions:
+      properties:
+        epochs:
+          $ref: '#/components/schemas/CatalogEpochsKnob'
+        early_stopping:
+          $ref: '#/components/schemas/CatalogEarlyStoppingKnob'
+        patience:
+          $ref: '#/components/schemas/CatalogPatienceKnob'
+        split:
+          $ref: '#/components/schemas/CatalogSplitKnob'
+      type: object
+      required:
+      - epochs
+      - early_stopping
+      - patience
+      - split
+      title: CatalogOptions
   securitySchemes:
     HTTPBearer:
       type: http

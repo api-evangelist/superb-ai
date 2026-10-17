@@ -575,70 +575,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    ChangePasswordRequest:
-      properties:
-        previous_password:
-          type: string
-          minLength: 1
-          title: Previous Password
-          description: Your current password (re-verified).
-        new_password:
-          type: string
-          maxLength: 256
-          minLength: 10
-          title: New Password
-          description: The new password (10+ characters, not a common one).
-      type: object
-      required:
-      - previous_password
-      - new_password
-      title: ChangePasswordRequest
-      description: 'Change your own password. `previous_password` is re-verified against the
-
-        identity provider before the new one is set; `new_password` must satisfy the
-
-        provider''s strength policy (10+ chars, not a common password).'
-    UserResponse:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-        email:
-          type: string
-          title: Email
-        first_name:
-          type: string
-          title: First Name
-        last_name:
-          type: string
-          title: Last Name
-        role:
-          $ref: '#/components/schemas/WorkspaceRole'
-        created_at:
-          type: string
-          format: date-time
-          title: Created At
-        updated_at:
-          type: string
-          format: date-time
-          title: Updated At
-      type: object
-      required:
-      - id
-      - email
-      - first_name
-      - last_name
-      - role
-      - created_at
-      - updated_at
-      title: UserResponse
-    WorkspaceRole:
-      type: string
-      enum:
-      - admin
-      - member
-      title: WorkspaceRole
     ValidationError:
       properties:
         loc:
@@ -665,6 +601,74 @@ components:
       - msg
       - type
       title: ValidationError
+    UserRoleUpdate:
+      properties:
+        role:
+          $ref: '#/components/schemas/WorkspaceRole'
+      type: object
+      required:
+      - role
+      title: UserRoleUpdate
+      description: 'Body for PATCH /users/{user_id}. Admin-only — changes the target
+
+        user''s workspace role. Blocked by last-admin guard when demoting.'
+    WorkspaceRole:
+      type: string
+      enum:
+      - admin
+      - member
+      title: WorkspaceRole
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    ChangePasswordRequest:
+      properties:
+        previous_password:
+          type: string
+          minLength: 1
+          title: Previous Password
+          description: Your current password (re-verified).
+        new_password:
+          type: string
+          maxLength: 256
+          minLength: 10
+          title: New Password
+          description: The new password (10+ characters, not a common one).
+      type: object
+      required:
+      - previous_password
+      - new_password
+      title: ChangePasswordRequest
+      description: 'Change your own password. `previous_password` is re-verified against the
+
+        identity provider before the new one is set; `new_password` must satisfy the
+
+        provider''s strength policy (10+ chars, not a common password).'
     UserPage:
       properties:
         items:
@@ -681,15 +685,6 @@ components:
       required:
       - items
       title: UserPage
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
     UserSeedCreate:
       properties:
         email:
@@ -732,6 +727,50 @@ components:
         ready-to-login member directly (WorkOS account with password + membership,
 
         no email). Humans join via `/tenants/{slug}/invitations` + in-app accept.'
+    UserResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        email:
+          type: string
+          title: Email
+        first_name:
+          type: string
+          title: First Name
+        last_name:
+          type: string
+          title: Last Name
+        role:
+          $ref: '#/components/schemas/WorkspaceRole'
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      type: object
+      required:
+      - id
+      - email
+      - first_name
+      - last_name
+      - role
+      - created_at
+      - updated_at
+      title: UserResponse
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     ErrorCode:
       type: string
       enum:
@@ -820,45 +859,6 @@ components:
       description: 'Edit your own profile (first/last name only). Email + password have their
 
         own dedicated endpoints.'
-    ErrorResponse:
-      type: object
-      required:
-      - error
-      properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
-    UserRoleUpdate:
-      properties:
-        role:
-          $ref: '#/components/schemas/WorkspaceRole'
-      type: object
-      required:
-      - role
-      title: UserRoleUpdate
-      description: 'Body for PATCH /users/{user_id}. Admin-only — changes the target
-
-        user''s workspace role. Blocked by last-admin guard when demoting.'
   securitySchemes:
     HTTPBearer:
       type: http

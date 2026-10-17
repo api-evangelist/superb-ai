@@ -212,12 +212,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    WorkspaceRole:
-      type: string
-      enum:
-      - admin
-      - member
-      title: WorkspaceRole
     ValidationError:
       properties:
         loc:
@@ -244,89 +238,40 @@ components:
       - msg
       - type
       title: ValidationError
-    InvitationCreate:
-      properties:
-        email:
-          type: string
-          maxLength: 254
-          format: email
-          title: Email
-          description: Email address to invite.
-        role:
-          $ref: '#/components/schemas/WorkspaceRole'
-          description: Workspace role granted when the invitation is accepted.
-          default: member
-      type: object
-      required:
-      - email
-      title: InvitationCreate
-      description: 'An invitation is email + role, nothing else (ADR-0112 principle carried
-
-        forward): the invitee names themselves at sign-up.'
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    InvitationResponse:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-          description: Invitation id.
-        email:
-          type: string
-          maxLength: 254
-          format: email
-          title: Email
-          description: Invited email — acceptance requires an account holding exactly this address.
-        role:
-          $ref: '#/components/schemas/WorkspaceRole'
-          description: Role granted on acceptance.
-        status:
-          $ref: '#/components/schemas/InvitationStatus'
-          description: pending | accepted | declined | revoked | expired.
-        accept_url:
-          type: string
-          title: Accept Url
-          description: 'Hosted accept link (from the invitation email). Copyable — hand it over Slack/chat as an alternative to the email. Possession alone grants nothing: acceptance still requires signing in with the invited email.'
-        expires_at:
-          type: string
-          format: date-time
-          title: Expires At
-          description: After this the invitation can no longer be accepted.
-        created_at:
-          type: string
-          format: date-time
-          title: Created At
-          description: When the invitation was sent.
-      type: object
-      required:
-      - id
-      - email
-      - role
-      - status
-      - accept_url
-      - expires_at
-      - created_at
-      title: InvitationResponse
-    InvitationStatus:
+    WorkspaceRole:
       type: string
       enum:
-      - pending
-      - accepted
-      - declined
-      - revoked
-      - expired
-      title: InvitationStatus
-      description: 'Lifecycle of a workspace invitation (ADR-0113). Terminal states are
-
-        kept as history; only `pending` rows are actionable/unique per email.'
+      - admin
+      - member
+      title: WorkspaceRole
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
     InvitationPage:
       properties:
         items:
@@ -339,6 +284,15 @@ components:
       required:
       - items
       title: InvitationPage
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     ErrorCode:
       type: string
       enum:
@@ -404,34 +358,80 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    ErrorResponse:
+    InvitationCreate:
+      properties:
+        email:
+          type: string
+          maxLength: 254
+          format: email
+          title: Email
+          description: Email address to invite.
+        role:
+          $ref: '#/components/schemas/WorkspaceRole'
+          description: Workspace role granted when the invitation is accepted.
+          default: member
       type: object
       required:
-      - error
+      - email
+      title: InvitationCreate
+      description: 'An invitation is email + role, nothing else (ADR-0112 principle carried
+
+        forward): the invitee names themselves at sign-up.'
+    InvitationResponse:
       properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Invitation id.
+        email:
+          type: string
+          maxLength: 254
+          format: email
+          title: Email
+          description: Invited email — acceptance requires an account holding exactly this address.
+        role:
+          $ref: '#/components/schemas/WorkspaceRole'
+          description: Role granted on acceptance.
+        status:
+          $ref: '#/components/schemas/InvitationStatus'
+          description: pending | accepted | declined | revoked | expired.
+        accept_url:
+          type: string
+          title: Accept Url
+          description: 'Hosted accept link (from the invitation email). Copyable — hand it over Slack/chat as an alternative to the email. Possession alone grants nothing: acceptance still requires signing in with the invited email.'
+        expires_at:
+          type: string
+          format: date-time
+          title: Expires At
+          description: After this the invitation can no longer be accepted.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: When the invitation was sent.
+      type: object
+      required:
+      - id
+      - email
+      - role
+      - status
+      - accept_url
+      - expires_at
+      - created_at
+      title: InvitationResponse
+    InvitationStatus:
+      type: string
+      enum:
+      - pending
+      - accepted
+      - declined
+      - revoked
+      - expired
+      title: InvitationStatus
+      description: 'Lifecycle of a workspace invitation (ADR-0113). Terminal states are
+
+        kept as history; only `pending` rows are actionable/unique per email.'
   securitySchemes:
     HTTPBearer:
       type: http

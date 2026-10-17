@@ -306,6 +306,126 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+        input:
+          title: Input
+        ctx:
+          type: object
+          title: Context
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
+    ConfusionMatrix:
+      properties:
+        labels:
+          items:
+            type: string
+          type: array
+          title: Labels
+        matrix:
+          items:
+            items:
+              type: integer
+            type: array
+          type: array
+          title: Matrix
+      additionalProperties: false
+      type: object
+      required:
+      - labels
+      - matrix
+      title: ConfusionMatrix
+      description: K classes + a trailing 'background' bucket for FP/missed.
+    TrainingTask:
+      type: string
+      enum:
+      - detection
+      - segmentation
+      title: TrainingTask
+    TrainedModelUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 255
+          - type: 'null'
+          title: Name
+          description: New display name (unique per tenant, case-insensitive); omit to leave unchanged.
+        description:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Description
+          description: New description; send null to clear it, omit to leave unchanged.
+      type: object
+      title: TrainedModelUpdate
+      description: 'Edit a trained model (ADR-0072) — name and/or description (partial; send only
+
+        what changes). Name is unique per tenant (case-insensitive); `description` may be
+
+        set to null to clear it.'
+    TrainedModelListPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/TrainedModelResponse'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+      type: object
+      required:
+      - items
+      title: TrainedModelListPage
     TrainingMetricsSummary:
       properties:
         optimal_confidence:
@@ -337,22 +457,6 @@ components:
         so a future added key never 500s a model read; `num_test` is set only on the
 
         final (full) scorecard, so it is Optional.'
-    TrainedModelListPage:
-      properties:
-        items:
-          items:
-            $ref: '#/components/schemas/TrainedModelResponse'
-          type: array
-          title: Items
-        next_cursor:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Next Cursor
-      type: object
-      required:
-      - items
-      title: TrainedModelListPage
     PerClassMetrics:
       properties:
         class:
@@ -380,105 +484,6 @@ components:
       - support
       title: PerClassMetrics
       description: One class's P/R/F1 + GT support at the chosen threshold.
-    TrainedModelResponse:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-          description: Trained-model id.
-        name:
-          type: string
-          title: Name
-          description: Display name (unique per tenant, case-insensitive).
-        description:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Description
-          description: Optional free-text description; null if unset.
-        task:
-          $ref: '#/components/schemas/TrainingTask'
-          description: Task the model performs (detection or segmentation).
-        model:
-          type: string
-          title: Model
-          description: Catalog model key the run used (e.g. 'rf-detr-nano').
-        project_id:
-          type: string
-          format: uuid
-          title: Project Id
-          description: 'Lineage: which project''s data produced this model (tenant registry).'
-        training_run_id:
-          type: string
-          format: uuid
-          title: Training Run Id
-          description: Training run that produced this model.
-        project_version_id:
-          type: string
-          format: uuid
-          title: Project Version Id
-          description: Frozen project version the run trained on.
-        class_map:
-          additionalProperties:
-            type: string
-          type: object
-          title: Class Map
-          description: Model class index → class name.
-        metrics_summary:
-          $ref: '#/components/schemas/TrainingMetricsSummary'
-          description: Summary evaluation metrics for the trained model.
-        created_at:
-          type: string
-          format: date-time
-          title: Created At
-          description: When the model was registered.
-        updated_at:
-          type: string
-          format: date-time
-          title: Updated At
-          description: When the model was last updated.
-      type: object
-      required:
-      - id
-      - name
-      - description
-      - task
-      - model
-      - project_id
-      - training_run_id
-      - project_version_id
-      - class_map
-      - metrics_summary
-      - created_at
-      - updated_at
-      title: TrainedModelResponse
-    ValidationError:
-      properties:
-        loc:
-          items:
-            anyOf:
-            - type: string
-            - type: integer
-          type: array
-          title: Location
-        msg:
-          type: string
-          title: Message
-        type:
-          type: string
-          title: Error Type
-        input:
-          title: Input
-        ctx:
-          type: object
-          title: Context
-      type: object
-      required:
-      - loc
-      - msg
-      - type
-      title: ValidationError
     HTTPValidationError:
       properties:
         detail:
@@ -488,33 +493,6 @@ components:
           title: Detail
       type: object
       title: HTTPValidationError
-    ConfusionMatrix:
-      properties:
-        labels:
-          items:
-            type: string
-          type: array
-          title: Labels
-        matrix:
-          items:
-            items:
-              type: integer
-            type: array
-          type: array
-          title: Matrix
-      additionalProperties: false
-      type: object
-      required:
-      - labels
-      - matrix
-      title: ConfusionMatrix
-      description: K classes + a trailing 'background' bucket for FP/missed.
-    TrainingTask:
-      type: string
-      enum:
-      - detection
-      - segmentation
-      title: TrainingTask
     ErrorCode:
       type: string
       enum:
@@ -610,57 +588,79 @@ components:
         `map`/`map_50` are injected post-hoc by `trainer._score_split` (torchmetrics),
 
         so `evaluate()` returns them unset — hence Optional-with-default.'
-    ErrorResponse:
-      type: object
-      required:
-      - error
+    TrainedModelResponse:
       properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
-    TrainedModelUpdate:
-      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+          description: Trained-model id.
         name:
-          anyOf:
-          - type: string
-            maxLength: 255
-          - type: 'null'
+          type: string
           title: Name
-          description: New display name (unique per tenant, case-insensitive); omit to leave unchanged.
+          description: Display name (unique per tenant, case-insensitive).
         description:
           anyOf:
           - type: string
-            maxLength: 1000
           - type: 'null'
           title: Description
-          description: New description; send null to clear it, omit to leave unchanged.
+          description: Optional free-text description; null if unset.
+        task:
+          $ref: '#/components/schemas/TrainingTask'
+          description: Task the model performs (detection or segmentation).
+        model:
+          type: string
+          title: Model
+          description: Catalog model key the run used (e.g. 'rf-detr-nano').
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+          description: 'Lineage: which project''s data produced this model (tenant registry).'
+        training_run_id:
+          type: string
+          format: uuid
+          title: Training Run Id
+          description: Training run that produced this model.
+        project_version_id:
+          type: string
+          format: uuid
+          title: Project Version Id
+          description: Frozen project version the run trained on.
+        class_map:
+          additionalProperties:
+            type: string
+          type: object
+          title: Class Map
+          description: Model class index → class name.
+        metrics_summary:
+          $ref: '#/components/schemas/TrainingMetricsSummary'
+          description: Summary evaluation metrics for the trained model.
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+          description: When the model was registered.
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+          description: When the model was last updated.
       type: object
-      title: TrainedModelUpdate
-      description: 'Edit a trained model (ADR-0072) — name and/or description (partial; send only
-
-        what changes). Name is unique per tenant (case-insensitive); `description` may be
-
-        set to null to clear it.'
+      required:
+      - id
+      - name
+      - description
+      - task
+      - model
+      - project_id
+      - training_run_id
+      - project_version_id
+      - class_map
+      - metrics_summary
+      - created_at
+      - updated_at
+      title: TrainedModelResponse
   securitySchemes:
     HTTPBearer:
       type: http

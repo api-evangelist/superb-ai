@@ -668,20 +668,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    DatasetKind:
-      type: string
-      enum:
-      - image
-      - video
-      title: DatasetKind
-    AnchorKind:
-      type: string
-      enum:
-      - asset
-      - point
-      - box
-      - annotation
-      title: AnchorKind
     ValidationError:
       properties:
         loc:
@@ -708,6 +694,67 @@ components:
       - msg
       - type
       title: ValidationError
+    CommentStatus:
+      type: string
+      enum:
+      - open
+      - resolved
+      title: CommentStatus
+    DatasetKind:
+      type: string
+      enum:
+      - image
+      - video
+      title: DatasetKind
+    CommentListPage:
+      properties:
+        items:
+          items:
+            $ref: '#/components/schemas/CommentResponse'
+          type: array
+          title: Items
+        next_cursor:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Next Cursor
+        total:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Total
+      type: object
+      required:
+      - items
+      title: CommentListPage
+    ErrorResponse:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
     BoxAnchor:
       properties:
         x:
@@ -737,36 +784,23 @@ components:
       - w
       - h
       title: BoxAnchor
-    HTTPValidationError:
+    PointAnchor:
       properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    CommentListPage:
-      properties:
-        items:
-          items:
-            $ref: '#/components/schemas/CommentResponse'
-          type: array
-          title: Items
-        next_cursor:
-          anyOf:
-          - type: string
-          - type: 'null'
-          title: Next Cursor
-        total:
-          anyOf:
-          - type: integer
-          - type: 'null'
-          title: Total
+        x:
+          type: number
+          maximum: 2.0
+          minimum: -1.0
+          title: X
+        y:
+          type: number
+          maximum: 2.0
+          minimum: -1.0
+          title: Y
       type: object
       required:
-      - items
-      title: CommentListPage
+      - x
+      - y
+      title: PointAnchor
     CommentUpdateRequest:
       properties:
         body:
@@ -815,6 +849,106 @@ components:
         replaced and re-validated as a unit — so you can''t end up `kind=box` with a
 
         stale `point` coord. Anchor edits are rejected on replies (route-level).'
+    CommentResponse:
+      properties:
+        id:
+          type: string
+          format: uuid
+          title: Id
+        project_id:
+          type: string
+          format: uuid
+          title: Project Id
+        asset_id:
+          type: string
+          format: uuid
+          title: Asset Id
+        asset_kind:
+          $ref: '#/components/schemas/DatasetKind'
+        anchor_kind:
+          $ref: '#/components/schemas/AnchorKind'
+        anchor_coords:
+          anyOf:
+          - $ref: '#/components/schemas/PointAnchor'
+          - $ref: '#/components/schemas/BoxAnchor'
+          - type: 'null'
+          title: Anchor Coords
+        annotation_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Annotation Id
+        parent_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Parent Id
+        body:
+          type: string
+          title: Body
+        author_id:
+          anyOf:
+          - type: string
+            format: uuid
+          - type: 'null'
+          title: Author Id
+        status:
+          $ref: '#/components/schemas/CommentStatus'
+        origin:
+          $ref: '#/components/schemas/CommentOrigin'
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        seq:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Seq
+        reply_count:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Reply Count
+      type: object
+      required:
+      - id
+      - project_id
+      - asset_id
+      - asset_kind
+      - anchor_kind
+      - annotation_id
+      - parent_id
+      - body
+      - author_id
+      - status
+      - origin
+      - created_at
+      - updated_at
+      title: CommentResponse
+    AnchorKind:
+      type: string
+      enum:
+      - asset
+      - point
+      - box
+      - annotation
+      title: AnchorKind
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     ErrorCode:
       type: string
       enum:
@@ -921,146 +1055,12 @@ components:
       - body
       title: CommentCreateRequest
       description: "POST /projects/{pid}/assets/{aid}/comments.\n\nAnchor is one-of:\n  - kind=asset: no coords, no annotation_id\n  - kind=point: coords={\"x\", \"y\"}\n  - kind=box: coords={\"x\", \"y\", \"w\", \"h\"}\n  - kind=annotation: annotation_id required\nReplies: set parent_id (and inherit anchor from the root server-side)."
-    CommentResponse:
-      properties:
-        id:
-          type: string
-          format: uuid
-          title: Id
-        project_id:
-          type: string
-          format: uuid
-          title: Project Id
-        asset_id:
-          type: string
-          format: uuid
-          title: Asset Id
-        asset_kind:
-          $ref: '#/components/schemas/DatasetKind'
-        anchor_kind:
-          $ref: '#/components/schemas/AnchorKind'
-        anchor_coords:
-          anyOf:
-          - $ref: '#/components/schemas/PointAnchor'
-          - $ref: '#/components/schemas/BoxAnchor'
-          - type: 'null'
-          title: Anchor Coords
-        annotation_id:
-          anyOf:
-          - type: string
-            format: uuid
-          - type: 'null'
-          title: Annotation Id
-        parent_id:
-          anyOf:
-          - type: string
-            format: uuid
-          - type: 'null'
-          title: Parent Id
-        body:
-          type: string
-          title: Body
-        author_id:
-          anyOf:
-          - type: string
-            format: uuid
-          - type: 'null'
-          title: Author Id
-        status:
-          $ref: '#/components/schemas/CommentStatus'
-        origin:
-          $ref: '#/components/schemas/CommentOrigin'
-        created_at:
-          type: string
-          format: date-time
-          title: Created At
-        updated_at:
-          type: string
-          format: date-time
-          title: Updated At
-        seq:
-          anyOf:
-          - type: integer
-          - type: 'null'
-          title: Seq
-        reply_count:
-          anyOf:
-          - type: integer
-          - type: 'null'
-          title: Reply Count
-      type: object
-      required:
-      - id
-      - project_id
-      - asset_id
-      - asset_kind
-      - anchor_kind
-      - annotation_id
-      - parent_id
-      - body
-      - author_id
-      - status
-      - origin
-      - created_at
-      - updated_at
-      title: CommentResponse
-    PointAnchor:
-      properties:
-        x:
-          type: number
-          maximum: 2.0
-          minimum: -1.0
-          title: X
-        y:
-          type: number
-          maximum: 2.0
-          minimum: -1.0
-          title: Y
-      type: object
-      required:
-      - x
-      - y
-      title: PointAnchor
-    ErrorResponse:
-      type: object
-      required:
-      - error
-      properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
     CommentOrigin:
       type: string
       enum:
       - user
       - workflow_reject
       title: CommentOrigin
-    CommentStatus:
-      type: string
-      enum:
-      - open
-      - resolved
-      title: CommentStatus
   securitySchemes:
     HTTPBearer:
       type: http

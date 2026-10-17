@@ -432,32 +432,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    AssetStatus:
-      type: string
-      enum:
-      - pending
-      - processing
-      - ready
-      - failed
-      - deleted
-      title: AssetStatus
-    DatasetCreate:
-      properties:
-        name:
-          type: string
-          maxLength: 255
-          minLength: 1
-          title: Name
-        description:
-          anyOf:
-          - type: string
-            maxLength: 1000
-          - type: 'null'
-          title: Description
-      type: object
-      required:
-      - name
-      title: DatasetCreate
     ValidationError:
       properties:
         loc:
@@ -484,142 +458,6 @@ components:
       - msg
       - type
       title: ValidationError
-    EmbeddingStatus:
-      type: string
-      enum:
-      - pending
-      - ready
-      - failed
-      title: EmbeddingStatus
-    HTTPValidationError:
-      properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
-    JobStatus:
-      type: string
-      enum:
-      - pending
-      - queued
-      - running
-      - completed
-      - failed
-      - canceled
-      title: JobStatus
-    JobKind:
-      type: string
-      enum:
-      - build_project_version_manifest
-      - bulk_delete_image_assets
-      - bulk_update_tags_project
-      - bulk_add_assets_project
-      - bulk_remove_assets_project
-      - bulk_assign_assets_project
-      - bulk_unassign_assets_project
-      - bulk_approve_assets_project
-      - bulk_reject_assets_project
-      - bulk_create_annotations
-      - bulk_delete_annotations
-      - embed_dataset
-      - export_dataset
-      - auto_label_project
-      - cleanup_s3_objects
-      - delete_project_cascade
-      - delete_dataset_cascade
-      - duplicate_project_scope
-      - bulk_set_status_assets_project
-      title: JobKind
-    DatasetUpdate:
-      properties:
-        name:
-          anyOf:
-          - type: string
-            maxLength: 255
-            minLength: 1
-          - type: 'null'
-          title: Name
-        description:
-          anyOf:
-          - type: string
-            maxLength: 1000
-          - type: 'null'
-          title: Description
-      type: object
-      title: DatasetUpdate
-      description: 'PATCH semantics: omit a field to leave it unchanged. Explicit `null` is
-
-        treated the same as omit (use `""` to clear `description`). Future revision
-
-        may switch to JSON Merge Patch with explicit-null = clear semantics if FE asks.'
-    ErrorCode:
-      type: string
-      enum:
-      - UNCATEGORIZED
-      - AUTH_MISSING
-      - AUTH_INVALID_CREDENTIAL
-      - AUTH_TOKEN_EXPIRED
-      - AUTH_FORBIDDEN
-      - AUTH_TENANT_MISMATCH
-      - VALIDATION_ERROR
-      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
-      - BAD_REQUEST
-      - INVALID_CURSOR
-      - INVALID_FILTER
-      - UNSUPPORTED_OPERATION
-      - PAYLOAD_TOO_LARGE
-      - TENANT_NOT_FOUND
-      - TENANT_SLUG_TAKEN
-      - USER_NOT_FOUND
-      - USER_EMAIL_TAKEN
-      - INVITATION_NOT_FOUND
-      - INVITATION_PENDING
-      - INVITATION_NOT_PENDING
-      - INVITATION_EXPIRED
-      - LAST_ADMIN
-      - DATASET_NOT_FOUND
-      - DATASET_NAME_TAKEN
-      - DATASET_DELETED
-      - DATASET_ASSET_CAP_EXCEEDED
-      - ASSET_NOT_FOUND
-      - ASSET_DELETED
-      - ASSET_NOT_EMBEDDED
-      - ASSET_FORMAT_UNSUPPORTED
-      - ASSET_TOO_LARGE
-      - PROJECT_NOT_FOUND
-      - PROJECT_ARCHIVED
-      - PROJECT_MEMBER_NOT_FOUND
-      - PROJECT_CLASS_NOT_FOUND
-      - VERSION_NOT_FOUND
-      - MODEL_NOT_FOUND
-      - RESOURCE_NOT_READY
-      - PROJECT_STATE_FORBIDDEN
-      - CLASS_LOCKED
-      - CLASS_IN_USE
-      - DEPLOYMENT_NOT_FOUND
-      - DEPLOYMENT_STATE_FORBIDDEN
-      - EXPORT_EXPIRED
-      - EXPORT_FAILED
-      - ANNOTATION_NOT_FOUND
-      - JOB_NOT_FOUND
-      - JOB_ALREADY_RUNNING
-      - JOB_PER_TENANT_CAP
-      - JOB_TERMINAL
-      - EMBEDDER_UNAVAILABLE
-      - EMBEDDER_INVOCATION_FAILED
-      - NAME_TAKEN
-      - IDEMPOTENCY_REPLAY
-      - CONCURRENT_MODIFICATION
-      - RATE_LIMITED
-      - RESOURCE_LIMIT_EXCEEDED
-      - INTERNAL_ERROR
-      - DEPENDENCY_UNAVAILABLE
-      - MODEL_LOADING
-      - MODEL_STARTING
-      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
     JobResponse:
       properties:
         id:
@@ -720,42 +558,16 @@ components:
       - completed_at
       - pct
       title: JobResponse
-    DatasetStatsResponse:
-      properties:
-        total:
-          type: integer
-          title: Total
-        by_status:
-          additionalProperties:
-            type: integer
-          propertyNames:
-            $ref: '#/components/schemas/AssetStatus'
-          type: object
-          title: By Status
-        embedding:
-          anyOf:
-          - additionalProperties:
-              type: integer
-            propertyNames:
-              $ref: '#/components/schemas/EmbeddingStatus'
-            type: object
-          - type: 'null'
-          title: Embedding
-      type: object
-      required:
-      - total
-      - by_status
-      title: DatasetStatsResponse
-      description: 'Total counts for the FE asset grid header (FE feedback 2026-05-07).
-
-        Separate endpoint per ADR-0012 (cursor pagination, no totals on list).
-
-
-        `embedding`: semantic-search coverage so the FE can show
-
-        "1872 / 2000 embedded" badges and prompt the user to re-embed when there
-
-        are pending arrivals.'
+    JobStatus:
+      type: string
+      enum:
+      - pending
+      - queued
+      - running
+      - completed
+      - failed
+      - canceled
+      title: JobStatus
     ErrorResponse:
       type: object
       required:
@@ -784,6 +596,13 @@ components:
               type: string
               nullable: true
               description: Correlation id for support / log lookups.
+    EmbeddingStatus:
+      type: string
+      enum:
+      - pending
+      - ready
+      - failed
+      title: EmbeddingStatus
     DatasetResponse:
       properties:
         id:
@@ -821,6 +640,187 @@ components:
       - created_at
       - updated_at
       title: DatasetResponse
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    ErrorCode:
+      type: string
+      enum:
+      - UNCATEGORIZED
+      - AUTH_MISSING
+      - AUTH_INVALID_CREDENTIAL
+      - AUTH_TOKEN_EXPIRED
+      - AUTH_FORBIDDEN
+      - AUTH_TENANT_MISMATCH
+      - VALIDATION_ERROR
+      - VALIDATION_REQUIRED_CLASSIFICATION_MISSING
+      - BAD_REQUEST
+      - INVALID_CURSOR
+      - INVALID_FILTER
+      - UNSUPPORTED_OPERATION
+      - PAYLOAD_TOO_LARGE
+      - TENANT_NOT_FOUND
+      - TENANT_SLUG_TAKEN
+      - USER_NOT_FOUND
+      - USER_EMAIL_TAKEN
+      - INVITATION_NOT_FOUND
+      - INVITATION_PENDING
+      - INVITATION_NOT_PENDING
+      - INVITATION_EXPIRED
+      - LAST_ADMIN
+      - DATASET_NOT_FOUND
+      - DATASET_NAME_TAKEN
+      - DATASET_DELETED
+      - DATASET_ASSET_CAP_EXCEEDED
+      - ASSET_NOT_FOUND
+      - ASSET_DELETED
+      - ASSET_NOT_EMBEDDED
+      - ASSET_FORMAT_UNSUPPORTED
+      - ASSET_TOO_LARGE
+      - PROJECT_NOT_FOUND
+      - PROJECT_ARCHIVED
+      - PROJECT_MEMBER_NOT_FOUND
+      - PROJECT_CLASS_NOT_FOUND
+      - VERSION_NOT_FOUND
+      - MODEL_NOT_FOUND
+      - RESOURCE_NOT_READY
+      - PROJECT_STATE_FORBIDDEN
+      - CLASS_LOCKED
+      - CLASS_IN_USE
+      - DEPLOYMENT_NOT_FOUND
+      - DEPLOYMENT_STATE_FORBIDDEN
+      - EXPORT_EXPIRED
+      - EXPORT_FAILED
+      - ANNOTATION_NOT_FOUND
+      - JOB_NOT_FOUND
+      - JOB_ALREADY_RUNNING
+      - JOB_PER_TENANT_CAP
+      - JOB_TERMINAL
+      - EMBEDDER_UNAVAILABLE
+      - EMBEDDER_INVOCATION_FAILED
+      - NAME_TAKEN
+      - IDEMPOTENCY_REPLAY
+      - CONCURRENT_MODIFICATION
+      - RATE_LIMITED
+      - RESOURCE_LIMIT_EXCEEDED
+      - INTERNAL_ERROR
+      - DEPENDENCY_UNAVAILABLE
+      - MODEL_LOADING
+      - MODEL_STARTING
+      description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
+    DatasetCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 255
+          minLength: 1
+          title: Name
+        description:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Description
+      type: object
+      required:
+      - name
+      title: DatasetCreate
+    JobKind:
+      type: string
+      enum:
+      - build_project_version_manifest
+      - bulk_delete_image_assets
+      - bulk_update_tags_project
+      - bulk_add_assets_project
+      - bulk_remove_assets_project
+      - bulk_assign_assets_project
+      - bulk_unassign_assets_project
+      - bulk_approve_assets_project
+      - bulk_reject_assets_project
+      - bulk_create_annotations
+      - bulk_delete_annotations
+      - embed_dataset
+      - export_dataset
+      - auto_label_project
+      - cleanup_s3_objects
+      - delete_project_cascade
+      - delete_dataset_cascade
+      - duplicate_project_scope
+      - bulk_set_status_assets_project
+      title: JobKind
+    DatasetUpdate:
+      properties:
+        name:
+          anyOf:
+          - type: string
+            maxLength: 255
+            minLength: 1
+          - type: 'null'
+          title: Name
+        description:
+          anyOf:
+          - type: string
+            maxLength: 1000
+          - type: 'null'
+          title: Description
+      type: object
+      title: DatasetUpdate
+      description: 'PATCH semantics: omit a field to leave it unchanged. Explicit `null` is
+
+        treated the same as omit (use `""` to clear `description`). Future revision
+
+        may switch to JSON Merge Patch with explicit-null = clear semantics if FE asks.'
+    DatasetStatsResponse:
+      properties:
+        total:
+          type: integer
+          title: Total
+        by_status:
+          additionalProperties:
+            type: integer
+          propertyNames:
+            $ref: '#/components/schemas/AssetStatus'
+          type: object
+          title: By Status
+        embedding:
+          anyOf:
+          - additionalProperties:
+              type: integer
+            propertyNames:
+              $ref: '#/components/schemas/EmbeddingStatus'
+            type: object
+          - type: 'null'
+          title: Embedding
+      type: object
+      required:
+      - total
+      - by_status
+      title: DatasetStatsResponse
+      description: 'Total counts for the FE asset grid header (FE feedback 2026-05-07).
+
+        Separate endpoint per ADR-0012 (cursor pagination, no totals on list).
+
+
+        `embedding`: semantic-search coverage so the FE can show
+
+        "1872 / 2000 embedded" badges and prompt the user to re-embed when there
+
+        are pending arrivals.'
+    AssetStatus:
+      type: string
+      enum:
+      - pending
+      - processing
+      - ready
+      - failed
+      - deleted
+      title: AssetStatus
   securitySchemes:
     HTTPBearer:
       type: http

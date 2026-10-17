@@ -187,21 +187,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
 components:
   schemas:
-    AuthorizeResponse:
-      properties:
-        authorization_url:
-          type: string
-          title: Authorization Url
-          description: Hosted AuthKit URL to redirect the user to.
-      type: object
-      required:
-      - authorization_url
-      title: AuthorizeResponse
-      description: 'The hosted-AuthKit URL the FE redirects the browser to for sign-in/sign-up
-
-        (ADR-0053). After login, WorkOS redirects back to the configured callback with
-
-        a one-time `code`.'
     ValidationError:
       properties:
         loc:
@@ -228,27 +213,34 @@ components:
       - msg
       - type
       title: ValidationError
-    CallbackRequest:
-      properties:
-        code:
-          type: string
-          minLength: 1
-          title: Code
-          description: One-time authorization code from the AuthKit redirect.
+    ErrorResponse:
       type: object
       required:
-      - code
-      title: CallbackRequest
-      description: Body for POST /auth/callback — the `code` WorkOS appended to the redirect.
-    HTTPValidationError:
+      - error
       properties:
-        detail:
-          items:
-            $ref: '#/components/schemas/ValidationError'
-          type: array
-          title: Detail
-      type: object
-      title: HTTPValidationError
+        error:
+          type: object
+          required:
+          - code
+          - message
+          properties:
+            code:
+              $ref: '#/components/schemas/ErrorCode'
+            message:
+              type: string
+              description: Human-readable; free to evolve. Don't pattern-match on this.
+            hint:
+              type: string
+              nullable: true
+              description: When present, a concrete next step (often references a CLI command).
+            details:
+              type: object
+              nullable: true
+              description: Per-`code` structured payload; schema documented per code.
+            request_id:
+              type: string
+              nullable: true
+              description: Correlation id for support / log lookups.
     AuthTokens:
       properties:
         access_token:
@@ -282,6 +274,15 @@ components:
       required:
       - refresh_token
       title: RefreshRequest
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
     ErrorCode:
       type: string
       enum:
@@ -347,34 +348,33 @@ components:
       - MODEL_LOADING
       - MODEL_STARTING
       description: Stable error code enum. Pattern-match here, never on `message`. Adding values is non-breaking; renaming/removing is a major bump.
-    ErrorResponse:
+    AuthorizeResponse:
+      properties:
+        authorization_url:
+          type: string
+          title: Authorization Url
+          description: Hosted AuthKit URL to redirect the user to.
       type: object
       required:
-      - error
+      - authorization_url
+      title: AuthorizeResponse
+      description: 'The hosted-AuthKit URL the FE redirects the browser to for sign-in/sign-up
+
+        (ADR-0053). After login, WorkOS redirects back to the configured callback with
+
+        a one-time `code`.'
+    CallbackRequest:
       properties:
-        error:
-          type: object
-          required:
-          - code
-          - message
-          properties:
-            code:
-              $ref: '#/components/schemas/ErrorCode'
-            message:
-              type: string
-              description: Human-readable; free to evolve. Don't pattern-match on this.
-            hint:
-              type: string
-              nullable: true
-              description: When present, a concrete next step (often references a CLI command).
-            details:
-              type: object
-              nullable: true
-              description: Per-`code` structured payload; schema documented per code.
-            request_id:
-              type: string
-              nullable: true
-              description: Correlation id for support / log lookups.
+        code:
+          type: string
+          minLength: 1
+          title: Code
+          description: One-time authorization code from the AuthKit redirect.
+      type: object
+      required:
+      - code
+      title: CallbackRequest
+      description: Body for POST /auth/callback — the `code` WorkOS appended to the redirect.
   securitySchemes:
     HTTPBearer:
       type: http
