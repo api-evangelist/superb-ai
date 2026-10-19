@@ -1,0 +1,76 @@
+edges:
+- partner_name: PyPI
+  partner: pypi
+  partner_match: register
+  type: register
+  direction: provider-built
+  category: official SDK (Python)
+  evidence: https://pypi.org/project/spb-cli/
+  channel: package-registry
+  relationship: distribution-channel
+  contract_reference:
+    register: PyPI (public registry JSON)
+    spec_file: null
+    language: Python
+    packages:
+    - name: spb-cli
+      version: 0.19.4
+      released: '2024-11-07'
+      released_field: upload_time
+      lapsed: false
+      page: https://pypi.org/project/spb-cli/
+      repo_leg: github-org:superb-ai-suite
+      publisher_leg: email:superb-ai.com
+      matched_by: domain
+    - name: superb-ai-curate
+      version: 1.5.0
+      released: '2025-04-29'
+      released_field: upload_time
+      lapsed: false
+      page: https://pypi.org/project/superb-ai-curate/
+      repo_leg: domain:superb-ai.com
+      publisher_leg: email:superb-ai.com
+      matched_by: domain
+    - name: superb-ai-label
+      version: 0.22.2
+      released: '2024-11-07'
+      released_field: upload_time
+      lapsed: false
+      page: https://pypi.org/project/superb-ai-label/
+      repo_leg: github-org:superb-ai-suite
+      publisher_leg: email:superb-ai.com
+      matched_by: domain
+    - name: superb-ai-onprem
+      version: 1.14.0
+      released: '2026-10-17'
+      released_field: upload_time
+      lapsed: false
+      page: https://pypi.org/project/superb-ai-onprem/
+      repo_leg: github-org:superb-ai-suite
+      publisher_leg: email:superb-ai.com
+      matched_by: domain
+    current: true
+    signal_note: 'an official package on the registry: distribution, not an integration; lapsed = no release in
+      24 months'
+    detected_by: sweep-official-sdks.py
+    detected: '2026-10-18'
+  detected_by: sweep-official-sdks.py
+  first_seen: '2026-10-18'
+generated: '2026-10-18'
+method: searched
+source:
+- https://api.nuget.org/v3
+- https://crates.io/api/v1
+- https://proxy.golang.org
+- https://pypi.org/pypi
+- https://registry.npmjs.org
+- https://repo1.maven.org/maven2
+- https://rubygems.org/api/v1
+checked:
+- https://api.nuget.org/v3
+- https://crates.io/api/v1
+- https://proxy.golang.org
+- https://pypi.org/pypi
+- https://registry.npmjs.org
+- https://repo1.maven.org/maven2
+- https://rubygems.org/api/v1
