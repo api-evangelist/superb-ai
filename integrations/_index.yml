@@ -61,3 +61,16 @@
     detected: '2026-10-18'
   status: not-a-workflow
   arazzo: null
+- slug: superb-ai-hugging-face-hugging-face-hub
+  label: Hugging Face (hugging-face-hub)
+  partner: hugging-face
+  partner_name: Hugging Face (hugging-face-hub)
+  category: Hugging Face Hub models
+  type: marketplace
+  marketplace: hugging-face-hub
+  channel: partner-built
+  evidence: https://huggingface.co/superb-ai
+  source: edge
+  relationship: platform-app
+  status: not-a-workflow
+  arazzo: null

@@ -86,6 +86,28 @@ edges:
     detected: '2026-10-20'
   detected_by: sweep-official-clis.py
   first_seen: '2026-10-20'
+- partner_name: Hugging Face (hugging-face-hub)
+  partner: hugging-face
+  partner_match: mirror
+  mirror_match: domain
+  type: marketplace
+  relationship: platform-app
+  direction: third-party
+  channel: partner-built
+  marketplace: hugging-face-hub
+  evidence: https://huggingface.co/superb-ai
+  mirror_of: hugging-face/integrations/hugging-face-integration-edges.yml
+  apps:
+  - superb-ai/yolov6n
+  - superb-ai/deta-swin-large
+  - superb-ai/yolov6l6
+  - superb-ai/yolov6s
+  listing_count: 1
+  detected: '2026-10-23'
+  detected_by: mirror-platform-listings.py
+  category: Hugging Face Hub models
+  badges:
+  - Verified publisher (Hugging Face verified organisation)
 generated: '2026-10-18'
 method: searched
 source:
@@ -109,3 +131,4 @@ checked:
 - https://registry.npmjs.org
 - https://repo1.maven.org/maven2
 - https://rubygems.org/api/v1
+- hugging-face/integrations/hugging-face-integration-edges.yml
